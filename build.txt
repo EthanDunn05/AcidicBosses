@@ -1,0 +1,3 @@
+displayName = Acidic Bosses
+author = AcidAssassin
+version = 0.1

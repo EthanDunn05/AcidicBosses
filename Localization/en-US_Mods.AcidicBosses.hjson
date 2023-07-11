@@ -1,0 +1,4 @@
+Projectiles: {
+	SlimeSpikeProjectile.DisplayName: Slime Ball
+	KingSlimeCrownLaser.DisplayName: Crown Laser
+}
