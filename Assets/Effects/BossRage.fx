@@ -30,8 +30,8 @@ float4 BossRage(float2 coords : TEXCOORD0) : COLOR0
     float2 position = (coords / uScreenResolution);
     float distance = length(coords - float2(0.5, 0.5));
 
-    float radius = 1;
-    float softness = 0.8;
+    float radius = 1.2;
+    float softness = 0.7;
     float vignette = 1.0 - smoothstep(radius, radius - softness, distance);
 
     // Tint

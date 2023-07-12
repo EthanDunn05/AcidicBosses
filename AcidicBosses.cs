@@ -1,3 +1,4 @@
+using AcidicBosses.Common.Effects;
 using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
 using Terraria;
@@ -14,17 +15,28 @@ public class AcidicBosses : Mod
     {
         if (Main.netMode != NetmodeID.Server)
         {
-            var shockwaveRef = LoadEffect("Shockwave", EffectPriority.High);
-            var bossrageRef = LoadEffect("BossRage", EffectPriority.VeryHigh);
-            var neonboxRef = LoadEffect("NeonBox", EffectPriority.High);
+            LoadScreenShader(EffectsRegistry.Names.Shockwave, EffectPriority.High);
+            LoadScreenShader(EffectsRegistry.Names.BossRage, EffectPriority.VeryHigh);
+            LoadPrimShader(EffectsRegistry.Names.KsCrownLaser, "TrailPass");
         }
     }
 
-    private Ref<Effect> LoadEffect(string name, EffectPriority priority)
+    private Ref<Effect> LoadEffect(string name)
     {
-        var asset = new Ref<Effect>(Assets.Request<Effect>("Effects/" + name, AssetRequestMode.ImmediateLoad).Value);
-        Filters.Scene[name] = new Filter(new ScreenShaderData(asset, name), priority);
-        Filters.Scene[name].Load();
+        var asset = new Ref<Effect>(Assets.Request<Effect>("Assets/Effects/" + name, AssetRequestMode.ImmediateLoad).Value);
         return asset;
+    }
+
+    private void LoadPrimShader(string name, string pass)
+    {
+        var effect = LoadEffect($"PrimitiveShaders/{name}");
+        GameShaders.Misc[name] = new MiscShaderData(effect, pass);
+    }
+
+    private void LoadScreenShader(string name, EffectPriority priority)
+    {
+        var effect = LoadEffect(name);
+        Filters.Scene[name] = new Filter(new ScreenShaderData(effect, name), priority);
+        Filters.Scene[name].Load();
     }
 }

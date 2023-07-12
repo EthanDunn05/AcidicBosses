@@ -1,10 +1,9 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using ReLogic.Content;
 using Terraria;
 using Terraria.ModLoader;
 
-namespace AcidicBosses.ProjectileBases;
+namespace AcidicBosses.Content.ProjectileBases;
 
 public abstract class DeathrayBase : ModProjectile
 {
@@ -28,7 +27,7 @@ public abstract class DeathrayBase : ModProjectile
         Main.EntitySpriteDraw(texture, start - Main.screenPosition, headRect, Color.White, r, headRect.Center(), 1f, SpriteEffects.None);
         
         // Body
-        for (var i = 1; i <= Distance / step - 1; i++)
+        for (var i = 2; i <= Distance / step - 1; i++)
         {
             var position = start + rotation * i * step;
             Main.EntitySpriteDraw(texture, position - Main.screenPosition, bodyRect, Color.White, r, bodyRect.Center(), 1f, SpriteEffects.None);

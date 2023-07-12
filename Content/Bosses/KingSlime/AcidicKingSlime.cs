@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
-using AcidicBosses.Shaders;
+using AcidicBosses.Common.Effects;
+using AcidicBosses.Helpers;
 using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.Audio;
@@ -8,12 +10,12 @@ using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.ModLoader.IO;
 
-namespace AcidicBosses.Bosses.KingSlime;
+namespace AcidicBosses.Content.Bosses.KingSlime;
 
 public class AcidicKingSlime : AcidicBossOverride
 {
     public override int OverriddenNpc => NPCID.KingSlime;
-    
+
     private NPC ThisNpc { get; set; }
 
     private enum PhaseState
@@ -25,28 +27,79 @@ public class AcidicKingSlime : AcidicBossOverride
         Desperation
     }
 
-    private enum AttackState
+    private enum Attack
     {
-        None,
-        Jumping,
-        Bursting,
-        Teleporting,
-        Summoning,
+        None, // Only used when transitioning
+        JumpShort,
+        JumpTall,
+        SlimeBurst,
+        TeleportAbove,
+        SummonSlime,
         CrownLaser
     }
 
+    private readonly List<Attack> canFallThroughPlatform = new()
+    {
+        Attack.JumpShort,
+        Attack.JumpTall,
+        Attack.SummonSlime
+    };
+
+    private readonly List<Attack> phase1AttackPattern = new()
+    {
+        Attack.JumpShort,
+        Attack.JumpShort,
+        Attack.JumpTall,
+        Attack.TeleportAbove,
+        Attack.SlimeBurst,
+        Attack.JumpTall,
+        Attack.JumpShort,
+        Attack.TeleportAbove
+    };
+
+    private readonly List<Attack> phase2AttackPattern = new()
+    {
+        Attack.JumpShort,
+        Attack.JumpShort,
+        Attack.SummonSlime,
+        Attack.JumpTall,
+        Attack.TeleportAbove,
+        Attack.CrownLaser,
+        Attack.SlimeBurst,
+        Attack.JumpTall,
+        Attack.JumpShort,
+        Attack.TeleportAbove,
+        Attack.SummonSlime,
+        Attack.SlimeBurst
+    };
+
+    private readonly List<Attack> phase3AttackPattern = new()
+    {
+        Attack.JumpShort,
+        Attack.JumpTall,
+        Attack.SlimeBurst,
+        Attack.TeleportAbove,
+        Attack.SummonSlime,
+        Attack.JumpShort,
+        Attack.JumpTall,
+        Attack.SlimeBurst,
+        Attack.TeleportAbove,
+        Attack.JumpShort,
+        Attack.CrownLaser,
+        Attack.SummonSlime,
+    };
+
     // Synced Variables
-    private int AITimer
+    private int AiTimer
     {
         get => (int) ThisNpc.ai[0];
         set => ThisNpc.ai[0] = value;
     }
 
-    
-    private AttackState CurrentAttack
+    private int CurrentAttackPatternIndex
     {
-        get => (AttackState) ThisNpc.ai[1];
-        set => ThisNpc.ai[1] = (float) value;
+        get => (int) ThisNpc.ai[1];
+        set => ThisNpc.ai[1] = (int) value;
     }
 
     private PhaseState CurrentPhase
@@ -55,10 +108,6 @@ public class AcidicKingSlime : AcidicBossOverride
         set => ThisNpc.ai[2] = (float) value;
     }
 
-    private int ActionCount { get; set; } = 0;
-    private int BurstTimer { get; set; } = 300;
-    private int TeleportTimer { get; set; } = 500;
-    private int SummonTimer { get; set; } = 600;
     private bool BypassActionTimer { get; set; } = false;
     private bool isGrounded = true;
     private bool isFleeing = false;
@@ -67,14 +116,31 @@ public class AcidicKingSlime : AcidicBossOverride
     // Unsynced Variables
     private Vector2 teleportDestination = Vector2.Zero;
 
+    private List<Attack> CurrentAttackPattern => CurrentPhase switch
+    {
+        PhaseState.One => phase1AttackPattern,
+        PhaseState.Two => phase2AttackPattern,
+        PhaseState.Desperation => phase3AttackPattern,
+        _ => throw new UsageException(
+            $"King Slime is in the PhaseState {CurrentPhase} and does not have an attack pattern")
+    };
+
+    private Attack CurrentAttack
+    {
+        get
+        {
+            if (CurrentPhase is PhaseState.Transition1 or PhaseState.Transition2) return Attack.None;
+            return CurrentAttackPattern[CurrentAttackPatternIndex];
+        }
+    }
+
     public override void OnFirstFrame(NPC npc)
     {
         ThisNpc = npc;
-        AITimer = 0;
+        AiTimer = 0;
         CurrentPhase = PhaseState.One;
-        CurrentAttack = AttackState.None;
     }
-    
+
     public override bool AcidAI(NPC npc)
     {
         // Land
@@ -84,21 +150,24 @@ public class AcidicKingSlime : AcidicBossOverride
             npc.velocity.X = 0;
         }
 
-        // Update Timers
-        BurstTimer = Math.Max(BurstTimer - 1, 0);
-        TeleportTimer = Math.Max(TeleportTimer - 1, 0);
-        SummonTimer = Math.Max(SummonTimer - 1, 0);
-        if (AITimer > 0 && !BypassActionTimer && isGrounded)
+        // Update Timer
+        if (AiTimer > 0 && !BypassActionTimer && isGrounded)
         {
-            AITimer = Math.Max(AITimer - 1, 0);
+            AiTimer = Math.Max(AiTimer - 1, 0);
         }
-        
+
         // Flee when no players are alive
-        if (!npc.HasValidTarget && isGrounded)
+        if (IsTargetGone(npc) && isGrounded && !isFleeing)
         {
-            isFleeing = true;
+            npc.TargetClosest();
+            if (IsTargetGone(npc))
+            {
+                BypassActionTimer = true;
+                isFleeing = true;
+                AiTimer = 0;
+            }
         }
-        
+
         if (isFleeing)
         {
             FleeAI(npc);
@@ -130,6 +199,11 @@ public class AcidicKingSlime : AcidicBossOverride
         return false;
     }
 
+    private void NextAttack()
+    {
+        CurrentAttackPatternIndex = (CurrentAttackPatternIndex + 1) % CurrentAttackPattern.Count;
+    }
+
     // Phase AIs //
 
     #region Phases
@@ -140,59 +214,39 @@ public class AcidicKingSlime : AcidicBossOverride
         if (npc.GetLifePercent() <= 0.75f)
         {
             CurrentPhase = PhaseState.Transition1;
-            AITimer = 0;
+            CurrentAttackPatternIndex = 0;
+            AiTimer = 0;
             return;
         }
-
-        // Decide what to do once grounded
-        if (CurrentAttack == AttackState.None)
-        {
-            if (TeleportTimer <= 0) CurrentAttack = AttackState.Teleporting;
-            else if (BurstTimer == 0) CurrentAttack = AttackState.Bursting;
-            else CurrentAttack = AttackState.Jumping;
-        }
         
-        if (AITimer > 0 && !BypassActionTimer) return;
-
-        // Perform Attack
+        if (AiTimer > 0 && !BypassActionTimer) return;
+        
         switch (CurrentAttack)
         {
-            case AttackState.Bursting:
-                BurstAttack(npc);
-                AITimer = 30;
-                BurstTimer = Main.rand.Next(300, 600); // 5-10 second delay
-                CurrentAttack = AttackState.None;
-                NetSync(npc);
+            case Attack.SlimeBurst:
+                BurstAttack(npc, 8);
+                AiTimer = 30;
+                NextAttack();
                 break;
-            case AttackState.Teleporting:
+            case Attack.TeleportAbove:
                 BypassActionTimer = true;
                 TeleportAttack(npc, out var doneTp);
                 if (doneTp)
                 {
                     BypassActionTimer = false;
-                    CurrentAttack = AttackState.None;
-                    AITimer = 120;
-                    TeleportTimer = Main.rand.Next(600, 1200); // 10-20 seconds
-                    NetSync(npc);
+                    AiTimer = 120;
+                    NextAttack();
                 }
-
                 break;
-            case AttackState.Jumping:
-                if (ActionCount <= 3)
-                {
-                    JumpAttack(npc, 4f, 10f);
-                    AITimer = Main.rand.Next(60, 90); // 1-1.5 second delay
-                    NetSync(npc);
-                }
-                else if (ActionCount == 4)
-                {
-                    JumpAttack(npc, 4f, 15f);
-                    AITimer = 120;
-                    ActionCount = -1;
-                }
-
-                ActionCount++;
-                CurrentAttack = AttackState.None;
+            case Attack.JumpShort:
+                JumpAttack(npc, 4f, 10f);
+                AiTimer = 30;
+                NextAttack();
+                break;
+            case Attack.JumpTall:
+                JumpAttack(npc, 4f, 15f);
+                AiTimer = 60;
+                NextAttack();
                 break;
         }
     }
@@ -203,150 +257,139 @@ public class AcidicKingSlime : AcidicBossOverride
         if (npc.GetLifePercent() <= 0.25f)
         {
             CurrentPhase = PhaseState.Transition2;
-            AITimer = 0;
+            AiTimer = 0;
             return;
         }
 
-        // Decide Attack State
-        if (CurrentAttack == AttackState.None)
-        {
-            if (TeleportTimer <= 0) CurrentAttack = AttackState.Teleporting;
-            else if (SummonTimer <= 0) CurrentAttack = AttackState.Summoning;
-            else if (BurstTimer <= 0)
-            {
-                if (Main.rand.NextBool(3)) CurrentAttack = AttackState.Bursting;
-                else CurrentAttack = AttackState.CrownLaser;
-            }
-            else CurrentAttack = AttackState.Jumping;
-        }
-
-        if (AITimer > 0 && !BypassActionTimer) return;
+        if (AiTimer > 0 && !BypassActionTimer) return;
 
         // Preform the attack
         switch (CurrentAttack)
         {
-            case AttackState.Bursting:
-                BurstAttack(npc);
-                AITimer = 30;
-                BurstTimer = Main.rand.Next(300, 600); // 5-10 second delay
-                CurrentAttack = AttackState.None;
-                NetSync(npc);
+            case Attack.SlimeBurst:
+                BypassActionTimer = true;
+                if (AiTimer < 30)
+                {
+                    if (AiTimer == 0) BurstAttack(npc, 5);
+                    if (AiTimer == 15) BurstAttack(npc, 4);
+                    AiTimer++;
+                }
+                else
+                {
+                    BypassActionTimer = false;
+                    AiTimer = 30;
+                    NextAttack();
+                }
                 break;
-            case AttackState.Summoning:
+            case Attack.SummonSlime:
                 SummonAttack(npc);
-                SummonTimer = Main.rand.Next(180, 240); // 3-4 second delay
-                AITimer = 15;
-                CurrentAttack = AttackState.None;
-                NetSync(npc);
+                AiTimer = 15;
+                NextAttack();
                 break;
-            case AttackState.Teleporting:
+            case Attack.TeleportAbove:
                 BypassActionTimer = true;
                 TeleportAttack(npc, out var doneTp);
                 if (doneTp)
                 {
                     BypassActionTimer = false;
-                    CurrentAttack = AttackState.None;
-                    AITimer = 90;
-                    TeleportTimer = Main.rand.Next(300, 600); // 5-10 seconds
-                    NetSync(npc);
+                    AiTimer = 90;
+                    NextAttack();
                 }
-
                 break;
-            case AttackState.CrownLaser:
+            case Attack.CrownLaser:
                 BypassActionTimer = true;
                 CrownLaserAttack(npc, out var doneCl);
                 if (doneCl)
                 {
-                    AITimer = 0;
-                    BurstTimer = Main.rand.Next(180, 300); // 3-5 second delay
-                    CurrentAttack = AttackState.None; // Jump next frame
+                    AiTimer = 0;
                     BypassActionTimer = false;
-                    NetSync(npc);
+                    NextAttack();
                 }
 
                 break;
-            case AttackState.Jumping:
-                if (ActionCount < 3)
-                {
-                    JumpAttack(npc, 6f, 7.5f);
-                    AITimer = 30;
-                }
-                else if (ActionCount == 3)
-                {
-                    JumpAttack(npc, 4f, 12.5f);
-                    AITimer = 60;
-                    ActionCount = -1;
-                }
-
-                ActionCount++;
-                CurrentAttack = AttackState.None;
+            case Attack.JumpShort:
+                JumpAttack(npc, 6f, 7.5f);
+                AiTimer = 30;
+                NextAttack();
+                break;
+            case Attack.JumpTall:
+                JumpAttack(npc, 4f, 15f);
+                AiTimer = 30;
+                NextAttack(); 
                 break;
         }
     }
 
     private void DesperationPhaseAI(NPC npc)
     {
-        // Select next attack
-        if (CurrentAttack == AttackState.None)
-        {
-            if (TeleportTimer <= 0) CurrentAttack = AttackState.Teleporting;
-            else if (SummonTimer <= 0) CurrentAttack = AttackState.Summoning;
-            else if (BurstTimer <= 0) CurrentAttack = AttackState.CrownLaser;
-            else CurrentAttack = AttackState.Jumping;
-        }
-
-        if (AITimer > 0 && !BypassActionTimer) return;
+        if (AiTimer > 0 && !BypassActionTimer) return;
 
         // Random Jump
         switch (CurrentAttack)
         {
-            case AttackState.Summoning:
+            case Attack.SlimeBurst:
                 BypassActionTimer = true;
-
-                // Spawn 3 over 15 frames
-                if (AITimer < 15)
+                if (AiTimer < 30)
                 {
-                    if (AITimer % 5 == 0) SummonAttack(npc);
-                    AITimer++;
+                    if(AiTimer == 0) BurstAttack(npc, 8);
+                    if(AiTimer == 15) BurstAttack(npc, 7);
+                    AiTimer++;
                 }
                 else
                 {
-                    AITimer = 15;
-                    SummonTimer = 300;
                     BypassActionTimer = false;
-                    CurrentAttack = AttackState.None;
+                    AiTimer = 15;
+                    NextAttack();
+                }
+                break;
+            case Attack.SummonSlime:
+                BypassActionTimer = true;
+
+                // Spawn 3 over 15 frames
+                if (AiTimer < 15)
+                {
+                    if (AiTimer % 5 == 0) SummonAttack(npc);
+                    AiTimer++;
+                }
+                else
+                {
+                    AiTimer = 15;
+                    BypassActionTimer = false;
+                    NextAttack();
                 }
 
                 break;
-            case AttackState.Teleporting:
+            case Attack.TeleportAbove:
                 BypassActionTimer = true;
                 TeleportAttack(npc, out var isDone);
                 if (isDone)
                 {
-                    AITimer = 30;
-                    TeleportTimer = 500;
+                    AiTimer = 30;
                     BypassActionTimer = false;
-                    CurrentAttack = AttackState.None;
+                    NextAttack();
                 }
 
                 break;
-            case AttackState.CrownLaser:
+            case Attack.CrownLaser:
                 BypassActionTimer = true;
-                CrownLaserPatternAttack(npc, out var done);
+                CrownLaserCircleAttack(npc, out var done, 12);
                 if (done)
                 {
-                    AITimer = 0;
-                    BurstTimer = Main.rand.Next(180, 300); // 3-5 second delay
-                    CurrentAttack = AttackState.None; // Jump next frame
+                    AiTimer = 0;
                     BypassActionTimer = false;
-                    NetSync(npc);
+                    NextAttack();
                 }
 
                 break;
-            case AttackState.Jumping:
-                JumpAttack(npc, Main.rand.Next(4, 6), Main.rand.Next(8, 12));
-                AITimer = 30;
-                CurrentAttack = AttackState.None;
+            case Attack.JumpShort:
+                JumpAttack(npc, 6f, 10f);
+                AiTimer = 15;
+                NextAttack();
+                break;
+            case Attack.JumpTall:
+                JumpAttack(npc, 6f, 15f);
+                AiTimer = 30;
+                NextAttack();
                 break;
         }
     }
@@ -355,21 +398,21 @@ public class AcidicKingSlime : AcidicBossOverride
     {
         BypassActionTimer = true;
 
-        switch (AITimer)
+        switch (AiTimer)
         {
             case >= 0 and < 120:
-                var t = AITimer / 120f;
+                var t = AiTimer / 120f;
                 t = MathHelper.Clamp(t, 0, 1);
                 ChangeScale(npc, MathHelper.Lerp(1.25f, 0.75f, t));
 
-                if (AITimer % 20 == 0)
+                if (AiTimer % 20 == 0)
                 {
                     SummonAttack(npc);
                 }
 
                 break;
             case >= 120 and < 150:
-                if (AITimer == 120)
+                if (AiTimer == 120)
                 {
                     for (var i = 0; i < 100; i++)
                     {
@@ -390,83 +433,80 @@ public class AcidicKingSlime : AcidicBossOverride
             default:
                 targetScale = 0.75f;
                 CurrentPhase = PhaseState.Two;
-                CurrentAttack = AttackState.None;
-                AITimer = 0;
-                ActionCount = 0;
+                CurrentAttackPatternIndex = 0;
+                AiTimer = 0;
                 BypassActionTimer = false;
                 return;
         }
 
-        AITimer++;
+        AiTimer++;
     }
 
     private void Transition2AI(NPC npc)
     {
         BypassActionTimer = true;
 
-        switch (AITimer)
+        switch (AiTimer)
         {
             case >= 0 and < 30:
-                var roarT = AITimer / 29f;
+                var roarT = AiTimer / 29f;
                 SoundEngine.PlaySound(SoundID.Roar, npc.Center);
                 npc.color = Color.Red;
 
                 // Effects
-                if (AITimer == 0)
+                if (AiTimer == 0)
                 {
-                    Effects.ShockwaveActive(npc.Center, 0.15f, 0.25f, Color.Red);
-                    Effects.BossRageActivate(Color.MistyRose);
+                    EffectsManager.ShockwaveActive(npc.Center, 0.15f, 0.25f, Color.Red);
+                    EffectsManager.BossRageActivate(Color.MistyRose);
                 }
 
-                Effects.ShockwaveProgress(roarT);
-                if (AITimer == 29) Effects.ShockwaveKill();
+                EffectsManager.ShockwaveProgress(roarT);
+                if (AiTimer == 29) EffectsManager.ShockwaveKill();
 
                 break;
             case >= 30 and < 90:
-                var shrinkT = (AITimer - 30f) / (90f - 30f);
+                var shrinkT = (AiTimer - 30f) / (90f - 30f);
                 ChangeScale(npc, MathHelper.Lerp(0.75f, 0.5f, shrinkT));
 
-                if (AITimer % 10 == 0) SummonAttack(npc);
+                if (AiTimer % 10 == 0) SummonAttack(npc);
                 break;
             case 180:
-                CurrentAttack = AttackState.None;
                 BypassActionTimer = false;
                 CurrentPhase = PhaseState.Desperation;
+                CurrentAttackPatternIndex = 0;
                 targetScale = 0.5f;
-                AITimer = 0;
-                ActionCount = 0;
-                BurstTimer = 200;
-                SummonTimer = 0;
-                TeleportTimer = 500;
+                AiTimer = 0;
                 return;
         }
 
-        AITimer++;
+        AiTimer++;
     }
 
     private void FleeAI(NPC npc)
     {
-        if (npc.HasValidTarget)
+        if (!IsTargetGone(npc))
         {
+            BypassActionTimer = false;
             isFleeing = false;
-            AITimer = 30;
+            AiTimer = 30;
             ChangeScale(npc, targetScale);
             return;
         }
 
-        switch (AITimer)
+        switch (AiTimer)
         {
             case >= 0 and < 120:
-                var shrinkT = AITimer / 120f;
+                var shrinkT = AiTimer / 120f;
+                shrinkT = EasingHelper.QuadIn(shrinkT);
                 ChangeScale(npc, MathHelper.Lerp(targetScale, 0f, shrinkT));
                 break;
             default:
                 npc.active = false;
-                Effects.BossRageKill();
+                EffectsManager.BossRageKill();
                 break;
         }
 
-        AITimer++;
+        AiTimer++;
     }
 
     #endregion
@@ -483,17 +523,17 @@ public class AcidicKingSlime : AcidicBossOverride
         isGrounded = false;
     }
 
-    private void BurstAttack(NPC npc)
+    private void BurstAttack(NPC npc, int projCount)
     {
         // Burst Attack
         SoundEngine.PlaySound(SoundID.SplashWeak, npc.Center);
-        const int projCount = 8;
 
         // Create the projectiles
         if (Main.netMode == NetmodeID.MultiplayerClient) return;
         for (var i = 0; i < projCount; i++)
         {
-            var angle = MathF.PI * i / projCount + MathF.PI;
+            var dAngle = MathF.PI / projCount;
+            var angle = dAngle * i + dAngle / 2 + MathF.PI;
 
             const int speed = 10;
             var velocity = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * speed;
@@ -525,7 +565,7 @@ public class AcidicKingSlime : AcidicBossOverride
         }
 
         // This is gonna suck to program
-        switch (AITimer)
+        switch (AiTimer)
         {
             case >= 0 and < 60: // Indicate While Tracking
                 teleportDestination = Main.player[npc.target].position;
@@ -533,7 +573,8 @@ public class AcidicKingSlime : AcidicBossOverride
                 IndicationDust();
                 break;
             case >= 60 and < 90: // Keep indicating while shrinking
-                var shrinkT = (AITimer - 60f) / (90f - 60f);
+                var shrinkT = (AiTimer - 60f) / (90f - 60f);
+                shrinkT = EasingHelper.QuadOut(shrinkT);
                 ChangeScale(npc, MathHelper.Lerp(targetScale, 0f, shrinkT));
 
                 IndicationDust();
@@ -541,7 +582,8 @@ public class AcidicKingSlime : AcidicBossOverride
             case >= 90 and < 120: // Grow at the indicated position
                 npc.position = teleportDestination;
 
-                var growT = (AITimer - 90f) / (120f - 90f);
+                var growT = (AiTimer - 90f) / (120f - 90f);
+                growT = EasingHelper.QuadIn(growT);
                 ChangeScale(npc, MathHelper.Lerp(0f, targetScale, growT));
                 IndicationDust();
                 break;
@@ -555,7 +597,7 @@ public class AcidicKingSlime : AcidicBossOverride
         }
 
         done = false;
-        AITimer++;
+        AiTimer++;
     }
 
     private void SummonAttack(NPC npc)
@@ -581,7 +623,7 @@ public class AcidicKingSlime : AcidicBossOverride
 
     private void CrownLaserAttack(NPC npc, out bool done)
     {
-        switch (AITimer)
+        switch (AiTimer)
         {
             case 0:
                 SoundEngine.PlaySound(SoundID.Item8, npc.Center);
@@ -600,26 +642,27 @@ public class AcidicKingSlime : AcidicBossOverride
         }
 
         done = false;
-        AITimer++;
+        AiTimer++;
     }
 
-    private void CrownLaserPatternAttack(NPC npc, out bool done)
+    private void CrownLaserCircleAttack(NPC npc, out bool done, int projCount)
     {
-        const int projCount = 6;
         const int length = 30;
-        switch (AITimer)
+        switch (AiTimer)
         {
             case >= 0 and < length:
-                if (AITimer % (length / projCount) == 0)
+                if (AiTimer % (length / projCount) == 0)
                 {
                     SoundEngine.PlaySound(SoundID.Item8, npc.Center);
 
                     if (Main.netMode == NetmodeID.MultiplayerClient) break;
 
                     var gemPos = new Vector2(npc.Center.X, npc.position.Y);
-                    var dAngle = MathF.PI / projCount;
-                    var i = (AITimer / ((float) length / projCount));
-                    var angle = dAngle * i + dAngle / 2f + MathF.PI;
+                    
+                    // Circle lasers
+                    var dAngle = MathHelper.TwoPi / projCount;
+                    var i = (AiTimer / ((float) length / projCount));
+                    var angle = dAngle * i + dAngle / 2f;
 
                     Projectile.NewProjectile(npc.GetSource_FromAI(), gemPos, Vector2.Zero,
                         ModContent.ProjectileType<KingSlimeCrownLaser>(), 25, 10, ai0: angle);
@@ -632,7 +675,7 @@ public class AcidicKingSlime : AcidicBossOverride
         }
 
         done = false;
-        AITimer++;
+        AiTimer++;
     }
 
     #endregion
@@ -653,10 +696,6 @@ public class AcidicKingSlime : AcidicBossOverride
 
     public override void SendExtraAI(NPC npc, BitWriter bitWriter, BinaryWriter binaryWriter)
     {
-        binaryWriter.Write(ActionCount);
-        binaryWriter.Write(BurstTimer);
-        binaryWriter.Write(TeleportTimer);
-        binaryWriter.Write(SummonTimer);
         bitWriter.WriteBit(BypassActionTimer);
         bitWriter.WriteBit(isGrounded);
         bitWriter.WriteBit(isFleeing);
@@ -664,10 +703,6 @@ public class AcidicKingSlime : AcidicBossOverride
 
     public override void ReceiveExtraAI(NPC npc, BitReader bitReader, BinaryReader binaryReader)
     {
-        ActionCount = binaryReader.ReadInt32();
-        BurstTimer = binaryReader.ReadInt32();
-        TeleportTimer = binaryReader.ReadInt32();
-        SummonTimer = binaryReader.ReadInt32();
         BypassActionTimer = bitReader.ReadBit();
         isGrounded = bitReader.ReadBit();
         isFleeing = bitReader.ReadBit();
@@ -677,13 +712,13 @@ public class AcidicKingSlime : AcidicBossOverride
     {
         if (npc.life <= 0)
         {
-            Effects.BossRageKill();
+            EffectsManager.BossRageKill();
         }
     }
 
     public override bool? CanFallThroughPlatforms(NPC npc)
     {
-        return (CurrentAttack is AttackState.Jumping or AttackState.None)
+        return (canFallThroughPlatform.Contains(CurrentAttack) && AiTimer > 0)
                && (Main.player[npc.target].Center.Y > npc.position.Y + npc.height);
     }
 }

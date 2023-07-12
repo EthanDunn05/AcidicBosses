@@ -1,6 +1,6 @@
 ﻿using Terraria.ID;
 
-namespace AcidicBosses.Bosses.EoC;
+namespace AcidicBosses.Content.Bosses.EoC;
 
 public class AcidicEoC : AcidicBossOverride
 {

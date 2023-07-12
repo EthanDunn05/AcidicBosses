@@ -1,10 +1,9 @@
-﻿using System;
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 
-namespace AcidicBosses.Bosses.KingSlime;
+namespace AcidicBosses.Content.Bosses.KingSlime;
 
 public class SlimeSpikeProjectile : ModProjectile
 {

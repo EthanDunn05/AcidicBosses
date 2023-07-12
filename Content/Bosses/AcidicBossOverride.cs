@@ -2,7 +2,7 @@
 using Terraria.ID;
 using Terraria.ModLoader;
 
-namespace AcidicBosses.Bosses;
+namespace AcidicBosses.Content.Bosses;
 
 public abstract class AcidicBossOverride : GlobalNPC
 {
@@ -44,5 +44,11 @@ public abstract class AcidicBossOverride : GlobalNPC
         
         if (Main.netMode != NetmodeID.SinglePlayer)
             NetMessage.SendData(MessageID.SyncNPC, -1, -1, null, npc.whoAmI);
+    }
+
+    protected static bool IsTargetGone(NPC npc)
+    {
+        var player = Main.player[npc.target];
+        return !player.active || player.dead;
     }
 }
