@@ -14,14 +14,16 @@ using Terraria.ModLoader;
 namespace AcidicBosses.Content.Bosses.KingSlime;
 
 // I'll clean up this mess later
-public class KingSlimeCrownLaser : DeathrayBase, IPrimDrawer
+public class KingSlimeCrownLaser : ModProjectile, IPrimDrawer
 {
-    private TrailPrimDrawer laserDrawer;
-    
-    public override float Distance => 1200;
-    protected override int CollisionWidth => 5;
+    public bool drawBehindNpcs { get; } = false;
 
-    protected override float LaserRotation
+    private LinePrimDrawer laserDrawer;
+    
+    private float Distance => 1200;
+    private int CollisionWidth => 5;
+
+    private float LaserRotation
     {
         get => Projectile.ai[0];
         set => Projectile.ai[0] = value;
@@ -82,34 +84,34 @@ public class KingSlimeCrownLaser : DeathrayBase, IPrimDrawer
         return false;
     }
 
-    private float GetWidth(float x) => 10f;
+    private static float GetWidth(float x) => 10f;
 
-    private Color GetColor(float x) => Color.White;
-    
+    private static Color GetColor(float x) => Color.White;
+
     public void DrawPrims(SpriteBatch spriteBatch)
     {
-        laserDrawer ??= new TrailPrimDrawer(GetWidth, GetColor, specialShader: EffectsRegistry.KsCrownLaser);
+        laserDrawer ??= new LinePrimDrawer(GetWidth, GetColor, specialShader: EffectsRegistry.KsCrownLaser);
 
         if (!drawLaser) return;
 
-        laserDrawer.Shader.UseImage1(ModContent.Request<Texture2D>(Texture, AssetRequestMode.ImmediateLoad));
+        var texAsset = ModContent.Request<Texture2D>(Texture, AssetRequestMode.ImmediateLoad);
+
+        laserDrawer.Shader.UseImage1(texAsset);
         laserDrawer.Shader.Shader.Parameters["uDistance"].SetValue(Distance);
         
-        var texture = ModContent.Request<Texture2D>(Texture, AssetRequestMode.ImmediateLoad).Value;
+        var texture = texAsset.Value;
         var step = texture.Width / 3;
 
         var points = new List<Vector2>();
         for (var i = 0; i <= Distance / step; i++)
         {
-            var position = Projectile.Center + LaserRotation.ToRotationVector2() * i * step;
+            var position = Projectile.Center + LaserRotation.ToRotationVector2() * i * Distance / step;
             points.Add(position);
         }
         
         laserDrawer.Draw(points, -Main.screenPosition, (int) (Distance / step));
     }
     
-    
-
     public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox)
     {
         if(drawLaser) return base.Colliding(projHitbox, targetHitbox);

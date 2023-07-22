@@ -12,9 +12,9 @@ using Terraria.ModLoader.IO;
 
 namespace AcidicBosses.Content.Bosses.KingSlime;
 
-public class AcidicKingSlime : AcidicBossOverride
+public class KingSlimeOverride : AcidicNPCOverride
 {
-    public override int OverriddenNpc => NPCID.KingSlime;
+    protected override int OverriddenNpc => NPCID.KingSlime;
 
     private NPC ThisNpc { get; set; }
 
@@ -576,11 +576,14 @@ public class AcidicKingSlime : AcidicBossOverride
                 var shrinkT = (AiTimer - 60f) / (90f - 60f);
                 shrinkT = EasingHelper.QuadOut(shrinkT);
                 ChangeScale(npc, MathHelper.Lerp(targetScale, 0f, shrinkT));
-
+                
                 IndicationDust();
                 break;
             case >= 90 and < 120: // Grow at the indicated position
                 npc.position = teleportDestination;
+
+                if (AiTimer == 90)
+                    Gore.NewGore(npc.GetSource_FromAI(), npc.Center, Vector2.Zero, GoreID.KingSlimeCrown);
 
                 var growT = (AiTimer - 90f) / (120f - 90f);
                 growT = EasingHelper.QuadIn(growT);

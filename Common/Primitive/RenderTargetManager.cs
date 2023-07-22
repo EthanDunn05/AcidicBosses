@@ -13,13 +13,17 @@ namespace AcidicBosses.Common.Primitive;
 
 public class RenderTargetManager : ModSystem
 {
-    private static RenderTarget2D CustomRenderTarget;
+    private static RenderTarget2D primRenderTarget;
+    
+    private static RenderTarget2D primRenderTargetBeforeNPCs;
 
-    private static Filter CurrentScreenShader;
+    private static Filter currentScreenShader;
 
-    private static readonly List<IPrimDrawer> CustomTargetDrawers = new();
+    private static readonly List<IPrimDrawer> PrimDrawersList = new();
+    
+    private static readonly List<IPrimDrawer> PrimDrawersListBeforeNPCs = new();
 
-    private Vector2 PreviousScreenSize;
+    private Vector2 previousScreenSize;
     
     public override void Load()
     {
@@ -35,20 +39,30 @@ public class RenderTargetManager : ModSystem
         On_Main.DoDraw_DrawNPCsOverTiles -= DrawRenderTargetToMain;
     }
     
+    private static void DrawTarget(RenderTarget2D target)
+    {
+        if (!PrimDrawersList.Any() && !PrimDrawersListBeforeNPCs.Any())
+            return;
+
+        Main.spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, SamplerState.PointClamp, DepthStencilState.None, Main.Rasterizer, null, Main.GameViewMatrix.TransformationMatrix);
+
+        // Draw the RT
+        Main.spriteBatch.Draw(target, Vector2.Zero, null, Color.White, 0f, Vector2.Zero, 1f, SpriteEffects.None, 0f);
+        Main.spriteBatch.End();
+    }
+    
     private void DrawRenderTargetToMain(On_Main.orig_DoDraw_DrawNPCsOverTiles orig, Main self)
     {
+        DrawTarget(primRenderTargetBeforeNPCs);
         orig(self);
-        Main.spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, SamplerState.PointClamp, DepthStencilState.None, Main.Rasterizer, null, Main.GameViewMatrix.TransformationMatrix);
-        
-        // Draw our RT. The scale is important, it is 2 here as this RT is 0.5x the main screen size.
-        Main.spriteBatch.Draw(CustomRenderTarget, Vector2.Zero, null, Color.White, 0f, Vector2.Zero, 1f, SpriteEffects.None, 0f);
-        Main.spriteBatch.End();
+        DrawTarget(primRenderTarget);
     }
 
     private void DrawToCustomRenderTargets(On_Main.orig_CheckMonoliths orig)
     {
         // Clear our render target from the previous frame.
-        CustomTargetDrawers.Clear();
+        PrimDrawersList.Clear();
+        PrimDrawersListBeforeNPCs.Clear();
 
         // Check every active projectile.
         for (int i = 0; i < Main.projectile.Length; i++)
@@ -57,10 +71,14 @@ public class RenderTargetManager : ModSystem
             // If the projectile is active, a mod projectile, and uses our interface,
             if (projectile.active && projectile.ModProjectile != null && projectile.ModProjectile is IPrimDrawer pixelPrimitiveProjectile)
                 // Add it to the list of prims to draw this frame.
-                CustomTargetDrawers.Add(pixelPrimitiveProjectile);
+                if(pixelPrimitiveProjectile.drawBehindNpcs)
+                    PrimDrawersListBeforeNPCs.Add(pixelPrimitiveProjectile);
+                else 
+                    PrimDrawersList.Add(pixelPrimitiveProjectile);
         }
 
-        DrawProjectilesToRenderTarget(CustomRenderTarget, CustomTargetDrawers);
+        DrawProjectilesToRenderTarget(primRenderTarget, PrimDrawersList);
+        DrawProjectilesToRenderTarget(primRenderTargetBeforeNPCs, PrimDrawersListBeforeNPCs);
 
         // Clear the current render target.
         Main.graphics.GraphicsDevice.SetRenderTarget(null);
@@ -69,19 +87,19 @@ public class RenderTargetManager : ModSystem
         orig();
     }
     
-    private static void DrawProjectilesToRenderTarget(RenderTarget2D renderTarget, List<IPrimDrawer> customTargetDrawers)
+    private static void DrawProjectilesToRenderTarget(RenderTarget2D renderTarget, List<IPrimDrawer> prims)
     {
         // Swap to our custom render target.
         SwapToRenderTarget(renderTarget);
         
-        if (!customTargetDrawers.Any()) return;
+        if (!prims.Any()) return;
         
         // Start a spritebatch, as one does not exist in the method we're detouring.
         Main.spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, Main.DefaultSamplerState, DepthStencilState.None, Main.Rasterizer, null);
 
         // Loop through the list and call each draw function.
-        foreach (var customTargetDrawer in customTargetDrawers)
-            customTargetDrawer.DrawPrims(Main.spriteBatch);
+        foreach (var primDrawer in prims)
+            primDrawer.DrawPrims(Main.spriteBatch);
 
         // End the spritebatch we started.
         Main.spriteBatch.End();
@@ -110,23 +128,27 @@ public class RenderTargetManager : ModSystem
             // Get the current screen size.
             Vector2 currentScreenSize = new(Main.screenWidth, Main.screenHeight);
             // If it does not match the previous one, we need to update it.
-            if (currentScreenSize != PreviousScreenSize)
+            if (currentScreenSize != previousScreenSize)
             {
                 // Render target stuff should be done on the main thread only.
                 Main.QueueMainThreadAction(() =>
                 {
                     // If it is not null, or already disposed, dispose it.
-                    if (CustomRenderTarget != null && !CustomRenderTarget.IsDisposed)
-                        CustomRenderTarget.Dispose();
+                    if (primRenderTarget != null && !primRenderTarget.IsDisposed)
+                        primRenderTarget.Dispose();
+                    
+                    // If it is not null, or already disposed, dispose it.
+                    if (primRenderTargetBeforeNPCs != null && !primRenderTargetBeforeNPCs.IsDisposed)
+                        primRenderTargetBeforeNPCs.Dispose();
 
                     // Recreate the render target with the current, accurate screen dimensions.
-                    // In our case, we want to half them to downscale it, pixelating it.
-                    CustomRenderTarget = new RenderTarget2D(Main.graphics.GraphicsDevice, Main.screenWidth, Main.screenHeight );
+                    primRenderTarget = new RenderTarget2D(Main.graphics.GraphicsDevice, Main.screenWidth, Main.screenHeight);
+                    primRenderTargetBeforeNPCs = new RenderTarget2D(Main.graphics.GraphicsDevice, Main.screenWidth, Main.screenHeight);
                 });
 
             }
             // Set the current one to the previous one for next frame.
-            PreviousScreenSize = currentScreenSize;
+            previousScreenSize = currentScreenSize;
         }
     }
 }

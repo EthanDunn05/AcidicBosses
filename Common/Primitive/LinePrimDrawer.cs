@@ -8,7 +8,7 @@ using Terraria.Graphics.Shaders;
 
 namespace AcidicBosses.Common.Primitive;
 
-public class TrailPrimDrawer : PrimDrawer
+public class LinePrimDrawer : PrimDrawer
 {
     public delegate float VertexWidthFunction(float completionRatio);
 
@@ -24,7 +24,7 @@ public class TrailPrimDrawer : PrimDrawer
 
     public bool UsesSmoothening;
 
-    public TrailPrimDrawer(VertexWidthFunction widthFunction, VertexColorFunction colorFunction,
+    public LinePrimDrawer(VertexWidthFunction widthFunction, VertexColorFunction colorFunction,
         VertexOffsetFunction offsetFunction = null, bool useSmoothening = true, MiscShaderData specialShader = null) :
         base(specialShader)
     {

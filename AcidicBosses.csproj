@@ -11,10 +11,9 @@
     <PackageReference Include="tModLoader.CodeAssist" Version="0.1.*" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Assets" />
-    <Folder Include="Content" />
+    <ClCompile Include="Assets\Effects\shockwave.fx" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Assets\Effects\shockwave.fx" />
+    <Folder Include="Content\Bosses\EoW" />
   </ItemGroup>
 </Project>

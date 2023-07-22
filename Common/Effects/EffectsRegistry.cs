@@ -10,10 +10,12 @@ public static class EffectsRegistry
         public const string Shockwave = "Shockwave";
         public const string BossRage = "BossRage";
         public const string KsCrownLaser = "KsCrownLaser";
+        public const string BasicTexture = "BasicTexture";
     }
 
     public static Filter Shockwave => Filters.Scene[Names.Shockwave];
     public static Filter BossRage => Filters.Scene[Names.BossRage];
     
     public static MiscShaderData KsCrownLaser => GameShaders.Misc[Names.KsCrownLaser];
+    public static MiscShaderData BasicTexture => GameShaders.Misc[Names.BasicTexture];
 }

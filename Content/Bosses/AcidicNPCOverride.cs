@@ -4,13 +4,14 @@ using Terraria.ModLoader;
 
 namespace AcidicBosses.Content.Bosses;
 
-public abstract class AcidicBossOverride : GlobalNPC
+public abstract class AcidicNPCOverride : GlobalNPC
 {
     public override bool InstancePerEntity => true;
-    public abstract int OverriddenNpc { get; }
+    protected abstract int OverriddenNpc { get; }
+    protected NPC Npc { get; private set; }
 
     private bool isFirstFrame = true;
-    
+
     public override bool AppliesToEntity(NPC entity, bool lateInstantiation)
     {
         return entity.type == OverriddenNpc;
@@ -25,6 +26,7 @@ public abstract class AcidicBossOverride : GlobalNPC
     {
         if (isFirstFrame)
         {
+            Npc = npc;
             OnFirstFrame(npc);
             isFirstFrame = false;
         }

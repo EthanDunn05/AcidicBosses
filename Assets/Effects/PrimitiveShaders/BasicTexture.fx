@@ -49,51 +49,18 @@ VertexShaderOutput VertexShaderFunction(in VertexShaderInput input)
     return output;
 }
 
-// Converts trail coordinates to coordinates on a deathray sprite
-float2 DeathrayCoords(float rayLength, int imageLength, float2 coords)
-{
-    int stepSize = imageLength / 3.0;
-    int steps = rayLength / stepSize;
-    float step = coords.x * steps - 1;
-    float stepProgress = step % 1.0;
-
-    float2 DeathrayCoords = coords;
-    
-    // Head
-    if(step < 1.0)
-    {
-        DeathrayCoords.x = stepProgress / 3.0;
-    }
-    // Tail
-    else if(step > steps - 2) 
-    {
-        DeathrayCoords.x = (2 + stepProgress) / 3.0;
-    }
-    // Body
-    else
-    {
-        DeathrayCoords.x = (1 + stepProgress) / 3.0;
-    }
-
-    return DeathrayCoords;
-}
-
+// All this shader does is apply the inputed texture and tint it based of vertex color
 float4 PixelShaderFunction(VertexShaderOutput input) : COLOR0
 {
+    float4 color = input.Color;
     float2 coords = input.TextureCoordinates;
-    float rayLength = uDistance;
-    int imageLength = uImageSize1.x;
+    coords.xy = coords.yx; // Swizzle to rotate the tex
 
-    float2 deathrayCoords = DeathrayCoords(rayLength, imageLength, coords);
-    float4 deathrayMap = tex2D(uImage1, deathrayCoords);
+    float4 tex = tex2D(uImage0, coords);
+    tex.a = tex.r; // Alpha mask
+    tex.rgb *= color.rgb;
 
-    float4 color = deathrayMap;
-    color.a *= deathrayMap.r;
-
-    float brightness = (sin(coords.x * 100.0 - uTime * 10.0) + 1.0) / 4.0 + 0.5;
-    color.rgb *= float3(brightness, 0.1, 0.1);
-
-    return color;
+    return tex;
 }
 
 technique Technique1

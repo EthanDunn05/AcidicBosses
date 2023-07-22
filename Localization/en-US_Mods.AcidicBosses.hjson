@@ -1,4 +1,7 @@
 Projectiles: {
 	SlimeSpikeProjectile.DisplayName: Slime Ball
 	KingSlimeCrownLaser.DisplayName: Crown Laser
+	BasicDashLine.DisplayName: Basic Dash Line
+	PhantomEoC.DisplayName: Phantom Eo C
+	EyeDashLine.DisplayName: Eye Dash Line
 }
