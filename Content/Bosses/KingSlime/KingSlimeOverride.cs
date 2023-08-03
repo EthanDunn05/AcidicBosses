@@ -16,7 +16,8 @@ public class KingSlimeOverride : AcidicNPCOverride
 {
     protected override int OverriddenNpc => NPCID.KingSlime;
 
-    private NPC ThisNpc { get; set; }
+    #region Phase and Attacks
+    
 
     private enum PhaseState
     {
@@ -89,23 +90,24 @@ public class KingSlimeOverride : AcidicNPCOverride
         Attack.SummonSlime,
     };
 
-    // Synced Variables
-    private int AiTimer
-    {
-        get => (int) ThisNpc.ai[0];
-        set => ThisNpc.ai[0] = value;
-    }
-
     private int CurrentAttackPatternIndex
     {
-        get => (int) ThisNpc.ai[1];
-        set => ThisNpc.ai[1] = (int) value;
+        get => (int) Npc.ai[1];
+        set => Npc.ai[1] = (int) value;
     }
 
     private PhaseState CurrentPhase
     {
-        get => (PhaseState) ThisNpc.ai[2];
-        set => ThisNpc.ai[2] = (float) value;
+        get => (PhaseState) Npc.ai[2];
+        set => Npc.ai[2] = (float) value;
+    }
+    
+    #endregion
+    
+    private int AiTimer
+    {
+        get => (int) Npc.ai[0];
+        set => Npc.ai[0] = value;
     }
 
     private bool BypassActionTimer { get; set; } = false;
@@ -136,7 +138,6 @@ public class KingSlimeOverride : AcidicNPCOverride
 
     public override void OnFirstFrame(NPC npc)
     {
-        ThisNpc = npc;
         AiTimer = 0;
         CurrentPhase = PhaseState.One;
     }
@@ -503,6 +504,7 @@ public class KingSlimeOverride : AcidicNPCOverride
             default:
                 npc.active = false;
                 EffectsManager.BossRageKill();
+                EffectsManager.ShockwaveKill();
                 break;
         }
 
@@ -542,7 +544,7 @@ public class KingSlimeOverride : AcidicNPCOverride
                 npc.Center,
                 velocity,
                 ModContent.ProjectileType<SlimeSpikeProjectile>(),
-                20,
+                (int) (Npc.damage * 0.5f),
                 2
             );
         }
@@ -697,14 +699,14 @@ public class KingSlimeOverride : AcidicNPCOverride
         npc.position.Y -= npc.height;
     }
 
-    public override void SendExtraAI(NPC npc, BitWriter bitWriter, BinaryWriter binaryWriter)
+    public override void SendAcidAI(NPC npc, BitWriter bitWriter, BinaryWriter binaryWriter)
     {
         bitWriter.WriteBit(BypassActionTimer);
         bitWriter.WriteBit(isGrounded);
         bitWriter.WriteBit(isFleeing);
     }
 
-    public override void ReceiveExtraAI(NPC npc, BitReader bitReader, BinaryReader binaryReader)
+    public override void ReceiveAcidAI(NPC npc, BitReader bitReader, BinaryReader binaryReader)
     {
         BypassActionTimer = bitReader.ReadBit();
         isGrounded = bitReader.ReadBit();
@@ -716,6 +718,7 @@ public class KingSlimeOverride : AcidicNPCOverride
         if (npc.life <= 0)
         {
             EffectsManager.BossRageKill();
+            EffectsManager.ShockwaveKill();
         }
     }
 

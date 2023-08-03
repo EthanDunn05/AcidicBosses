@@ -1,11 +1,11 @@
 ﻿using AcidicBosses.Content.ProjectileBases;
 using Microsoft.Xna.Framework;
 
-namespace AcidicBosses.Content.Bosses.EoC;
+namespace AcidicBosses.Content.Bosses.BoC;
 
-public class EyeDashLine : DashLineBase
+public class CreeperDashLine : DashLineBase
 {
     protected override float Length { get; } = 12000f;
-    protected override float Width { get; } = 35f;
+    protected override float Width { get; } = 14;
     protected override Color Color { get; } = Color.Crimson;
 }

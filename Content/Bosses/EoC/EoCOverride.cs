@@ -367,6 +367,8 @@ public class EoCOverride : AcidicNPCOverride
     {
         countUpTimer = true;
         const int spinCount = 3;
+        
+        Npc.SimpleFlyMovement(Vector2.Zero, 0.5f);
 
         // Spin
         if (AiTimer < 90)
@@ -431,12 +433,25 @@ public class EoCOverride : AcidicNPCOverride
     private void TransitionTwoAI()
     {
         countUpTimer = true;
-
+        
         if (AiTimer == 0)
         {
             EffectsManager.BossRageActivate(Color.MistyRose);
             EffectsManager.ShockwaveActive(Npc.Center, 0.15f, 0.25f, Color.Red);
             SoundEngine.PlaySound(SoundID.Roar, Npc.Center);
+            
+            // Don't fly off into the distance
+            Npc.velocity = Vector2.Zero;
+            Npc.localAI[0] = Npc.rotation;
+        }
+        
+        // Spin
+        if (AiTimer < 30)
+        {
+            // Spin :)
+            var spinT = AiTimer / 30f;
+            var spinOffset = MathHelper.TwoPi * EasingHelper.QuadInOut(spinT);
+            Npc.rotation = MathHelper.WrapAngle(Npc.localAI[0] + spinOffset);
         }
 
         if (AiTimer <= 60)
@@ -445,7 +460,7 @@ public class EoCOverride : AcidicNPCOverride
             EffectsManager.ShockwaveProgress(shockT);
         }
 
-        if (AiTimer == 61)
+        if (AiTimer > 60)
         {
             EffectsManager.ShockwaveKill();
             CurrentPhase = PhaseState.Four;
@@ -480,6 +495,7 @@ public class EoCOverride : AcidicNPCOverride
         {
             Npc.active = false;
             EffectsManager.BossRageKill();
+            EffectsManager.ShockwaveKill();
         }
     }
 
@@ -552,7 +568,7 @@ public class EoCOverride : AcidicNPCOverride
         // Create Telegraph
         if (AiTimer == 0)
         {
-            var line = NewDashLine(Npc.Center, 0f);
+            var line = NewDashLine(Npc.Center, MathHelper.PiOver2);
             line.timeLeft = dashAtTime;
         }
     }
@@ -579,8 +595,8 @@ public class EoCOverride : AcidicNPCOverride
             if (AiTimer == 0 && Main.netMode != NetmodeID.MultiplayerClient)
             {
                 // Center
-                var line = NewDashLine(Npc.Center, dashOffset * offsetCoef);
-                line.timeLeft = dashAtTime;
+                var line = NewDashLine(Npc.Center, dashOffset * offsetCoef + MathHelper.PiOver2);
+                line.timeLeft = (int) (dashAtTime * 1.5f);
             }
         }
         
@@ -761,7 +777,7 @@ public class EoCOverride : AcidicNPCOverride
 
     private Projectile NewDashLine(Vector2 position, float offset, bool anchorToBoss = true)
     {
-        var ai1 = anchorToBoss ? 1 : 0;
+        var ai1 = anchorToBoss ? Npc.whoAmI : 0;
         return Projectile.NewProjectileDirect(Npc.GetSource_FromAI(), position, Vector2.Zero,
             ModContent.ProjectileType<EyeDashLine>(), 0, 0, ai0: offset, ai1: ai1);
     }
@@ -791,7 +807,7 @@ public class EoCOverride : AcidicNPCOverride
 
         // Afterimages
         if (useAfterimages)
-            for (var i = 1; i < npc.oldPos.Length; i += 2)
+            for (var i = 1; i < npc.oldPos.Length; i ++)
             {
                 // All of this is heavily simplified from decompiled vanilla
                 var fade = 0.5f * (10 - i) / 20f;
@@ -848,7 +864,7 @@ public class EoCOverride : AcidicNPCOverride
 
     #endregion
 
-    public override void SendExtraAI(NPC npc, BitWriter bitWriter, BinaryWriter binaryWriter)
+    public override void SendAcidAI(NPC npc, BitWriter bitWriter, BinaryWriter binaryWriter)
     {
         bitWriter.WriteBit(useAfterimages);
         bitWriter.WriteBit(countUpTimer);
@@ -856,7 +872,7 @@ public class EoCOverride : AcidicNPCOverride
         bitWriter.WriteBit(mouthMode);
     }
 
-    public override void ReceiveExtraAI(NPC npc, BitReader bitReader, BinaryReader binaryReader)
+    public override void ReceiveAcidAI(NPC npc, BitReader bitReader, BinaryReader binaryReader)
     {
         useAfterimages = bitReader.ReadBit();
         countUpTimer = bitReader.ReadBit();
@@ -864,15 +880,7 @@ public class EoCOverride : AcidicNPCOverride
         mouthMode = bitReader.ReadBit();
     }
 
-    public override void HitEffect(NPC npc, NPC.HitInfo hit)
-    {
-        if (npc.life <= 0)
-        {
-            EffectsManager.BossRageKill();
-        }
-    }
-
-    private void LookTowards(Vector2 target, float power)
+    protected override void LookTowards(Vector2 target, float power)
     {
         Npc.rotation = Npc.rotation.AngleLerp(Npc.AngleTo(target) - MathHelper.PiOver2, power);
     }

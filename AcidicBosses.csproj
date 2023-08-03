@@ -13,7 +13,4 @@
   <ItemGroup>
     <ClCompile Include="Assets\Effects\shockwave.fx" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Content\Bosses\EoW" />
-  </ItemGroup>
 </Project>

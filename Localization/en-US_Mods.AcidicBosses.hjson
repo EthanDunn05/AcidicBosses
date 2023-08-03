@@ -4,4 +4,6 @@ Projectiles: {
 	BasicDashLine.DisplayName: Basic Dash Line
 	PhantomEoC.DisplayName: Phantom Eo C
 	EyeDashLine.DisplayName: Eye Dash Line
+	CreeperDashLine.DisplayName: Creeper Dash Line
+	IchorShot.DisplayName: Ichor Shot
 }
