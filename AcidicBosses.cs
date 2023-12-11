@@ -17,7 +17,6 @@ public class AcidicBosses : Mod
         {
             LoadScreenShader(EffectsRegistry.Names.Shockwave, EffectPriority.High);
             LoadScreenShader(EffectsRegistry.Names.BossRage, EffectPriority.VeryHigh);
-            LoadPrimShader(EffectsRegistry.Names.KsCrownLaser, "TrailPass");
             LoadPrimShader(EffectsRegistry.Names.BasicTexture, "TrailPass");
         }
     }

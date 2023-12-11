@@ -10,7 +10,12 @@ public static class TextureRegistry
     
     public static Asset<Texture2D> GlowLine => Tex("Lines/GlowLine");
     public static Asset<Texture2D> InvertedGlowLine => Tex("Lines/InvertedGlowLine");
+    public static Asset<Texture2D> SideGlowLine => Tex("Lines/SideGlowLine");
     public static Asset<Texture2D> Line => Tex("Lines/Line");
 
     private static Asset<Texture2D> Tex(string name) => ModContent.Request<Texture2D>($"AcidicBosses/Assets/Textures/{name}", AssetRequestMode.ImmediateLoad);
+    
+    public static string TerrariaProjectile(int projID) => $"Terraria/Images/Projectile_{projID}";
+    public static string TerrariaItem(int itemID) => $"Terraria/Images/Item_{itemID}";
+    public static string TerrariaNPC(int npcID) => $"Terraria/Images/NPC_{npcID}";
 }

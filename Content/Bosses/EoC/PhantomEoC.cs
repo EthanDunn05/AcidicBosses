@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework;
+﻿using AcidicBosses.Common.Textures;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.Audio;
@@ -12,7 +13,7 @@ namespace AcidicBosses.Content.Bosses.EoC;
 public class PhantomEoC : ModProjectile
 {
     // Steal the EoC's drip
-    public override string Texture => $"Terraria/Images/NPC_{NPCID.EyeofCthulhu}";
+    public override string Texture => TextureRegistry.TerrariaNPC(NPCID.EyeofCthulhu);
 
     private int MoveDelay => (int) Projectile.ai[0];
 
@@ -78,13 +79,14 @@ public class PhantomEoC : ModProjectile
         // Yoinked from vanilla code
         SoundEngine.PlaySound(SoundID.NPCDeath1, Projectile.Center);
         
-        Gore.NewGore(Projectile.GetSource_Death(), Projectile.Center, Main.rand.NextVector2Square(-30, 31) * 0.2f, 7);
-        Gore.NewGore(Projectile.GetSource_Death(), Projectile.Center, Main.rand.NextVector2Square(-30, 31) * 0.2f, 7);
+        // Gore is too messy
+        // Gore.NewGore(Projectile.GetSource_Death(), Projectile.Center, Main.rand.NextVector2Square(-30, 31) * 0.2f, 7);
+        // Gore.NewGore(Projectile.GetSource_Death(), Projectile.Center, Main.rand.NextVector2Square(-30, 31) * 0.2f, 7);
 
-        for (var i = 0; i < 20; i++)
+        for (var i = 0; i < 50; i++)
         {
             var speed = Main.rand.NextVector2Square(-30, 31) * 0.2f;
-            Dust.NewDust(Projectile.Center, Projectile.width, Projectile.height, DustID.Blood, speed.X, speed.Y);
+            Dust.NewDust(Projectile.position, Projectile.width, Projectile.height, DustID.Blood, speed.X, speed.Y, Scale: 2f);
         }
     }
 

@@ -2,8 +2,31 @@ Projectiles: {
 	SlimeSpikeProjectile.DisplayName: Slime Ball
 	KingSlimeCrownLaser.DisplayName: Crown Laser
 	BasicDashLine.DisplayName: Basic Dash Line
-	PhantomEoC.DisplayName: Phantom Eo C
+	PhantomEoC.DisplayName: Phantom Eye of Cthulhu
 	EyeDashLine.DisplayName: Eye Dash Line
 	CreeperDashLine.DisplayName: Creeper Dash Line
 	IchorShot.DisplayName: Ichor Shot
+	SkeletronHandDashLine.DisplayName: Skeletron Hand Dash Line
+	CursedSkull.DisplayName: Cursed Skull
+	CursedSkullLine.DisplayName: Cursed Skull Line
+	Muramasa.DisplayName: Muramasa
+	MurasamaLine.DisplayName: Murasama Line
+	WoFDeathray.DisplayName: Wo F Deathray
+	WoFDeathrayIndicator.DisplayName: Wo F Deathray Indicator
+	WoFLineIndicator.DisplayName: Wo F Line Indicator
+	WoFMoveIndicator.DisplayName: Wo F Move Indicator
+	WoFLaser.DisplayName: Wo F Laser
+	KingSlimeLaserIndicator.DisplayName: King Slime Laser Indicator
+}
+
+Buffs: {
+	NewTonguedBuff: {
+		DisplayName: The Tongue
+		Description: You are being sucked into the mouth
+	}
+}
+
+NPCs: {
+	WoFMouth.DisplayName: Wall of Flesh
+	EasyPixieNPC.DisplayName: Easy Pixie N P C
 }

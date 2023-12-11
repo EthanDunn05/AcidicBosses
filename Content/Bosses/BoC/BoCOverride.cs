@@ -8,6 +8,7 @@ using Terraria;
 using Terraria.Audio;
 using Terraria.GameContent;
 using Terraria.GameContent.ItemDropRules;
+using Terraria.Graphics.CameraModifiers;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -17,8 +18,19 @@ public class BoCOverride : AcidicNPCOverride
 {
     protected override int OverriddenNpc => NPCID.BrainofCthulhu;
 
+    private BoCBossBar BossBar => (BoCBossBar) Npc.BossBar;
 
-    #region Phase And Attack Patterns
+    public override void SetDefaults(NPC entity)
+    {
+        base.SetDefaults(entity);
+
+        entity.BossBar = ModContent.GetInstance<BoCBossBar>();
+        entity.knockBackResist = 0f; // Remove knockback
+        entity.lifeMax = (int) (entity.lifeMax * 1.5f); // Compensate for less Creepers
+    }
+
+
+    #region Phases
 
     private enum PhaseState
     {
@@ -32,13 +44,37 @@ public class BoCOverride : AcidicNPCOverride
         AngerThree
     }
 
+    private PhaseState CurrentPhase
+    {
+        get => (PhaseState) Npc.ai[1];
+        set => Npc.ai[1] = (float) value;
+    }
+    
+    private Action CurrentAi => CurrentPhase switch
+    {
+        PhaseState.Intro => Phase_Intro,
+        PhaseState.CreeperOne => Phase_CreeperOne,
+        PhaseState.AngerOne => Phase_AngerOne,
+        PhaseState.TransitionOne => Phase_TransitionOne,
+        PhaseState.CreeperTwo => Phase_CreeperTwo,
+        PhaseState.AngerTwo => Phase_AngerTwo,
+        PhaseState.TransitionTwo => Phase_TransitionTwo,
+        PhaseState.AngerThree => Phase_AngerThree,
+        _ => throw new UsageException(
+            $"BoC is in the PhaseState {CurrentPhase} and does not have an ai")
+    };
+    
+    #endregion
+
+    #region Attacks
+
     private enum Attack
     {
         Teleport,
         IchorTriple,
         SummonCreeper
     }
-
+    
     private Attack[] angerOneAp =
     {
         Attack.Teleport,
@@ -63,7 +99,7 @@ public class BoCOverride : AcidicNPCOverride
         Attack.IchorTriple,
         Attack.IchorTriple
     };
-
+    
     private Attack[] CurrentAttackPattern => CurrentPhase switch
     {
         PhaseState.AngerOne => angerOneAp,
@@ -73,32 +109,6 @@ public class BoCOverride : AcidicNPCOverride
             $"BoC is in the PhaseState {CurrentPhase} and does not have an attack pattern")
     };
 
-    private Action CurrentAi => CurrentPhase switch
-    {
-        PhaseState.Intro => IntroAI,
-        PhaseState.CreeperOne => CreeperOneAI,
-        PhaseState.AngerOne => AngerOneAI,
-        PhaseState.TransitionOne => TransitionOneAI,
-        PhaseState.CreeperTwo => CreeperTwoAI,
-        PhaseState.AngerTwo => AngerTwoAI,
-        PhaseState.TransitionTwo => TransitionTwoAI,
-        PhaseState.AngerThree => AngerThreeAI,
-        _ => throw new UsageException(
-            $"BoC is in the PhaseState {CurrentPhase} and does not have an ai")
-    };
-
-    private int AiTimer
-    {
-        get => (int) Npc.ai[0];
-        set => Npc.ai[0] = value;
-    }
-
-    private PhaseState CurrentPhase
-    {
-        get => (PhaseState) Npc.ai[1];
-        set => Npc.ai[1] = (float) value;
-    }
-
     private int CurrentAttackIndex
     {
         get => (int) Npc.ai[2];
@@ -106,26 +116,29 @@ public class BoCOverride : AcidicNPCOverride
     }
 
     private Attack CurrentAttack => CurrentAttackPattern[CurrentAttackIndex];
+    
+    private void NextAttack()
+    {
+        CurrentAttackIndex = (CurrentAttackIndex + 1) % CurrentAttackPattern.Length;
+        if(CurrentAttack == 0) Npc.TargetClosest();
+    }
 
     #endregion
 
+    #region AI
+    
     private bool countUpTimer = false;
 
     private bool isBrainOpen = false;
 
     private bool showPhantoms = false;
 
-    private bool isFleeing;
-
-    private BoCBossBar BossBar => (BoCBossBar) Npc.BossBar;
-
-    public override void SetDefaults(NPC entity)
+    private bool isFleeing = false;
+    
+    private int AiTimer
     {
-        base.SetDefaults(entity);
-
-        entity.BossBar = ModContent.GetInstance<BoCBossBar>();
-        entity.knockBackResist = 0f; // Remove knockback
-        entity.lifeMax = (int) (entity.lifeMax * 1.5f); // Compensate for less Creepers
+        get => (int) Npc.ai[0];
+        set => Npc.ai[0] = value;
     }
 
     public override void OnFirstFrame(NPC npc)
@@ -141,7 +154,7 @@ public class BoCOverride : AcidicNPCOverride
         if (AiTimer > 0 && !countUpTimer)
             AiTimer--;
 
-        // Flee when no players are alive or it is day
+        // Flee when no players are alive or out of crimson
         var target = Main.player[npc.target];
         if ((IsTargetGone(npc) || !target.ZoneCrimson) && !isFleeing)
         {
@@ -163,227 +176,7 @@ public class BoCOverride : AcidicNPCOverride
 
         return false;
     }
-
-    #region AI
-
-    private void IntroAI()
-    {
-        countUpTimer = true;
-        BossBar.MaxCreepers = 10;
-
-        // 10 creepers
-        if (AiTimer % 6 == 0 && AiTimer < 60) SummonCreeper(CreeperOverride.AttackType.Dash);
-
-        if (AiTimer >= 60)
-        {
-            SoundEngine.PlaySound(SoundID.Roar);
-
-            CurrentPhase = PhaseState.CreeperOne;
-            countUpTimer = false;
-            AiTimer = 0;
-        }
-    }
-
-    private void CreeperOneAI()
-    {
-        var creepersAlive = Main.npc.Count(n => n.type == NPCID.Creeper && n.active);
-
-        if (creepersAlive <= 0)
-        {
-            AiTimer = 0;
-            OpenBrain();
-            CurrentPhase = PhaseState.AngerOne;
-            return;
-        }
-
-        // Slow boi
-        HoverToPlayer(0.5f);
-    }
-
-    private void AngerOneAI()
-    {
-        if (Npc.GetLifePercent() <= 0.75f && !countUpTimer)
-        {
-            ResetExtraAI();
-            CurrentPhase = PhaseState.TransitionOne;
-            CurrentAttackIndex = 0;
-            AiTimer = 0;
-            return;
-        }
-
-        if (AiTimer > 0 && !countUpTimer)
-        {
-            HoverToPlayer(1.5f);
-            return;
-        }
-
-        bool isDone = false;
-        switch (CurrentAttack)
-        {
-            case Attack.Teleport:
-                Teleport(out isDone, 1.5f);
-                if (isDone) AiTimer = 120;
-                break;
-            case Attack.IchorTriple:
-                TripleIchorShot();
-                AiTimer = 120;
-                NextAttack();
-                break;
-        }
-
-        if (isDone) NextAttack();
-    }
-
-    private void TransitionOneAI()
-    {
-        BossBar.MaxCreepers = 10;
-        countUpTimer = true;
-
-        if (AiTimer == 0)
-        {
-            CloseBrain();
-            SoundEngine.PlaySound(SoundID.Roar, Npc.Center);
-        }
-
-        if (AiTimer % 6 == 0 && AiTimer < 60) SummonCreeper(CreeperOverride.AttackType.SuperDash);
-        if (AiTimer >= 60)
-        {
-            ExtraAI[0] = 1;
-            countUpTimer = false;
-            AiTimer = 60;
-            CurrentPhase = PhaseState.CreeperTwo;
-        }
-    }
-
-    private void CreeperTwoAI()
-    {
-        var creepersAlive = Main.npc.Count(n => n.type == NPCID.Creeper && n.active);
-
-        if (creepersAlive <= 0)
-        {
-            Npc.dontTakeDamage = false;
-            AiTimer = 0;
-            OpenBrain();
-            CurrentPhase = PhaseState.AngerTwo;
-            return;
-        }
-
-        if (AiTimer > 0 && !countUpTimer)
-        {
-            HoverToPlayer(1f);
-        }
-        else
-        {
-            Teleport(out var isDone, 1f);
-            if (isDone) AiTimer = 160;
-        }
-    }
-
-    private void AngerTwoAI()
-    {
-        if (Npc.GetLifePercent() <= 0.25f && !countUpTimer)
-        {
-            ResetExtraAI();
-            CurrentPhase = PhaseState.TransitionTwo;
-            CurrentAttackIndex = 0;
-            AiTimer = 0;
-            return;
-        }
-        
-        if (AiTimer > 0 && !countUpTimer)
-        {
-            HoverToPlayer(2f);
-            return;
-        }
-
-        var isDone = false;
-        switch (CurrentAttack)
-        {
-            case Attack.Teleport:
-                Teleport(out isDone, 2f);
-                if (isDone) AiTimer = 120;
-                break;
-            case Attack.IchorTriple:
-                TripleIchorShot();
-                AiTimer = 90;
-                isDone = true;
-                break;
-            case Attack.SummonCreeper:
-                BossBar.MaxCreepers = 0; // No Shield
-                SummonCreeper(CreeperOverride.AttackType.Dash);
-                AiTimer = 90;
-                isDone = true;
-                break;
-        }
-
-        if (isDone) NextAttack();
-    }
-
-    private void TransitionTwoAI()
-    {
-        BossBar.MaxCreepers = 0;
-        countUpTimer = true;
-
-        if (AiTimer == 0)
-        {
-            SoundEngine.PlaySound(SoundID.Roar, Npc.Center);
-            EffectsManager.BossRageActivate(Color.MistyRose);
-            EffectsManager.ShockwaveActive(Npc.Center, 0.15f, 0.25f, Color.Transparent);
-            showPhantoms = true;
-            
-            Npc.velocity = Vector2.Zero;
-        }
-        // Shockwave
-        else if (AiTimer < 120)
-        {
-            var shockT = AiTimer / 120f;
-            EffectsManager.ShockwaveProgress(shockT);
-            ConfusePlayers();
-        }
-        else
-        {
-            EffectsManager.ShockwaveKill();
-            
-            countUpTimer = false;
-            AiTimer = 60;
-            CurrentAttackIndex = 0;
-            CurrentPhase = PhaseState.AngerThree;
-        }
-    }
-
-    private void AngerThreeAI()
-    {
-        ConfusePlayers();
-        
-        if (AiTimer > 0 && !countUpTimer)
-        {
-            HoverToPlayer(1.5f);
-            return;
-        }
-
-        var isDone = false;
-        switch (CurrentAttack)
-        {
-            case Attack.Teleport:
-                Teleport(out isDone, 2f);
-                if (isDone) AiTimer = 90;
-                break;
-            case Attack.IchorTriple:
-                TripleIchorShot();
-                AiTimer = 60;
-                isDone = true;
-                break;
-            case Attack.SummonCreeper:
-                BossBar.MaxCreepers = 0; // No Shield
-                SummonCreeper(CreeperOverride.AttackType.Dash);
-                AiTimer = 90;
-                isDone = true;
-                break;
-        }
-
-        if (isDone) NextAttack();
-    }
-
+    
     private void FleeAI()
     {
         countUpTimer = true;
@@ -409,18 +202,239 @@ public class BoCOverride : AcidicNPCOverride
         }
     }
 
+    #region Phase AIs
+    
+    private void Phase_Intro()
+    {
+        countUpTimer = true;
+        BossBar.MaxCreepers = 10;
+
+        // 10 creepers
+        if (AiTimer % 6 == 0 && AiTimer < 60) Attack_SummonCreeper(CreeperOverride.AttackType.Dash);
+
+        if (AiTimer >= 60)
+        {
+            SoundEngine.PlaySound(SoundID.Roar);
+
+            CurrentPhase = PhaseState.CreeperOne;
+            countUpTimer = false;
+            AiTimer = 0;
+        }
+    }
+
+    private void Phase_CreeperOne()
+    {
+        var creepersAlive = Main.npc.Count(n => n.type == NPCID.Creeper && n.active);
+
+        if (creepersAlive <= 0)
+        {
+            AiTimer = 0;
+            OpenBrain();
+            CurrentPhase = PhaseState.AngerOne;
+            return;
+        }
+
+        // Slow boi
+        Attack_HoverToPlayer(0.5f);
+    }
+
+    private void Phase_AngerOne()
+    {
+        if (Npc.GetLifePercent() <= 0.6f && !countUpTimer)
+        {
+            ResetExtraAI();
+            CurrentPhase = PhaseState.TransitionOne;
+            CurrentAttackIndex = 0;
+            AiTimer = 0;
+            return;
+        }
+
+        if (AiTimer > 0 && !countUpTimer)
+        {
+            Attack_HoverToPlayer(1.25f);
+            return;
+        }
+
+        bool isDone = false;
+        switch (CurrentAttack)
+        {
+            case Attack.Teleport:
+                Attack_Teleport(out isDone, 1.5f);
+                if (isDone) AiTimer = 120;
+                break;
+            case Attack.IchorTriple:
+                Attack_TripleIchorShot();
+                AiTimer = 120;
+                NextAttack();
+                break;
+        }
+
+        if (isDone) NextAttack();
+    }
+
+    private void Phase_TransitionOne()
+    {
+        BossBar.MaxCreepers = 10;
+        countUpTimer = true;
+
+        if (AiTimer == 0)
+        {
+            CloseBrain();
+            SoundEngine.PlaySound(SoundID.Roar, Npc.Center);
+        }
+
+        if (AiTimer % 6 == 0 && AiTimer < 60) Attack_SummonCreeper(CreeperOverride.AttackType.SuperDash);
+        if (AiTimer >= 60)
+        {
+            ExtraAI[0] = 1;
+            countUpTimer = false;
+            AiTimer = 60;
+            CurrentPhase = PhaseState.CreeperTwo;
+        }
+    }
+
+    private void Phase_CreeperTwo()
+    {
+        var creepersAlive = Main.npc.Count(n => n.type == NPCID.Creeper && n.active);
+
+        if (creepersAlive <= 0)
+        {
+            Npc.dontTakeDamage = false;
+            AiTimer = 0;
+            OpenBrain();
+            CurrentPhase = PhaseState.AngerTwo;
+            return;
+        }
+
+        if (AiTimer > 0 && !countUpTimer)
+        {
+            Attack_HoverToPlayer(1f);
+        }
+        else
+        {
+            Attack_Teleport(out var isDone, 1f);
+            if (isDone) AiTimer = 160;
+        }
+    }
+
+    private void Phase_AngerTwo()
+    {
+        if (Npc.GetLifePercent() <= 0.25f && !countUpTimer)
+        {
+            ResetExtraAI();
+            CurrentPhase = PhaseState.TransitionTwo;
+            CurrentAttackIndex = 0;
+            AiTimer = 0;
+            return;
+        }
+        
+        if (AiTimer > 0 && !countUpTimer)
+        {
+            Attack_HoverToPlayer(1.75f);
+            return;
+        }
+
+        var isDone = false;
+        switch (CurrentAttack)
+        {
+            case Attack.Teleport:
+                Attack_Teleport(out isDone, 2f);
+                if (isDone) AiTimer = 120;
+                break;
+            case Attack.IchorTriple:
+                Attack_TripleIchorShot();
+                AiTimer = 90;
+                isDone = true;
+                break;
+            case Attack.SummonCreeper:
+                BossBar.MaxCreepers = 0; // No Shield
+                Attack_SummonCreeper(CreeperOverride.AttackType.Dash);
+                AiTimer = 90;
+                isDone = true;
+                break;
+        }
+
+        if (isDone) NextAttack();
+    }
+
+    private void Phase_TransitionTwo()
+    {
+        BossBar.MaxCreepers = 0;
+        countUpTimer = true;
+
+        if (AiTimer == 0)
+        {
+            SoundEngine.PlaySound(SoundID.Roar, Npc.Center);
+            EffectsManager.ShockwaveActive(Npc.Center, 0.075f, 0.15f, Color.Transparent);
+            var punch = new PunchCameraModifier(Npc.Center, Main.rand.NextVector2Unit(), 10f, 12f, 60, 1000f, FullName);
+            Main.instance.CameraModifiers.Add(punch);
+            showPhantoms = true;
+            
+            Npc.velocity = Vector2.Zero;
+        }
+        // Shockwave
+        else if (AiTimer < 120)
+        {
+            var shockT = AiTimer / 120f;
+            EffectsManager.ShockwaveProgress(shockT);
+            ConfusePlayers();
+        }
+        else
+        {
+            EffectsManager.ShockwaveKill();
+            
+            countUpTimer = false;
+            AiTimer = 60;
+            CurrentAttackIndex = 0;
+            CurrentPhase = PhaseState.AngerThree;
+        }
+    }
+
+    private void Phase_AngerThree()
+    {
+        ConfusePlayers();
+        
+        if (AiTimer > 0 && !countUpTimer)
+        {
+            Attack_HoverToPlayer(1f);
+            return;
+        }
+
+        var isDone = false;
+        switch (CurrentAttack)
+        {
+            case Attack.Teleport:
+                Attack_Teleport(out isDone, 2f);
+                if (isDone) AiTimer = 90;
+                break;
+            case Attack.IchorTriple:
+                Attack_TripleIchorShot();
+                AiTimer = 60;
+                isDone = true;
+                break;
+            case Attack.SummonCreeper:
+                BossBar.MaxCreepers = 0; // No Shield
+                Attack_SummonCreeper(CreeperOverride.AttackType.Dash);
+                AiTimer = 90;
+                isDone = true;
+                break;
+        }
+
+        if (isDone) NextAttack();
+    }
+
     #endregion
 
-    #region Attacks
+    #region Attack Behaviors
 
-    private void HoverToPlayer(float speed)
+    private void Attack_HoverToPlayer(float speed)
     {
         var target = Main.player[Npc.target].Center;
         var direction = Npc.Center.DirectionTo(target);
         Npc.SimpleFlyMovement(direction * speed * MathF.Sqrt(5 * Npc.Distance(target)) / 10f, 0.05f);
     }
 
-    private void SummonCreeper(CreeperOverride.AttackType type)
+    private void Attack_SummonCreeper(CreeperOverride.AttackType type)
     {
         SoundEngine.PlaySound(SoundID.NPCHit9, Npc.Center);
 
@@ -431,7 +445,7 @@ public class BoCOverride : AcidicNPCOverride
         }
     }
 
-    private void TripleIchorShot()
+    private void Attack_TripleIchorShot()
     {
         const float spread = MathF.PI / 6f;
         const float speed = 5f;
@@ -446,7 +460,7 @@ public class BoCOverride : AcidicNPCOverride
         }
     }
 
-    private void Teleport(out bool isDone, float hoverSpeed)
+    private void Attack_Teleport(out bool isDone, float hoverSpeed)
     {
         const int fadeTime = 45;
         ref var offsetX = ref ExtraAI[0];
@@ -473,7 +487,7 @@ public class BoCOverride : AcidicNPCOverride
             // Fade out
             case < fadeTime:
             {
-                HoverToPlayer(hoverSpeed);
+                Attack_HoverToPlayer(hoverSpeed);
 
                 var fadeT = EasingHelper.QuadOut((float) AiTimer / fadeTime);
                 Npc.Opacity = 1f - fadeT;
@@ -491,7 +505,7 @@ public class BoCOverride : AcidicNPCOverride
             // Fade in
             case < fadeTime * 2:
             {
-                HoverToPlayer(hoverSpeed);
+                Attack_HoverToPlayer(hoverSpeed);
 
                 var fadeT = EasingHelper.QuadIn((float) (AiTimer - fadeTime) / fadeTime);
                 Npc.Opacity = fadeT;
@@ -520,7 +534,7 @@ public class BoCOverride : AcidicNPCOverride
             if (!player.HasBuff(BuffID.Confused))
             {
                 // 5 seconds
-                player.AddBuff(BuffID.Confused, 120);
+                player.AddBuff(BuffID.Confused, 2);
             }
             else
             {
@@ -570,6 +584,8 @@ public class BoCOverride : AcidicNPCOverride
     }
 
     #endregion
+    
+    #endregion
 
     #region Drawing
 
@@ -602,8 +618,7 @@ public class BoCOverride : AcidicNPCOverride
                 if (i is 0 or 1) phantomPos.Y = Main.player[Main.myPlayer].Center.Y + offsetY;
                 else phantomPos.Y = Main.player[Main.myPlayer].Center.Y - offsetY;
                 
-                // No lighting to represent it's not real
-                var phantomColor = Color.White * 0.5f * npc.Opacity;
+                var phantomColor = Lighting.GetColor(phantomPos.ToTileCoordinates()) * 0.5f;
                 
                 spriteBatch.Draw(
                     brainTexture, phantomPos - Main.screenPosition, 
@@ -619,15 +634,11 @@ public class BoCOverride : AcidicNPCOverride
             npc.rotation, origin, npc.scale,
             SpriteEffects.None, 0f);
 
-        // Debug info
-        Utils.DrawBorderString(spriteBatch, $"{AiTimer}", npc.position - Main.screenPosition, Color.White);
-
         return false;
     }
 
     public override void FindFrame(NPC npc, int frameHeight)
     {
-        npc.frameCounter += 1.0;
         if (npc.frameCounter > 6.0)
         {
             npc.frameCounter = 0.0;
@@ -638,7 +649,7 @@ public class BoCOverride : AcidicNPCOverride
     }
 
     #endregion
-
+    
     public override void ModifyNPCLoot(NPC npc, NPCLoot npcLoot)
     {
         // Drop Tissue Samples directly if the player isn't getting a treasure bag
@@ -646,11 +657,5 @@ public class BoCOverride : AcidicNPCOverride
         notExpertRule.OnSuccess(ItemDropRule.Common(ItemID.TissueSample, 1, 75, 125));
 
         npcLoot.Add(notExpertRule);
-    }
-
-    private void NextAttack()
-    {
-        CurrentAttackIndex = (CurrentAttackIndex + 1) % CurrentAttackPattern.Length;
-        if(CurrentAttack == 0) Npc.TargetClosest();
     }
 }

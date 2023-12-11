@@ -59,6 +59,12 @@ public class CreeperOverride : AcidicNPCOverride
     public override void OnFirstFrame(NPC npc)
     {
         npc.TargetClosest();
+        
+        for (var i = 0; i < 20; i++)
+        {
+            var vel = Main.rand.NextVector2Circular(5, 5);
+            Dust.NewDustDirect(Npc.Center, 0, 0, DustID.Blood, vel.X, vel.Y);
+        }
     }
 
     public override bool AcidAI(NPC npc)

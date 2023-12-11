@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework;
+﻿using AcidicBosses.Common.Textures;
+using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -7,7 +8,7 @@ namespace AcidicBosses.Content.Bosses.BoC;
 
 public class IchorShot : ModProjectile
 {
-    public override string Texture => $"Terraria/Images/Projectile_{ProjectileID.IchorSplash}";
+    public override string Texture => TextureRegistry.TerrariaProjectile(ProjectileID.IchorSplash);
     
     public override void SetDefaults()
     {

@@ -57,8 +57,7 @@ float4 PixelShaderFunction(VertexShaderOutput input) : COLOR0
     coords.xy = coords.yx; // Swizzle to rotate the tex
 
     float4 tex = tex2D(uImage0, coords);
-    tex.a = tex.r; // Alpha mask
-    tex.rgb *= color.rgb;
+    tex.rgba *= color.rgba;
 
     return tex;
 }

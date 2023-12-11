@@ -13,7 +13,7 @@ using Terraria.ModLoader;
 
 namespace AcidicBosses.Content.ProjectileBases;
 
-public abstract class DashLineBase : ModProjectile, IPrimDrawer
+public abstract class BaseLineProjectile : ModProjectile, IPrimDrawer
 {
     public bool drawBehindNpcs { get; } = true;
     
@@ -21,25 +21,31 @@ public abstract class DashLineBase : ModProjectile, IPrimDrawer
     
     public float Offset => Projectile.ai[0];
 
+    private Vector2? startoffset;
+
     public int AnchorTo => (int) Projectile.ai[1];
 
     private LinePrimDrawer lineDrawer;
     
     private MiscShaderData Shader => EffectsRegistry.BasicTexture;
 
-    private Asset<Texture2D> LineTexture { get; } = TextureRegistry.InvertedGlowLine;
-    
     protected abstract float Length { get; }
 
     protected abstract float Width { get; }
     
     protected abstract Color Color { get; }
     
+    protected abstract Asset<Texture2D> LineTexture { get; }
+    
+    protected virtual bool anchorPosition => true;
+    protected virtual bool anchorRotation => true;
+    
     public override void SetDefaults()
     {
         Projectile.netImportant = true;
         Projectile.width = 0;
         Projectile.height = 0;
+        Projectile.tileCollide = false;
     }
     
     public override void AI()
@@ -49,8 +55,13 @@ public abstract class DashLineBase : ModProjectile, IPrimDrawer
             var owner = Main.npc[AnchorTo];
             if (owner != null)
             {
-                Projectile.rotation = owner.rotation + Offset;
-                Projectile.position = owner.Center;
+                startoffset ??= owner.Center - Projectile.position;
+                
+                if (anchorRotation) Projectile.rotation = owner.rotation + Offset;
+                else Projectile.rotation = Offset;
+                
+                if (anchorPosition)
+                    Projectile.position = (Vector2) (owner.Center + startoffset);
             }
         }
         else

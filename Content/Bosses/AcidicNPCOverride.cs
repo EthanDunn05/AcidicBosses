@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using AcidicBosses.Common.Effects;
 using Microsoft.Xna.Framework;
 using Terraria;
@@ -16,10 +17,9 @@ public abstract class AcidicNPCOverride : GlobalNPC
     protected NPC Npc { get; private set; }
     
     /// <summary>
-    /// 16 extra floats for synced ai stuff.
-    /// That many may be overkill, but it's only an extra 64 bytes to sync so why not
+    /// 4 extra floats for synced ai stuff.
     /// </summary>
-    protected float[] ExtraAI = new float[16];
+    protected float[] ExtraAI = new float[4];
 
     private bool isFirstFrame = true;
 
@@ -50,6 +50,23 @@ public abstract class AcidicNPCOverride : GlobalNPC
         return true;
     }
 
+    protected void TargetRandom()
+    {
+        Npc.target = RandomTargetablePlayer().whoAmI;
+    }
+
+    // Gets a random player close enough to the boss to be targeted
+    protected Player RandomTargetablePlayer()
+    {
+        const float maxDistance = 2000;
+        var players = Main.player
+            .Where(p => p.active && !p.dead && Npc.Distance(p.Center) < maxDistance)
+            .ToList();
+        var player = Main.rand.NextFromCollection(players);
+
+        return player;
+    }
+
     public virtual void SendAcidAI(NPC npc, BitWriter bitWriter, BinaryWriter binaryWriter)
     {
         
@@ -57,7 +74,7 @@ public abstract class AcidicNPCOverride : GlobalNPC
 
     public sealed override void SendExtraAI(NPC npc, BitWriter bitWriter, BinaryWriter binaryWriter)
     {
-        for (var i = 0; i < 16; i++)
+        for (var i = 0; i < 4; i++)
         {
             binaryWriter.Write(ExtraAI[i]);
         }
@@ -71,7 +88,7 @@ public abstract class AcidicNPCOverride : GlobalNPC
 
     public sealed override void ReceiveExtraAI(NPC npc, BitReader bitReader, BinaryReader binaryReader)
     {
-        for (var i = 0; i < 16; i++)
+        for (var i = 0; i < 4; i++)
         {
             ExtraAI[i] = binaryReader.ReadSingle();
         }
@@ -80,7 +97,7 @@ public abstract class AcidicNPCOverride : GlobalNPC
 
     protected void ResetExtraAI()
     {
-        for (var i = 0; i < 16; i++)
+        for (var i = 0; i < 4; i++)
         {
             ExtraAI[i] = 0f;
         }

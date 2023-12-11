@@ -4,12 +4,12 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
 
-namespace AcidicBosses.Content.Bosses.BoC;
+namespace AcidicBosses.Content.Bosses.Skeletron;
 
-public class CreeperDashLine : BaseLineProjectile
+public class SkeletronHandDashLine : BaseLineProjectile
 {
-    protected override float Length { get; } = 12000f;
-    protected override float Width { get; } = 14;
-    protected override Color Color { get; } = Color.Crimson;
+    protected override float Length => 12000f;
+    protected override float Width => 18f;
+    protected override Color Color => Color.LightGray;
     protected override Asset<Texture2D> LineTexture { get; } = TextureRegistry.InvertedGlowLine;
 }

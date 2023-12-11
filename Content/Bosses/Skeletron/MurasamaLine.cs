@@ -5,25 +5,21 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
 
-namespace AcidicBosses.Content.Bosses.EoC;
+namespace AcidicBosses.Content.Bosses.Skeletron;
 
-public class EyeDashLine : BaseLineProjectile
+public class MurasamaLine : BaseLineProjectile
 {
-    protected override float Length { get; } = 12000f;
-    protected override float Width { get; } = 35f;
-    protected override Color Color => Color.Crimson;
-    
-    protected override Asset<Texture2D> LineTexture { get; } = TextureRegistry.InvertedGlowLine;
-    
-    // Nullable to make setting a single time easier
+    protected override float Length => 12000f;
+    protected override float Width => 10f;
+    protected override Color Color => GetColor();
+    protected override Asset<Texture2D> LineTexture => TextureRegistry.GlowLine;
     private int? maxTimeLeft;
     
+    // Fade over Time
     private Color GetColor()
     {
         var fadeT = (float) Projectile.timeLeft / maxTimeLeft ?? 3600;
-        var color = Color.Crimson;
-        color *= EasingHelper.CubicOut(fadeT);
-        return color;
+        return Color.Blue * EasingHelper.QuadOut(fadeT);
     }
 
     public override void AI()
