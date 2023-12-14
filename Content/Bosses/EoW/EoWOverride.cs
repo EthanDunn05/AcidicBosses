@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.Audio;
+using Terraria.DataStructures;
 using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -19,6 +20,8 @@ public class EoWOverride : AcidicNPCOverride
     private bool IsHead => Npc.type == NPCID.EaterofWorldsHead;
     private bool IsBody => Npc.type == NPCID.EaterofWorldsBody;
     private bool IsTail => Npc.type == NPCID.EaterofWorldsTail;
+
+    private NPC Head => Main.npc[Npc.realLife];
 
     public override bool AppliesToEntity(NPC entity, bool lateInstantiation)
     {
@@ -112,6 +115,11 @@ public class EoWOverride : AcidicNPCOverride
     public override void OnFirstFrame(NPC npc)
     {
         AiTimer = 0;
+
+        if (IsHead)
+        {
+            Npc.realLife = Npc.whoAmI;
+        }
     }
 
     public override bool AcidAI(NPC npc)
@@ -122,7 +130,6 @@ public class EoWOverride : AcidicNPCOverride
 
         ManagePartList();
 
-        // Flee when no players are alive or it is day  
         var target = Main.player[npc.target];
         if (IsTargetGone(npc) && !isFleeing)
         {
@@ -136,17 +143,36 @@ public class EoWOverride : AcidicNPCOverride
             }
         }
 
-        Move(Main.player[Npc.target].Center);
+        if (IsHead) HeadAI();
+        if (IsBody) BodyAI();
+        if (IsTail) TailAI();
 
         if (countUpTimer)
             AiTimer++;
 
         return false;
     }
+    
+    private void HeadAI()
+    {
+        var collision = HeadAI_CheckCollisionForDustSpawns();
+        HeadAI_CheckTargetDistance(ref collision);
+        HeadAI_Movement(collision);
+    }
+
+    private void BodyAI()
+    {
+        BodyTailAI_Movement();
+    }
+
+    private void TailAI()
+    {
+        BodyTailAI_Movement();
+    }
 
     private void FleeAI()
     {
-        if (Main.netMode != 1 && (double) (Npc.position.Y / 16f) >
+        if (Main.netMode != NetmodeID.MultiplayerClient && (double) (Npc.position.Y / 16f) >
             (Main.rockLayer + (double) Main.maxTilesY) / 2.0)
         {
             Npc.active = false;
@@ -172,7 +198,7 @@ public class EoWOverride : AcidicNPCOverride
         }
     }
 
-    #region Parts
+    #region Part Management
 
     private bool TryGetNextPart(out EoWOverride part)
     {
@@ -217,6 +243,11 @@ public class EoWOverride : AcidicNPCOverride
             // Sync previous part and length for next part
             NextNpc.ai[1] = Npc.whoAmI;
             NextNpc.ai[2] = lengthFollowing - 1;
+
+            // Sync HP to head
+            NextNpc.realLife = Npc.realLife;
+            NextNpc.life = Npc.life;
+            NextNpc.lifeMax = Npc.lifeMax;
 
             Npc.netUpdate = true;
         }
@@ -272,18 +303,6 @@ public class EoWOverride : AcidicNPCOverride
         Npc.checkDead();
     }
 
-    private void HeadAI()
-    {
-    }
-
-    private void BodyAI()
-    {
-    }
-
-    private void TailAI()
-    {
-    }
-
     #endregion
 
     #region Phase AIs
@@ -292,326 +311,332 @@ public class EoWOverride : AcidicNPCOverride
 
     #region Attack Behaviors
 
-    private bool GetCanFly()
+    #region Movement
+    
+    // Movement taken from Worm.cs in ExampleMod
+
+    private int MaxDistanceForUsingTileCollision => 1000;
+
+    private Vector2? ForcedTargetPosition { get; set; }
+
+    public float MoveSpeed => 8f;
+
+    public float Acceleration => 0.07f;
+
+    private bool HeadAI_CheckCollisionForDustSpawns()
     {
-        // Adapted from vanilla code
-        var tilePositionX = (int) (Npc.position.X / 16f) - 1;
-        var tileWidthPosX = (int) ((Npc.position.X + Npc.width) / 16f) + 2;
-        var tilePositionY = (int) (Npc.position.Y / 16f) - 1;
-        var tileWidthPosY = (int) ((Npc.position.Y + Npc.height) / 16f) + 2;
-        if (tilePositionX < 0)
-            tilePositionX = 0;
-        if (tileWidthPosX > Main.maxTilesX)
-            tileWidthPosX = Main.maxTilesX;
-        if (tilePositionY < 0)
-            tilePositionY = 0;
-        if (tileWidthPosY > Main.maxTilesY)
-            tileWidthPosY = Main.maxTilesY;
+        int minTilePosX = (int) (Npc.Left.X / 16) - 1;
+        int maxTilePosX = (int) (Npc.Right.X / 16) + 2;
+        int minTilePosY = (int) (Npc.Top.Y / 16) - 1;
+        int maxTilePosY = (int) (Npc.Bottom.Y / 16) + 2;
 
-        // Fly or not
-        bool inTiles = false;
-        if (!inTiles)
+        // Ensure that the tile range is within the world bounds
+        if (minTilePosX < 0)
+            minTilePosX = 0;
+        if (maxTilePosX > Main.maxTilesX)
+            maxTilePosX = Main.maxTilesX;
+        if (minTilePosY < 0)
+            minTilePosY = 0;
+        if (maxTilePosY > Main.maxTilesY)
+            maxTilePosY = Main.maxTilesY;
+
+        bool collision = false;
+
+        // This is the initial check for collision with tiles.
+        for (int i = minTilePosX; i < maxTilePosX; ++i)
         {
-            for (int i = tilePositionX; i < tileWidthPosX; i++)
+            for (int j = minTilePosY; j < maxTilePosY; ++j)
             {
-                for (int j = tilePositionY; j < tileWidthPosY; j++)
+                Tile tile = Main.tile[i, j];
+
+                // If the tile is solid or is considered a platform, then there's valid collision
+                if (tile.HasUnactuatedTile && (Main.tileSolid[tile.TileType] ||
+                                               Main.tileSolidTop[tile.TileType] && tile.TileFrameY == 0) ||
+                    tile.LiquidAmount > 64)
                 {
-                    if (Main.tile[i, j] != null &&
-                        ((Main.tile[i, j].HasUnactuatedTile && (Main.tileSolid[Main.tile[i, j].TileType] ||
-                                                                (Main.tileSolidTop[Main.tile[i, j].TileType] &&
-                                                                 Main.tile[i, j].TileFrameY == 0))) ||
-                         Main.tile[i, j].LiquidAmount > 64))
+                    Vector2 tileWorld = new Point16(i, j).ToWorldCoordinates(0, 0);
+
+                    if (Npc.Right.X > tileWorld.X && Npc.Left.X < tileWorld.X + 16 && Npc.Bottom.Y > tileWorld.Y &&
+                        Npc.Top.Y < tileWorld.Y + 16)
                     {
-                        Vector2 vector;
-                        vector.X = i * 16;
-                        vector.Y = j * 16;
-                        if (Npc.position.X + Npc.width > vector.X && Npc.position.X < vector.X + 16f &&
-                            Npc.position.Y + Npc.height > vector.Y && Npc.position.Y < vector.Y + 16f)
-                        {
-                            inTiles = true;
-                            if (Main.rand.NextBool(100) && Main.tile[i, j].HasUnactuatedTile)
-                            {
-                                WorldGen.KillTile(i, j, true, true, false);
-                            }
-                        }
+                        // Collision found
+                        collision = true;
+
+                        if (Main.rand.NextBool(100))
+                            WorldGen.KillTile(i, j, fail: true, effectOnly: true, noItem: false);
                     }
                 }
             }
         }
 
-        if (!inTiles && IsHead)
-        {
-            Rectangle rectangle = new Rectangle((int) Npc.position.X, (int) Npc.position.Y, Npc.width, Npc.height);
-            int num37 = 1000;
-            bool flag3 = true;
-            for (int num38 = 0; num38 < 255; num38++)
-            {
-                if (Main.player[num38].active)
-                {
-                    Rectangle rectangle2 = new Rectangle((int) Main.player[num38].position.X - num37,
-                        (int) Main.player[num38].position.Y - num37, num37 * 2, num37 * 2);
-                    if (rectangle.Intersects(rectangle2))
-                    {
-                        flag3 = false;
-                        break;
-                    }
-                }
-            }
-
-            if (flag3)
-            {
-                inTiles = true;
-            }
-        }
-
-        return inTiles;
+        return collision;
     }
 
-    private void Move(Vector2 target)
+    private void HeadAI_CheckTargetDistance(ref bool collision)
     {
-        // Movement taken from vanilla
-
-        float maxSpeed = 8f;
-        float acceleration = 0.07f;
-
-        Vector2 segDirection = new Vector2(Npc.position.X + (float) Npc.width * 0.5f, Npc.position.Y + (float) Npc.height * 0.5f);
-        float targetX = target.X;
-        float targetY = target.Y;
-
-        targetX = (int) (targetX / 16f) * 16;
-        targetY = (int) (targetY / 16f) * 16;
-        segDirection.X = (int) (segDirection.X / 16f) * 16;
-        segDirection.Y = (int) (segDirection.Y / 16f) * 16;
-        targetX -= segDirection.X;
-        targetY -= segDirection.Y;
-
-        float targetDist = (float) Math.Sqrt(targetX * targetX + targetY * targetY);
-        if (prevPart != 0)
+        // If there is no collision with tiles, we check if the distance between this NPC and its target is too large, so that we can still trigger "collision".
+        if (!collision)
         {
-            try
+            Rectangle hitbox = Npc.Hitbox;
+
+            int maxDistance = MaxDistanceForUsingTileCollision;
+
+            bool tooFar = true;
+
+            for (int i = 0; i < Main.maxPlayers; i++)
             {
-                segDirection = new Vector2(Npc.position.X + (float) Npc.width * 0.5f,
-                    Npc.position.Y + (float) Npc.height * 0.5f);
-                targetX = PrevNpc.position.X + (float) (PrevNpc.width / 2) -
-                        segDirection.X;
-                targetY = PrevNpc.position.Y + (float) (PrevNpc.height / 2) -
-                        segDirection.Y;
-            }
-            catch
-            {
+                Rectangle areaCheck;
+
+                Player player = Main.player[i];
+
+                if (ForcedTargetPosition is Vector2 target)
+                    areaCheck = new Rectangle((int) target.X - maxDistance, (int) target.Y - maxDistance,
+                        maxDistance * 2, maxDistance * 2);
+                else if (player.active && !player.dead && !player.ghost)
+                    areaCheck = new Rectangle((int) player.position.X - maxDistance,
+                        (int) player.position.Y - maxDistance, maxDistance * 2, maxDistance * 2);
+                else
+                    continue; // Not a valid player
+
+                if (hitbox.Intersects(areaCheck))
+                {
+                    tooFar = false;
+                    break;
+                }
             }
 
-            Npc.rotation = (float) Math.Atan2(targetY, targetX) + 1.57f;
-            targetDist = (float) Math.Sqrt(targetX * targetX + targetY * targetY);
-            int width = Npc.width;
-            width = (int) ((float) width * Npc.scale);
-            targetDist = (targetDist - (float) width) / targetDist;
-            targetX *= targetDist;
-            targetY *= targetDist;
-            Npc.velocity = Vector2.Zero;
-            Npc.position.X += targetX;
-            Npc.position.Y += targetY;
+            if (tooFar)
+                collision = true;
+        }
+    }
+
+    private void HeadAI_Movement(bool collision)
+    {
+        // MoveSpeed determines the max speed at which this NPC can move.
+        // Higher value = faster speed.
+        float speed = MoveSpeed;
+        // acceleration is exactly what it sounds like. The speed at which this NPC accelerates.
+        float acceleration = Acceleration;
+
+        float targetXPos, targetYPos;
+
+        Player playerTarget = Main.player[Npc.target];
+
+        Vector2 forcedTarget = ForcedTargetPosition ?? playerTarget.Center;
+        // Using a ValueTuple like this allows for easy assignment of multiple values
+        (targetXPos, targetYPos) = (forcedTarget.X, forcedTarget.Y);
+
+        // Copy the value, since it will be clobbered later
+        Vector2 npcCenter = Npc.Center;
+
+        float targetRoundedPosX = (float) ((int) (targetXPos / 16f) * 16);
+        float targetRoundedPosY = (float) ((int) (targetYPos / 16f) * 16);
+        npcCenter.X = (float) ((int) (npcCenter.X / 16f) * 16);
+        npcCenter.Y = (float) ((int) (npcCenter.Y / 16f) * 16);
+        float dirX = targetRoundedPosX - npcCenter.X;
+        float dirY = targetRoundedPosY - npcCenter.Y;
+
+        float length = (float) Math.Sqrt(dirX * dirX + dirY * dirY);
+
+        // If we do not have any type of collision, we want the NPC to fall down and de-accelerate along the X axis.
+        if (!collision)
+            HeadAI_Movement_HandleFallingFromNoCollision(dirX, speed, acceleration);
+        else
+        {
+            // Else we want to play some audio (soundDelay) and move towards our target.
+            HeadAI_Movement_PlayDigSounds(length);
+
+            HeadAI_Movement_HandleMovement(dirX, dirY, length, speed, acceleration);
+        }
+
+        HeadAI_Movement_SetRotation(collision);
+    }
+
+    private void HeadAI_Movement_HandleFallingFromNoCollision(float dirX, float speed, float acceleration)
+    {
+        // Keep searching for a new target
+        Npc.TargetClosest(true);
+
+        // Constant gravity of 0.11 pixels/tick
+        Npc.velocity.Y += 0.11f;
+
+        // Ensure that the Npc does not fall too quickly
+        if (Npc.velocity.Y > speed)
+            Npc.velocity.Y = speed;
+
+        // The following behavior mimics vanilla worm movement
+        if (Math.Abs(Npc.velocity.X) + Math.Abs(Npc.velocity.Y) < speed * 0.4f)
+        {
+            // Velocity is sufficiently fast, but not too fast
+            if (Npc.velocity.X < 0.0f)
+                Npc.velocity.X -= acceleration * 1.1f;
+            else
+                Npc.velocity.X += acceleration * 1.1f;
+        }
+        else if (Npc.velocity.Y == speed)
+        {
+            // Npc has reached terminal velocity
+            if (Npc.velocity.X < dirX)
+                Npc.velocity.X += acceleration;
+            else if (Npc.velocity.X > dirX)
+                Npc.velocity.X -= acceleration;
+        }
+        else if (Npc.velocity.Y > 4)
+        {
+            if (Npc.velocity.X < 0)
+                Npc.velocity.X += acceleration * 0.9f;
+            else
+                Npc.velocity.X -= acceleration * 0.9f;
+        }
+    }
+
+    private void HeadAI_Movement_PlayDigSounds(float length)
+    {
+        if (Npc.soundDelay == 0)
+        {
+            // Play sounds quicker the closer the Npc is to the target location
+            float num1 = length / 40f;
+
+            if (num1 < 10)
+                num1 = 10f;
+
+            if (num1 > 20)
+                num1 = 20f;
+
+            Npc.soundDelay = (int) num1;
+
+            SoundEngine.PlaySound(SoundID.WormDig, Npc.position);
+        }
+    }
+
+    private void HeadAI_Movement_HandleMovement(float dirX, float dirY, float length, float speed, float acceleration)
+    {
+        float absDirX = Math.Abs(dirX);
+        float absDirY = Math.Abs(dirY);
+        float newSpeed = speed / length;
+        dirX *= newSpeed;
+        dirY *= newSpeed;
+
+        if ((Npc.velocity.X > 0 && dirX > 0) || (Npc.velocity.X < 0 && dirX < 0) || (Npc.velocity.Y > 0 && dirY > 0) ||
+            (Npc.velocity.Y < 0 && dirY < 0))
+        {
+            // The Npc is moving towards the target location
+            if (Npc.velocity.X < dirX)
+                Npc.velocity.X += acceleration;
+            else if (Npc.velocity.X > dirX)
+                Npc.velocity.X -= acceleration;
+
+            if (Npc.velocity.Y < dirY)
+                Npc.velocity.Y += acceleration;
+            else if (Npc.velocity.Y > dirY)
+                Npc.velocity.Y -= acceleration;
+
+            // The intended Y-velocity is small AND the Npc is moving to the left and the target is to the right of the Npc or vice versa
+            if (Math.Abs(dirY) < speed * 0.2 && ((Npc.velocity.X > 0 && dirX < 0) || (Npc.velocity.X < 0 && dirX > 0)))
+            {
+                if (Npc.velocity.Y > 0)
+                    Npc.velocity.Y += acceleration * 2f;
+                else
+                    Npc.velocity.Y -= acceleration * 2f;
+            }
+
+            // The intended X-velocity is small AND the Npc is moving up/down and the target is below/above the Npc
+            if (Math.Abs(dirX) < speed * 0.2 && ((Npc.velocity.Y > 0 && dirY < 0) || (Npc.velocity.Y < 0 && dirY > 0)))
+            {
+                if (Npc.velocity.X > 0)
+                    Npc.velocity.X = Npc.velocity.X + acceleration * 2f;
+                else
+                    Npc.velocity.X = Npc.velocity.X - acceleration * 2f;
+            }
+        }
+        else if (absDirX > absDirY)
+        {
+            // The X distance is larger than the Y distance.  Force movement along the X-axis to be stronger
+            if (Npc.velocity.X < dirX)
+                Npc.velocity.X += acceleration * 1.1f;
+            else if (Npc.velocity.X > dirX)
+                Npc.velocity.X -= acceleration * 1.1f;
+
+            if (Math.Abs(Npc.velocity.X) + Math.Abs(Npc.velocity.Y) < speed * 0.5)
+            {
+                if (Npc.velocity.Y > 0)
+                    Npc.velocity.Y += acceleration;
+                else
+                    Npc.velocity.Y -= acceleration;
+            }
         }
         else
         {
-            if (!GetCanFly())
+            // The X distance is larger than the Y distance.  Force movement along the X-axis to be stronger
+            if (Npc.velocity.Y < dirY)
+                Npc.velocity.Y += acceleration * 1.1f;
+            else if (Npc.velocity.Y > dirY)
+                Npc.velocity.Y -= acceleration * 1.1f;
+
+            if (Math.Abs(Npc.velocity.X) + Math.Abs(Npc.velocity.Y) < speed * 0.5)
             {
-                Npc.TargetClosest();
-                Npc.velocity.Y += 0.11f;
-                if (Npc.velocity.Y > maxSpeed)
-                {
-                    Npc.velocity.Y = maxSpeed;
-                }
-
-                if ((double) (Math.Abs(Npc.velocity.X) + Math.Abs(Npc.velocity.Y)) < (double) maxSpeed * 0.4)
-                {
-                    if (Npc.velocity.X < 0f)
-                    {
-                        Npc.velocity.X -= acceleration * 1.1f;
-                    }
-                    else
-                    {
-                        Npc.velocity.X += acceleration * 1.1f;
-                    }
-                }
-                else if (Npc.velocity.Y == maxSpeed)
-                {
-                    if (Npc.velocity.X < targetX)
-                    {
-                        Npc.velocity.X += acceleration;
-                    }
-                    else if (Npc.velocity.X > targetX)
-                    {
-                        Npc.velocity.X -= acceleration;
-                    }
-                }
-                else if (Npc.velocity.Y > 4f)
-                {
-                    if (Npc.velocity.X < 0f)
-                    {
-                        Npc.velocity.X += acceleration * 0.9f;
-                    }
-                    else
-                    {
-                        Npc.velocity.X -= acceleration * 0.9f;
-                    }
-                }
-            }
-            else
-            {
-                if (Npc.soundDelay == 0)
-                {
-                    float num58 = targetDist / 40f;
-                    if (num58 < 10f)
-                    {
-                        num58 = 10f;
-                    }
-
-                    if (num58 > 20f)
-                    {
-                        num58 = 20f;
-                    }
-
-                    Npc.soundDelay = (int) num58;
-                    SoundEngine.PlaySound(SoundID.WormDig, Npc.position);
-                }
-
-                targetDist = (float) Math.Sqrt(targetX * targetX + targetY * targetY);
-                float num59 = Math.Abs(targetX);
-                float num60 = Math.Abs(targetY);
-                float num61 = maxSpeed / targetDist;
-                targetX *= num61;
-                targetY *= num61;
-
-                if ((Npc.velocity.X > 0f && targetX > 0f) || (Npc.velocity.X < 0f && targetX < 0f) ||
-                    (Npc.velocity.Y > 0f && targetY > 0f) || (Npc.velocity.Y < 0f && targetY < 0f))
-                {
-                    if (Npc.velocity.X < targetX)
-                    {
-                        Npc.velocity.X += acceleration;
-                    }
-                    else if (Npc.velocity.X > targetX)
-                    {
-                        Npc.velocity.X -= acceleration;
-                    }
-
-                    if (Npc.velocity.Y < targetY)
-                    {
-                        Npc.velocity.Y += acceleration;
-                    }
-                    else if (Npc.velocity.Y > targetY)
-                    {
-                        Npc.velocity.Y -= acceleration;
-                    }
-
-                    if ((double) Math.Abs(targetY) < (double) maxSpeed * 0.2 &&
-                        ((Npc.velocity.X > 0f && targetX < 0f) ||
-                         (Npc.velocity.X < 0f && targetX > 0f)))
-                    {
-                        if (Npc.velocity.Y > 0f)
-                        {
-                            Npc.velocity.Y += acceleration * 2f;
-                        }
-                        else
-                        {
-                            Npc.velocity.Y -= acceleration * 2f;
-                        }
-                    }
-
-                    if ((double) Math.Abs(targetX) < (double) maxSpeed * 0.2 &&
-                        ((Npc.velocity.Y > 0f && targetY < 0f) ||
-                         (Npc.velocity.Y < 0f && targetY > 0f)))
-                    {
-                        if (Npc.velocity.X > 0f)
-                        {
-                            Npc.velocity.X += acceleration * 2f;
-                        }
-                        else
-                        {
-                            Npc.velocity.X -= acceleration * 2f;
-                        }
-                    }
-                }
-                else if (num59 > num60)
-                {
-                    if (Npc.velocity.X < targetX)
-                    {
-                        Npc.velocity.X += acceleration * 1.1f;
-                    }
-                    else if (Npc.velocity.X > targetX)
-                    {
-                        Npc.velocity.X -= acceleration * 1.1f;
-                    }
-
-                    if ((double) (Math.Abs(Npc.velocity.X) + Math.Abs(Npc.velocity.Y)) < (double) maxSpeed * 0.5)
-                    {
-                        if (Npc.velocity.Y > 0f)
-                        {
-                            Npc.velocity.Y += acceleration;
-                        }
-                        else
-                        {
-                            Npc.velocity.Y -= acceleration;
-                        }
-                    }
-                }
+                if (Npc.velocity.X > 0)
+                    Npc.velocity.X += acceleration;
                 else
-                {
-                    if (Npc.velocity.Y < targetY)
-                    {
-                        Npc.velocity.Y += acceleration * 1.1f;
-                    }
-                    else if (Npc.velocity.Y > targetY)
-                    {
-                        Npc.velocity.Y -= acceleration * 1.1f;
-                    }
-
-                    if ((double) (Math.Abs(Npc.velocity.X) + Math.Abs(Npc.velocity.Y)) < (double) maxSpeed * 0.5)
-                    {
-                        if (Npc.velocity.X > 0f)
-                        {
-                            Npc.velocity.X += acceleration;
-                        }
-                        else
-                        {
-                            Npc.velocity.X -= acceleration;
-                        }
-                    }
-                }
-            }
-
-            Npc.rotation = (float) Math.Atan2(Npc.velocity.Y, Npc.velocity.X) + 1.57f;
-            if (IsHead)
-            {
-                if (GetCanFly())
-                {
-                    if (Npc.localAI[0] != 1f)
-                    {
-                        Npc.netUpdate = true;
-                    }
-
-                    Npc.localAI[0] = 1f;
-                }
-                else
-                {
-                    if (Npc.localAI[0] != 0f)
-                    {
-                        Npc.netUpdate = true;
-                    }
-
-                    Npc.localAI[0] = 0f;
-                }
-
-                if (((Npc.velocity.X > 0f && Npc.oldVelocity.X < 0f) ||
-                     (Npc.velocity.X < 0f && Npc.oldVelocity.X > 0f) ||
-                     (Npc.velocity.Y > 0f && Npc.oldVelocity.Y < 0f) ||
-                     (Npc.velocity.Y < 0f && Npc.oldVelocity.Y > 0f)) && !Npc.justHit)
-                {
-                    Npc.netUpdate = true;
-                }
+                    Npc.velocity.X -= acceleration;
             }
         }
     }
+
+    private void HeadAI_Movement_SetRotation(bool collision)
+    {
+        // Set the correct rotation for this Npc.
+        // Assumes the sprite for the Npc points upward.  You might have to modify this line to properly account for your Npc's orientation
+        Npc.rotation = Npc.velocity.ToRotation() + MathHelper.PiOver2;
+
+        // Some netupdate stuff (multiplayer compatibility).
+        if (collision)
+        {
+            if (Npc.localAI[0] != 1)
+                Npc.netUpdate = true;
+
+            Npc.localAI[0] = 1f;
+        }
+        else
+        {
+            if (Npc.localAI[0] != 0)
+                Npc.netUpdate = true;
+
+            Npc.localAI[0] = 0f;
+        }
+
+        // Force a netupdate if the Npc's velocity changed sign and it was not "just hit" by a player
+        if (((Npc.velocity.X > 0 && Npc.oldVelocity.X < 0) || (Npc.velocity.X < 0 && Npc.oldVelocity.X > 0) ||
+             (Npc.velocity.Y > 0 && Npc.oldVelocity.Y < 0) || (Npc.velocity.Y < 0 && Npc.oldVelocity.Y > 0)) &&
+            !Npc.justHit)
+            Npc.netUpdate = true;
+    }
+    
+    private void BodyTailAI_Movement()
+    {
+        // Follow behind the segment "in front" of this NPC
+        // Use the current NPC.Center to calculate the direction towards the "parent NPC" of this NPC.
+        float dirX = PrevNpc.Center.X - Npc.Center.X;
+        float dirY = PrevNpc.Center.Y - Npc.Center.Y;
+
+        // We then use Atan2 to get a correct rotation towards that parent NPC.
+        // Assumes the sprite for the NPC points upward.  You might have to modify this line to properly account for your NPC's orientation
+        Npc.rotation = (float) Math.Atan2(dirY, dirX) + MathHelper.PiOver2;
+        // We also get the length of the direction vector.
+        float length = (float) Math.Sqrt(dirX * dirX + dirY * dirY);
+        // We calculate a new, correct distance.
+        float dist = (length - Npc.width) / length;
+        float posX = dirX * dist;
+        float posY = dirY * dist;
+
+        // Reset the velocity of this NPC, because we don't want it to move on its own
+        Npc.velocity = Vector2.Zero;
+        // And set this NPCs position accordingly to that of this NPCs parent NPC.
+        Npc.position.X += posX;
+        Npc.position.Y += posY;
+    }
+
+    #endregion
 
     private NPC NewBody(Vector2 position)
     {

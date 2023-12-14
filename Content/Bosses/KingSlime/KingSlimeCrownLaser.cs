@@ -12,7 +12,6 @@ using Terraria.ModLoader;
 
 namespace AcidicBosses.Content.Bosses.KingSlime;
 
-// I'll clean up this mess later
 public class KingSlimeCrownLaser : DeathrayBase
 {
     public override float Distance => 12000;
