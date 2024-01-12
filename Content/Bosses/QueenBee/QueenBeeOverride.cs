@@ -38,7 +38,7 @@ public class QueenBeeOverride : AcidicNPCOverride
 	#endregion
 
 	#region Attacks  
-	  
+	
 	private enum Attack  
 	{
 		DashFromLeft,

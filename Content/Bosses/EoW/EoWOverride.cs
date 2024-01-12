@@ -21,17 +21,29 @@ public class EoWOverride : AcidicNPCOverride
     private bool IsBody => Npc.type == NPCID.EaterofWorldsBody;
     private bool IsTail => Npc.type == NPCID.EaterofWorldsTail;
 
-    private NPC Head => Main.npc[Npc.realLife];
+    private NPC MainHead => Main.npc[Npc.realLife];
+
+    public override void SetDefaults(NPC entity)
+    {
+        // entity.lifeMax = 10080;
+    }
 
     public override bool AppliesToEntity(NPC entity, bool lateInstantiation)
     {
         return entity.type is NPCID.EaterofWorldsHead or NPCID.EaterofWorldsBody or NPCID.EaterofWorldsTail;
     }
 
+    public override bool? DrawHealthBar(NPC npc, byte hbPosition, ref float scale, ref Vector2 position)
+    {
+        if (IsHead) return null;
+        return false;
+    }
+
     #region Phases
 
     private enum PhaseState
     {
+        Intro
     }
 
     private PhaseState CurrentPhase
@@ -42,6 +54,7 @@ public class EoWOverride : AcidicNPCOverride
 
     private Action CurrentAi => CurrentPhase switch
     {
+        PhaseState.Intro => Phase_Intro,
         _ => throw new UsageException(
             $"The PhaseState {CurrentPhase} and does not have an ai")
     };
@@ -115,6 +128,7 @@ public class EoWOverride : AcidicNPCOverride
     public override void OnFirstFrame(NPC npc)
     {
         AiTimer = 0;
+        CurrentPhase = PhaseState.Intro;
 
         if (IsHead)
         {
@@ -130,6 +144,16 @@ public class EoWOverride : AcidicNPCOverride
 
         ManagePartList();
 
+        if (Npc.whoAmI != Npc.realLife) SyncAI();
+
+        // Spawn dust when this segment is underground for visibility
+        if (CheckCollisionForDustSpawns())
+        {
+            if (Main.rand.NextBool(10))
+                Dust.NewDust(Npc.position, Npc.width, Npc.height, DustID.Shadowflame);
+        }
+
+        // Check flee conditions
         var target = Main.player[npc.target];
         if (IsTargetGone(npc) && !isFleeing)
         {
@@ -147,15 +171,17 @@ public class EoWOverride : AcidicNPCOverride
         if (IsBody) BodyAI();
         if (IsTail) TailAI();
 
+        CurrentAi();
+
         if (countUpTimer)
             AiTimer++;
 
         return false;
     }
-    
+
     private void HeadAI()
     {
-        var collision = HeadAI_CheckCollisionForDustSpawns();
+        var collision = CheckCollisionForDustSpawns();
         HeadAI_CheckTargetDistance(ref collision);
         HeadAI_Movement(collision);
     }
@@ -168,6 +194,15 @@ public class EoWOverride : AcidicNPCOverride
     private void TailAI()
     {
         BodyTailAI_Movement();
+    }
+
+    private void SyncAI()
+    {
+        AiTimer = (int) MainHead.ai[3];
+
+        var headOverride = MainHead.GetGlobalNPC<EoWOverride>();
+        CurrentPhase = headOverride.CurrentPhase;
+        CurrentAttackIndex = headOverride.CurrentAttackIndex;
     }
 
     private void FleeAI()
@@ -253,9 +288,9 @@ public class EoWOverride : AcidicNPCOverride
         }
 
         // Don't allow for dangling parts
-        if (!NextNpc.active && !PrevNpc.active) DestroyPart();
-        if (IsHead && !NextNpc.active) DestroyPart();
-        if (IsTail && !PrevNpc.active) DestroyPart();
+        if (!NextNpc.active && !PrevNpc.active) DestroyPart(Npc);
+        if (IsHead && !NextNpc.active) DestroyPart(Npc);
+        if (IsTail && !PrevNpc.active) DestroyPart(Npc);
 
         // Transform
         if (IsBody && (!PrevNpc.active || PrevNpc.aiStyle != Npc.aiStyle)) TransformHead();
@@ -265,15 +300,20 @@ public class EoWOverride : AcidicNPCOverride
     private void TransformHead()
     {
         Npc.type = NPCID.EaterofWorldsHead;
-        float segmentLifeRatio = Npc.life / (float) Npc.lifeMax;
+        int realLife = Npc.realLife;
+        int preLife = Npc.life;
+        int aiTimerHold = AiTimer;
         int whoAmI = Npc.whoAmI;
         int next = nextPart;
 
         // Actually transform the body segment into a head segment.
         Npc.SetDefaultsKeepPlayerInteraction(Npc.type);
-        Npc.life = (int) (Npc.lifeMax * segmentLifeRatio);
+        Npc.realLife = realLife;
+        Npc.life = preLife;
         Npc.whoAmI = whoAmI;
+        AiTimer = aiTimerHold;
         nextPart = next;
+        SyncAI();
         Npc.TargetClosest();
         Npc.netUpdate = true;
         Npc.netSpam = 0;
@@ -282,13 +322,15 @@ public class EoWOverride : AcidicNPCOverride
     private void TransformTail()
     {
         Npc.type = NPCID.EaterofWorldsTail;
-        float segmentLifeRatio = Npc.life / (float) Npc.lifeMax;
+        int realLife = Npc.realLife;
+        int preLife = Npc.life;
         int whoAmI = Npc.whoAmI;
         int prev = prevPart;
 
         // Actually transform the body segment into a head segment.
         Npc.SetDefaultsKeepPlayerInteraction(Npc.type);
-        Npc.life = (int) (Npc.lifeMax * segmentLifeRatio);
+        Npc.realLife = realLife;
+        Npc.life = preLife;
         Npc.whoAmI = whoAmI;
         prevPart = prev;
         Npc.TargetClosest();
@@ -296,23 +338,33 @@ public class EoWOverride : AcidicNPCOverride
         Npc.netSpam = 0;
     }
 
-    private void DestroyPart()
+    private void DestroyPart(NPC npc)
     {
-        Npc.life = 0;
-        Npc.HitEffect();
-        Npc.checkDead();
+        npc.life = 0;
+        npc.HitEffect();
+        npc.checkDead();
     }
 
     #endregion
 
     #region Phase AIs
 
+    private void Phase_Intro()
+    {
+        countUpTimer = true;
+
+        if (AiTimer == 300)
+        {
+            Split();
+        }
+    }
+
     #endregion
 
     #region Attack Behaviors
 
     #region Movement
-    
+
     // Movement taken from Worm.cs in ExampleMod
 
     private int MaxDistanceForUsingTileCollision => 1000;
@@ -323,7 +375,7 @@ public class EoWOverride : AcidicNPCOverride
 
     public float Acceleration => 0.07f;
 
-    private bool HeadAI_CheckCollisionForDustSpawns()
+    private bool CheckCollisionForDustSpawns()
     {
         int minTilePosX = (int) (Npc.Left.X / 16) - 1;
         int maxTilePosX = (int) (Npc.Right.X / 16) + 2;
@@ -361,9 +413,6 @@ public class EoWOverride : AcidicNPCOverride
                     {
                         // Collision found
                         collision = true;
-
-                        if (Main.rand.NextBool(100))
-                            WorldGen.KillTile(i, j, fail: true, effectOnly: true, noItem: false);
                     }
                 }
             }
@@ -611,7 +660,7 @@ public class EoWOverride : AcidicNPCOverride
             !Npc.justHit)
             Npc.netUpdate = true;
     }
-    
+
     private void BodyTailAI_Movement()
     {
         // Follow behind the segment "in front" of this NPC
@@ -638,6 +687,35 @@ public class EoWOverride : AcidicNPCOverride
 
     #endregion
 
+    private void Split()
+    {
+        // Only have the head attempt this
+        if (!IsHead) return;
+        if (Main.netMode == NetmodeID.MultiplayerClient) return;
+
+        // Count Connected Segments
+        var segments = 1;
+        var nextCheck = NextNpc;
+        while (nextCheck.active && nextCheck.aiStyle == Npc.aiStyle)
+        {
+            segments++;
+            nextCheck = Main.npc[(int) nextCheck.ai[0]];
+        }
+
+        // Destroy center segment
+        var checkedSegments = 1;
+        nextCheck = NextNpc;
+        while (nextCheck.active && nextCheck.aiStyle == Npc.aiStyle)
+        {
+            checkedSegments++;
+            nextCheck = Main.npc[(int) nextCheck.ai[0]];
+            if (checkedSegments >= segments / 2) break;
+        }
+
+        // Destroy that center segment
+        DestroyPart(nextCheck);
+    }
+
     private NPC NewBody(Vector2 position)
     {
         return NPC.NewNPCDirect(Npc.GetSource_FromAI(), position, NPCID.EaterofWorldsBody, Npc.whoAmI);
@@ -653,6 +731,22 @@ public class EoWOverride : AcidicNPCOverride
     #endregion
 
     #region Drawing
+
+    public override bool PreDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color lightColor)
+    {
+        var drawPos = npc.Center - Main.screenPosition;
+        var texture = TextureAssets.Npc[npc.type].Value;
+        var origin = npc.frame.Size() * 0.5f;
+        lightColor *= npc.Opacity;
+
+        spriteBatch.Draw(
+            texture, drawPos,
+            npc.frame, lightColor,
+            npc.rotation, origin, npc.scale,
+            SpriteEffects.None, 0f);
+
+        return false;
+    }
 
     #endregion
 
