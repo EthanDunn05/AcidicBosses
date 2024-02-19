@@ -71,8 +71,8 @@ public class QueenBeeOverride : AcidicNPCOverride
 	  
 	private Attack CurrentAttack => CurrentAttackPattern[CurrentAttackIndex];
 	
-	private void NextAttack()  
-	{  
+	private void NextAttack()
+	{
 	    CurrentAttackIndex = (CurrentAttackIndex + 1) % CurrentAttackPattern.Length;
 	}
 

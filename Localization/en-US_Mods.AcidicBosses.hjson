@@ -29,4 +29,5 @@ Buffs: {
 NPCs: {
 	WoFMouth.DisplayName: Wall of Flesh
 	EasyPixieNPC.DisplayName: Easy Pixie N P C
+	ServantWorm.DisplayName: Servant Worm
 }

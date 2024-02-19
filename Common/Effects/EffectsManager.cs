@@ -1,4 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+using ReLogic.Content;
 using Terraria;
 using Terraria.Graphics.Effects;
 using Terraria.ID;
@@ -51,5 +53,13 @@ public static class EffectsManager
         if (Main.netMode == NetmodeID.Server || !EffectsRegistry.BossRage.IsActive()) return false;
         EffectsRegistry.BossRage.Deactivate();
         return true;
+    }
+
+    public static void UndergroundOutline(Asset<Texture2D> texture, Color outlineColor, Color lightColor)
+    {
+        EffectsRegistry.UndergroundOutline.UseImage0(texture);
+        EffectsRegistry.UndergroundOutline.UseColor(outlineColor);
+        EffectsRegistry.UndergroundOutline.UseSecondaryColor(lightColor);
+        EffectsRegistry.UndergroundOutline.Apply();
     }
 }
