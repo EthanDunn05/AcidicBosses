@@ -136,8 +136,6 @@ public class EoWHead : AcidicNPCOverride
     {
         // Fade in the stupid worm
         npc.Opacity = Math.Max(npc.Opacity + 0.05f, 1f);
-        
-        npc.behindTiles = false;
     }
 
     private void FleeAI()

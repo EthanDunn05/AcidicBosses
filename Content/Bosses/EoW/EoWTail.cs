@@ -31,6 +31,7 @@ public class EoWTail : AcidicNPCOverride
         EoWHead.CommonEowAI(npc);
 
         WormUtils.BodyTailFollow(npc, FollowingNPC);
+        if (!FollowingBoss) Npc.behindTiles = false;
 
         return false;
     }

@@ -31,6 +31,7 @@ public class EoWServant : AcidicNPC
 
     public override void OnFirstFrame()
     {
+        NPC.behindTiles = false;
         WormUtils.HeadSpawnSegments(NPC, 3, Type, NPCID.EaterofWorldsBody, NPCID.EaterofWorldsTail);
     }
 
@@ -67,4 +68,6 @@ public class EoWServant : AcidicNPC
 
         spriteBatch.EndShader();
     }
+    
+    
 }
