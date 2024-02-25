@@ -13,6 +13,7 @@ namespace AcidicBosses.Content.Bosses.EoW;
 public class EoWBossBar : ModBossBar
 {
     public float MaxWorms { get; set; } = 0;
+    public float CurrentWorms => Main.npc.Count(n => n.active && n.type == ModContent.NPCType<EoWServant>());
     
     private int bossHeadIndex = -1;
 
@@ -38,8 +39,8 @@ public class EoWBossBar : ModBossBar
         
         // Show creepers as the shield
         shieldMax = MaxWorms;
-        if(shieldMax != 0)
-            shield = Main.npc.Count(n => n.active && n.type == ModContent.NPCType<ServantWorm>());
+        if (shieldMax != 0)
+            shield = CurrentWorms;
 
         return true;
     }

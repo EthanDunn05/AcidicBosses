@@ -6,10 +6,11 @@ using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.GameContent;
 using Terraria.ID;
+using Terraria.ModLoader;
 
 namespace AcidicBosses.Content.Bosses.EoW;
 
-public class ServantWorm : AcidicNPC
+public class EoWServant : AcidicNPC
 {
     public override string Texture => TextureRegistry.TerrariaNPC(NPCID.EaterofWorldsHead);
 
@@ -19,8 +20,10 @@ public class ServantWorm : AcidicNPC
 
         NPC.aiStyle = -1;
         NPC.lifeMax = 128;
-    }
 
+        NPC.BossBar = ModContent.GetInstance<NoBossBar>();
+    }
+    
     public override void SetStaticDefaults()
     {
         
@@ -36,16 +39,21 @@ public class ServantWorm : AcidicNPC
         EoWHeadOverride.CommonEowAI(NPC);
         WormUtils.HeadDigAI(NPC, 10, 0.1f, null);
     }
-    
-    
 
     public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color lightColor)
     {
-        var drawPos = NPC.Center - Main.screenPosition;
-        var texAsset = TextureAssets.Npc[NPCID.EaterofWorldsHead];
+        CommonPreDraw(NPC, spriteBatch, screenPos, lightColor);
+
+        return false;
+    }
+
+    public static void CommonPreDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color lightColor)
+    {
+        var drawPos = npc.Center - Main.screenPosition;
+        var texAsset = TextureAssets.Npc[npc.type];
         var texture = texAsset.Value;
-        var origin = NPC.frame.Size() * 0.5f;
-        lightColor *= NPC.Opacity;
+        var origin = npc.frame.Size() * 0.5f;
+        lightColor *= npc.Opacity;
 
         // Outline when underground
         spriteBatch.StartShader();
@@ -53,12 +61,10 @@ public class ServantWorm : AcidicNPC
 
         spriteBatch.Draw(
             texture, drawPos,
-            NPC.frame, lightColor,
-            NPC.rotation, origin, NPC.scale,
+            npc.frame, lightColor,
+            npc.rotation, origin, npc.scale,
             SpriteEffects.None, 0f);
 
         spriteBatch.EndShader();
-
-        return false;
     }
 }

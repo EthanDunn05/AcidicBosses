@@ -1,18 +1,10 @@
 ﻿using System;
-using System.IO;
-using AcidicBosses.Common;
-using AcidicBosses.Common.Effects;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
-using Terraria.Audio;
-using Terraria.DataStructures;
 using Terraria.GameContent;
-using Terraria.GameContent.UI.BigProgressBar;
-using Terraria.Graphics.Shaders;
 using Terraria.ID;
 using Terraria.ModLoader;
-using Terraria.ModLoader.IO;
 
 namespace AcidicBosses.Content.Bosses.EoW;
 
@@ -42,6 +34,7 @@ public class EoWHeadOverride : AcidicNPCOverride
     private enum PhaseState
     {
         Intro,
+        Chill,
         Test
     }
 
@@ -54,6 +47,7 @@ public class EoWHeadOverride : AcidicNPCOverride
     private Action CurrentAi => CurrentPhase switch
     {
         PhaseState.Intro => Phase_Intro,
+        PhaseState.Chill => Phase_Chill,
         PhaseState.Test => Phase_Test,
         _ => throw new UsageException(
             $"The PhaseState {CurrentPhase} and does not have an ai")
@@ -105,7 +99,7 @@ public class EoWHeadOverride : AcidicNPCOverride
         CurrentPhase = PhaseState.Intro;
         AiTimer = 0;
         
-        WormUtils.HeadSpawnSegments(npc, 64, NPCID.EaterofWorldsHead, NPCID.EaterofWorldsBody, NPCID.EaterofWorldsTail);
+        WormUtils.HeadSpawnSegments(npc, 72, NPCID.EaterofWorldsHead, NPCID.EaterofWorldsBody, NPCID.EaterofWorldsTail);
     }
 
     public override bool AcidAI(NPC npc)
@@ -155,13 +149,17 @@ public class EoWHeadOverride : AcidicNPCOverride
 
     void Phase_Intro()
     {
+        // Spawn in servants and stop taking damage
         countUpTimer = true;
+        WormUtils.HeadDigAI(Npc, 10, 0.05f, null);
 
         if (AiTimer == 0)
         {
+            Npc.dontTakeDamage = true;
             BossBar.MaxWorms = 5;
         }
 
+        // Spawn 5 servants
         if (AiTimer % 30 == 0)
         {
             NewServant();
@@ -171,8 +169,21 @@ public class EoWHeadOverride : AcidicNPCOverride
         {
             AiTimer = 0;
             countUpTimer = false;
-            CurrentPhase = PhaseState.Test;
+            CurrentPhase = PhaseState.Chill;
         }
+    }
+
+    void Phase_Chill()
+    {
+        // Very simple AI where it just digs towards the player and waits until all of the servants are dead
+        if (BossBar.CurrentWorms <= 0)
+        {
+            AiTimer = 0;
+            CurrentPhase = PhaseState.Test;
+            Npc.dontTakeDamage = false;
+        }
+        
+        WormUtils.HeadDigAI(Npc, 10, 0.05f, null);
     }
     
     void Phase_Test()
@@ -188,7 +199,7 @@ public class EoWHeadOverride : AcidicNPCOverride
 
     private NPC NewServant()
     {
-        return NPC.NewNPCDirect(Npc.GetSource_FromAI(), Npc.Center, ModContent.NPCType<ServantWorm>(), Npc.whoAmI);
+        return NPC.NewNPCDirect(Npc.GetSource_FromAI(), Npc.Center, ModContent.NPCType<EoWServant>(), Npc.whoAmI);
     }
 
     #endregion
@@ -199,7 +210,7 @@ public class EoWHeadOverride : AcidicNPCOverride
 
     public override bool PreDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color lightColor)
     {
-        CommonEowPreDraw(npc, spriteBatch, screenPos, lightColor);
+        CommonPreDraw(npc, spriteBatch, screenPos, lightColor);
 
         return false;
     }
@@ -207,25 +218,19 @@ public class EoWHeadOverride : AcidicNPCOverride
     /// <summary>
     /// Draw code shared between all EoW segments
     /// </summary>
-    public static void CommonEowPreDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color lightColor)
+    public static void CommonPreDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color lightColor)
     {
         var drawPos = npc.Center - Main.screenPosition;
         var texAsset = TextureAssets.Npc[npc.type];
         var texture = texAsset.Value;
         var origin = npc.frame.Size() * 0.5f;
         lightColor *= npc.Opacity;
-        
-        // Outline when underground
-        spriteBatch.StartShader();
-        EffectsManager.UndergroundOutline(texAsset, Color.Violet, lightColor);
-            
+
         spriteBatch.Draw(
             texture, drawPos,
             npc.frame, lightColor,
             npc.rotation, origin, npc.scale,
             SpriteEffects.None, 0f);
-            
-        spriteBatch.EndShader();
     }
     
     #endregion

@@ -404,6 +404,9 @@ public static class WormUtils
         if (Main.player[npc.target].dead && npc.timeLeft > 30000)
             npc.timeLeft = 10;
 
+        // Match taking damage
+        npc.dontTakeDamage = Main.npc[npc.realLife].dontTakeDamage;
+
         NPC following = followingNpc;
         if (Main.netMode != NetmodeID.MultiplayerClient)
         {
