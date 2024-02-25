@@ -2,6 +2,7 @@
 using System.IO;
 using System.Linq;
 using AcidicBosses.Common.Effects;
+using AcidicBosses.Core.Systems;
 using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ID;

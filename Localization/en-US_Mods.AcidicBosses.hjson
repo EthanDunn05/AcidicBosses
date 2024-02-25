@@ -11,11 +11,11 @@ Projectiles: {
 	CursedSkullLine.DisplayName: Cursed Skull Line
 	Muramasa.DisplayName: Muramasa
 	MurasamaLine.DisplayName: Murasama Line
-	WoFDeathray.DisplayName: Wo F Deathray
-	WoFDeathrayIndicator.DisplayName: Wo F Deathray Indicator
-	WoFLineIndicator.DisplayName: Wo F Line Indicator
-	WoFMoveIndicator.DisplayName: Wo F Move Indicator
-	WoFLaser.DisplayName: Wo F Laser
+	WoFDeathray.DisplayName: WoF Deathray
+	WoFDeathrayIndicator.DisplayName: WoF Deathray Indicator
+	WoFLineIndicator.DisplayName: WoF Line Indicator
+	WoFMoveIndicator.DisplayName: WoF Move Indicator
+	WoFLaser.DisplayName: WoF Laser
 	KingSlimeLaserIndicator.DisplayName: King Slime Laser Indicator
 }
 
@@ -28,6 +28,14 @@ Buffs: {
 
 NPCs: {
 	WoFMouth.DisplayName: Wall of Flesh
-	EasyPixieNPC.DisplayName: Easy Pixie N P C
+	EasyPixieNPC.DisplayName: Easy Pixie NPC
 	ServantWorm.DisplayName: Servant Worm
+	EoWServant.DisplayName: Eo W Servant
+}
+
+Items: {
+	DifficultyActivator: {
+		Tooltip: ""
+		DisplayName: Difficulty Activator
+	}
 }

@@ -1,3 +1,4 @@
+using System.IO;
 using AcidicBosses.Common.Effects;
 using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
@@ -9,7 +10,7 @@ using Terraria.ModLoader;
 
 namespace AcidicBosses;
 
-public class AcidicBosses : Mod
+partial class AcidicBosses : Mod
 {
     public override void Load()
     {
