@@ -4,7 +4,7 @@ using Terraria.ID;
 
 namespace AcidicBosses.Content.Bosses.WoF.AI;
 
-public class WoFEyeOverride : AcidicNPCOverride
+public class WoFEye : AcidicNPCOverride
 {
     protected override int OverriddenNpc => NPCID.WallofFleshEye;
 

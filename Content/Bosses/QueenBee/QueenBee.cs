@@ -11,7 +11,7 @@ using Terraria.ModLoader.IO;
 
 namespace AcidicBosses.Content.Bosses.QueenBee;
 
-public class QueenBeeOverride : AcidicNPCOverride
+public class QueenBee : AcidicNPCOverride
 {
 	protected override int OverriddenNpc => NPCID.QueenBee;
     

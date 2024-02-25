@@ -17,7 +17,7 @@ using Terraria.ModLoader.IO;
 
 namespace AcidicBosses.Content.Bosses.EoC;
 
-public class EoCOverride : AcidicNPCOverride
+public class EoC : AcidicNPCOverride
 {
     protected override int OverriddenNpc => NPCID.EyeofCthulhu;
     

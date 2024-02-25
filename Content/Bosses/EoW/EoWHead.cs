@@ -8,7 +8,7 @@ using Terraria.ModLoader;
 
 namespace AcidicBosses.Content.Bosses.EoW;
 
-public class EoWHeadOverride : AcidicNPCOverride
+public class EoWHead : AcidicNPCOverride
 {
     // Set this to the boss to override
     protected override int OverriddenNpc => NPCID.EaterofWorldsHead;

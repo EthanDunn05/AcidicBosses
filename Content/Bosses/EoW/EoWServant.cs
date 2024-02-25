@@ -36,7 +36,7 @@ public class EoWServant : AcidicNPC
 
     public override void AcidAI()
     {
-        EoWHeadOverride.CommonEowAI(NPC);
+        EoWHead.CommonEowAI(NPC);
         WormUtils.HeadDigAI(NPC, 10, 0.1f, null);
     }
 

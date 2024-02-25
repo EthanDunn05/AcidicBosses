@@ -14,7 +14,7 @@ using Terraria.ModLoader;
 
 namespace AcidicBosses.Content.Bosses.BoC;
 
-public class BoCOverride : AcidicNPCOverride
+public class BoC : AcidicNPCOverride
 {
     protected override int OverriddenNpc => NPCID.BrainofCthulhu;
 

@@ -5,7 +5,7 @@ using Terraria.ModLoader;
 
 namespace AcidicBosses.Content.Bosses.BoC;
 
-public class BoCBagOverride : GlobalItem
+public class BoCBag : GlobalItem
 {
     public override bool AppliesToEntity(Item entity, bool lateInstantiation)
     {

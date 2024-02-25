@@ -16,7 +16,7 @@ using Terraria.UI;
 
 namespace AcidicBosses.Content.Bosses.WoF.AI;
 
-public class WoFOverride : AcidicNPCOverride
+public class WoF : AcidicNPCOverride
 {
     protected override int OverriddenNpc => NPCID.WallofFlesh;
     private int damage = 50;

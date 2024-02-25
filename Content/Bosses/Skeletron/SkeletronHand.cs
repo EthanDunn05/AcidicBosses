@@ -9,7 +9,7 @@ using Terraria.ModLoader;
 
 namespace AcidicBosses.Content.Bosses.Skeletron;
 
-public class SkeletronHandOverride : AcidicNPCOverride
+public class SkeletronHand : AcidicNPCOverride
 {
     protected override int OverriddenNpc => NPCID.SkeletronHand;
 
@@ -20,15 +20,15 @@ public class SkeletronHandOverride : AcidicNPCOverride
 
     private NPC Head => Main.npc[HeadID];
 
-    private SkeletronHeadOverride.PhaseState HeadPhase
+    private SkeletronHead.PhaseState HeadPhase
     {
-        get => (SkeletronHeadOverride.PhaseState) Head.ai[1];
+        get => (SkeletronHead.PhaseState) Head.ai[1];
         set => Head.ai[1] = (float) value;
     }
     
-    private SkeletronHeadOverride.HandState HeadAttack
+    private SkeletronHead.HandState HeadAttack
     {
-        get => (SkeletronHeadOverride.HandState) Head.ai[3];
+        get => (SkeletronHead.HandState) Head.ai[3];
         set => Head.ai[3] = (float) value;
     }
 
@@ -74,7 +74,7 @@ public class SkeletronHandOverride : AcidicNPCOverride
         }
 
         // Don't interact when above skeletron
-        if (HeadAttack == SkeletronHeadOverride.HandState.NoInteractLockHead)
+        if (HeadAttack == SkeletronHead.HandState.NoInteractLockHead)
         {
             Npc.damage = 0;
             Npc.dontTakeDamage = true;
@@ -89,22 +89,22 @@ public class SkeletronHandOverride : AcidicNPCOverride
 
         switch (HeadAttack)
         {
-            case SkeletronHeadOverride.HandState.HoverSide:
+            case SkeletronHead.HandState.HoverSide:
                 Attack_HoverToSide();
                 break;
-            case SkeletronHeadOverride.HandState.LockSide:
+            case SkeletronHead.HandState.LockSide:
                 Attack_LockToSide();
                 break;
-            case SkeletronHeadOverride.HandState.LockHead:
+            case SkeletronHead.HandState.LockHead:
                 Attack_LockAboveHead();
                 break;
-            case SkeletronHeadOverride.HandState.NoInteractLockHead:
+            case SkeletronHead.HandState.NoInteractLockHead:
                 Attack_LockAboveHead();
                 break;
-            case SkeletronHeadOverride.HandState.Slap:
+            case SkeletronHead.HandState.Slap:
                 Attack_Slap();
                 break;
-            case SkeletronHeadOverride.HandState.AlternatingSlaps:
+            case SkeletronHead.HandState.AlternatingSlaps:
                 Attack_AlternatingSlaps();
                 break;
         }

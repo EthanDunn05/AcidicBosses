@@ -14,7 +14,7 @@ using Terraria.ModLoader.IO;
 
 namespace AcidicBosses.Content.Bosses.Skeletron;
 
-public class SkeletronHeadOverride : AcidicNPCOverride
+public class SkeletronHead : AcidicNPCOverride
 {
     // Set this to the boss to override
     protected override int OverriddenNpc => NPCID.SkeletronHead;
@@ -411,7 +411,7 @@ public class SkeletronHeadOverride : AcidicNPCOverride
     {
         countUpTimer = true;
         CurrentHandState = HandState.Slap;
-        isDone = AiTimer >= SkeletronHandOverride.SlapLength;
+        isDone = AiTimer >= SkeletronHand.SlapLength;
 
         Attack_LockAbove();
 

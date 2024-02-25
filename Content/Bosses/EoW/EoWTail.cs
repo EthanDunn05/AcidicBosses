@@ -8,7 +8,7 @@ using Terraria.ModLoader;
 
 namespace AcidicBosses.Content.Bosses.EoW;
 
-public class EoWTailOverride : AcidicNPCOverride
+public class EoWTail : AcidicNPCOverride
 {
     protected override int OverriddenNpc => NPCID.EaterofWorldsTail;
 
@@ -28,7 +28,7 @@ public class EoWTailOverride : AcidicNPCOverride
 
     public override bool AcidAI(NPC npc)
     {
-        EoWHeadOverride.CommonEowAI(npc);
+        EoWHead.CommonEowAI(npc);
 
         WormUtils.BodyTailFollow(npc, FollowingNPC);
 
@@ -40,7 +40,7 @@ public class EoWTailOverride : AcidicNPCOverride
         // Draw differently depending on if following the main boss or a servant
         if (FollowingBoss)
         {
-            EoWHeadOverride.CommonPreDraw(npc, spriteBatch, screenPos, lightColor);
+            EoWHead.CommonPreDraw(npc, spriteBatch, screenPos, lightColor);
         }
         else
         {
