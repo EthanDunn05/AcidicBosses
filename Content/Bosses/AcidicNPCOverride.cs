@@ -11,9 +11,17 @@ using Terraria.ModLoader.IO;
 
 namespace AcidicBosses.Content.Bosses;
 
+/// <summary>
+/// Inherit this when overriding the behavior of a vanilla npc.
+/// </summary>
 public abstract class AcidicNPCOverride : GlobalNPC
 {
+    // Always
     public override bool InstancePerEntity => true;
+    
+    /// <summary>
+    /// The NPCID of the npc to override
+    /// </summary>
     protected abstract int OverriddenNpc { get; }
     protected NPC Npc { get; private set; }
     
@@ -29,13 +37,18 @@ public abstract class AcidicNPCOverride : GlobalNPC
         return entity.type == OverriddenNpc;
     }
 
+    /// <summary>
+    /// Called the first frame the NPC is alive on both the server and client
+    /// </summary>
+    /// <param name="npc">Not really useful anymore, but keeping it because I'm lazy</param>
     public virtual void OnFirstFrame(NPC npc)
     {
         
     }
-
+    
     public sealed override bool PreAI(NPC npc)
     {
+        // First frame setup
         if (isFirstFrame)
         {
             Npc = npc;
@@ -46,11 +59,20 @@ public abstract class AcidicNPCOverride : GlobalNPC
         return AcidAI(npc);
     }
 
+    /// <summary>
+    /// The main AI method of an Acidic NPC.
+    /// This is where the primary logic takes place.
+    /// </summary>
+    /// <param name="npc">The npc</param>
+    /// <returns>True to run vanilla AI, false to not. Same as PreAI</returns>
     public virtual bool AcidAI(NPC npc)
     {
         return true;
     }
 
+    /// <summary>
+    /// Just set the target to a random valid player
+    /// </summary>
     protected void TargetRandom()
     {
         Npc.target = RandomTargetablePlayer().whoAmI;
@@ -68,6 +90,13 @@ public abstract class AcidicNPCOverride : GlobalNPC
         return player;
     }
 
+    /// <summary>
+    /// Send stuff to be synced between server and client.
+    /// Sending and receiving must be done in the same order.
+    /// </summary>
+    /// <param name="npc">The npc</param>
+    /// <param name="bitWriter">Write booleans</param>
+    /// <param name="binaryWriter">Write everything else</param>
     public virtual void SendAcidAI(NPC npc, BitWriter bitWriter, BinaryWriter binaryWriter)
     {
         
@@ -82,6 +111,13 @@ public abstract class AcidicNPCOverride : GlobalNPC
         SendAcidAI(npc, bitWriter, binaryWriter);
     }
     
+    /// <summary>
+    /// Read stuff to be synced between server and client.
+    /// Sending and receiving must be done in the same order.
+    /// </summary>
+    /// <param name="npc">The npc</param>
+    /// <param name="bitReader">Read booleans</param>
+    /// <param name="binaryReader">Read everything else</param>
     public virtual void ReceiveAcidAI(NPC npc, BitReader bitReader, BinaryReader binaryReader)
     {
         

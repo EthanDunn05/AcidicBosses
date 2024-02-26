@@ -58,7 +58,7 @@ public class EoWServant : AcidicNPC
 
         // Outline when underground
         spriteBatch.StartShader();
-        EffectsManager.UndergroundOutline(texAsset, Color.Violet, lightColor);
+        EffectsManager.UndergroundOutlineApply(texAsset, Color.Violet, lightColor);
 
         spriteBatch.Draw(
             texture, drawPos,

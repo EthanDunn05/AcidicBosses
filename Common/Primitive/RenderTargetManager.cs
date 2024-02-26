@@ -11,6 +11,14 @@ using Terraria.ModLoader;
 
 namespace AcidicBosses.Common.Primitive;
 
+/**
+ * If I'm being honest, I hate how this is done.
+ * 
+ * I need to completely redo this system to be extendable,
+ * but doing so would require reworking a good amount of the projectiles.
+ *
+ * I hate prims
+ */
 public class RenderTargetManager : ModSystem
 {
     private static RenderTarget2D primRenderTarget;

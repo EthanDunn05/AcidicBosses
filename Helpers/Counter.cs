@@ -5,34 +5,37 @@ using System.Linq;
 
 namespace AcidicBosses.Helpers;
 
+/**
+ * Increments through a given list, returning to the beginning when getting to the end.
+ */
 public class Counter<T>
 {
-    public IEnumerable<T> list { get; set; }
-    public int index { get; private set; }
+    private IEnumerable<T> List { get; }
+    private int Index { get; set; }
 
     public Counter(IEnumerable<T> list)
     {
-        this.list = list;
-        index = 0;
+        List = list;
+        Index = 0;
     }
 
     public T Get()
     {
-        return list.ElementAt(index);
+        return List.ElementAt(Index);
     }
 
     public void Next()
     {
-        index = (index + 1) % list.Count();
+        Index = (Index + 1) % List.Count();
     }
 
     public void SendData(BinaryWriter binaryWriter)
     {
-        binaryWriter.Write7BitEncodedInt(index);
+        binaryWriter.Write7BitEncodedInt(Index);
     }
 
     public void RecieveData(BinaryReader binaryReader)
     {
-        index = binaryReader.Read7BitEncodedInt();
+        Index = binaryReader.Read7BitEncodedInt();
     }
 }

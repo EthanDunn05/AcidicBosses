@@ -11,6 +11,10 @@ using Terraria.ModLoader.IO;
 
 namespace AcidicBosses.Content.Bosses.QueenBee;
 
+/**
+ * This will be redone when I start work on this boss.
+ * It was made without referencing vanilla code which was a mistake.
+ */
 public class QueenBee : AcidicNPCOverride
 {
 	protected override int OverriddenNpc => NPCID.QueenBee;

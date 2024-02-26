@@ -15,7 +15,6 @@ using Terraria.ModLoader.IO;
 
 namespace AcidicBosses.Content.Bosses.KingSlime;
 
-// This is very outdated in how this boss is done, at some point this will be reworked into the newer system.
 public class KingSlime : AcidicNPCOverride
 {
     protected override int OverriddenNpc => NPCID.KingSlime;
@@ -363,8 +362,7 @@ public class KingSlime : AcidicNPCOverride
     private void Phase_Desperation(NPC npc)
     {
         if (AiTimer > 0 && !BypassActionTimer) return;
-
-        // Random Jump
+        
         switch (CurrentAttack)
         {
             case Attack.SlimeBurst:
@@ -711,7 +709,7 @@ public class KingSlime : AcidicNPCOverride
         if (CurrentPhase is PhaseState.Desperation or PhaseState.Transition2)
         {
             spriteBatch.StartShader();
-            EffectsManager.SlimeRage(TextureAssets.Npc[npc.type]);
+            EffectsManager.SlimeRageApply(TextureAssets.Npc[npc.type]);
         }
         
         DrawSlime(npc, spriteBatch, screenPos, lightColor);
