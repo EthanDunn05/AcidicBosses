@@ -12,6 +12,7 @@ public static class TextureRegistry
     public static Asset<Texture2D> InvertedGlowLine => Tex("Lines/InvertedGlowLine");
     public static Asset<Texture2D> SideGlowLine => Tex("Lines/SideGlowLine");
     public static Asset<Texture2D> Line => Tex("Lines/Line");
+    public static Asset<Texture2D> RgbPerlin => Tex("Noise/rgbPerlin");
 
     private static Asset<Texture2D> Tex(string name) => ModContent.Request<Texture2D>($"AcidicBosses/Assets/Textures/{name}", AssetRequestMode.ImmediateLoad);
     

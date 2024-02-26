@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using AcidicBosses.Common;
 using AcidicBosses.Common.Effects;
 using AcidicBosses.Helpers;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.Audio;
+using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.ModLoader.IO;
@@ -152,6 +155,7 @@ public class KingSlime : AcidicNPCOverride
     {
         AiTimer = 0;
         CurrentPhase = PhaseState.One;
+        ChangeScale(npc, targetScale);
     }
 
     public override bool AcidAI(NPC npc)
@@ -487,7 +491,6 @@ public class KingSlime : AcidicNPCOverride
             case >= 0 and < 30:
                 var roarT = AiTimer / 29f;
                 SoundEngine.PlaySound(SoundID.Roar, npc.Center);
-                npc.color = Color.Red;
 
                 // Effects
                 if (AiTimer == 0)
@@ -698,6 +701,101 @@ public class KingSlime : AcidicNPCOverride
     #endregion
 
     // Other Stuff //
+
+    #region Draw
+
+    public override bool PreDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color lightColor)
+    {
+        DrawNinja(npc, spriteBatch, screenPos, lightColor);
+        
+        if (CurrentPhase is PhaseState.Desperation or PhaseState.Transition2)
+        {
+            spriteBatch.StartShader();
+            EffectsManager.SlimeRage(TextureAssets.Npc[npc.type]);
+        }
+        
+        DrawSlime(npc, spriteBatch, screenPos, lightColor);
+        
+        if (CurrentPhase is PhaseState.Desperation or PhaseState.Transition2)
+        {
+            spriteBatch.EndShader();
+        }
+        
+        DrawCrown(npc, spriteBatch, screenPos, lightColor);
+        
+        return false;
+    }
+
+    private void DrawNinja(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color lightColor)
+    {
+        // Draw Ninja
+        Vector2 zero = Vector2.Zero;
+        float num243 = 0f;
+        zero.Y -= npc.velocity.Y;
+        zero.X -= npc.velocity.X * 2f;
+        num243 += npc.velocity.X * 0.05f;
+        if (npc.frame.Y == 120)
+        {
+            zero.Y += 2f;
+        }
+        if (npc.frame.Y == 360)
+        {
+            zero.Y -= 2f;
+        }
+        if (npc.frame.Y == 480)
+        {
+            zero.Y -= 6f;
+        }
+        spriteBatch.Draw(TextureAssets.Ninja.Value, new Vector2(npc.position.X - screenPos.X + (float)(npc.width / 2) + zero.X, npc.position.Y - screenPos.Y + (float)(npc.height / 2) + zero.Y), new Rectangle(0, 0, TextureAssets.Ninja.Width(), TextureAssets.Ninja.Height()), lightColor, num243, new Vector2(TextureAssets.Ninja.Width() / 2, TextureAssets.Ninja.Height() / 2), 1f, SpriteEffects.None, 0f);
+    }
+
+    private void DrawSlime(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color lightColor)
+    {
+        var drawPos = npc.Center - screenPos + Vector2.UnitY * npc.gfxOffY;
+        drawPos.Y -= 8f * npc.scale; // KS is in the ground unless I do this for some ungodly reason
+        var texAsset = TextureAssets.Npc[npc.type];
+        var texture = texAsset.Value;
+        var origin = npc.frame.Size() * 0.5f;
+
+        spriteBatch.Draw(
+            texture, drawPos,
+            npc.frame, npc.GetAlpha(lightColor),
+            npc.rotation, origin, npc.scale,
+            SpriteEffects.None, 0f);
+    }
+
+    private void DrawCrown(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color lightColor)
+    {
+        Texture2D value87 = TextureAssets.Extra[39].Value;
+        Vector2 center3 = npc.Center;
+        float num154 = 0f;
+        switch (npc.frame.Y / (TextureAssets.Npc[npc.type].Value.Height / Main.npcFrameCount[npc.type]))
+        {
+            case 0:
+                num154 = 2f;
+                break;
+            case 1:
+                num154 = -6f;
+                break;
+            case 2:
+                num154 = 2f;
+                break;
+            case 3:
+                num154 = 10f;
+                break;
+            case 4:
+                num154 = 2f;
+                break;
+            case 5:
+                num154 = 0f;
+                break;
+        }
+        center3.Y += npc.gfxOffY - (70f - num154) * npc.scale;
+        spriteBatch.Draw(value87, center3 - screenPos, null, lightColor, 0f, value87.Size() / 2f, 1f, SpriteEffects.None, 0f);
+
+    }
+
+    #endregion
 
     private void ChangeScale(NPC npc, float scale)
     {

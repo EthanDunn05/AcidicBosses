@@ -19,7 +19,8 @@ partial class AcidicBosses : Mod
             LoadScreenShader(EffectsRegistry.Names.Shockwave, EffectPriority.High);
             LoadScreenShader(EffectsRegistry.Names.BossRage, EffectPriority.VeryHigh);
             LoadPrimShader(EffectsRegistry.Names.BasicTexture, "TrailPass");
-            LoadMiscShader(EffectsRegistry.Names.UndergroundOutline, "UndergroundOutlinePass");
+            LoadBossShader(EffectsRegistry.Names.UndergroundOutline, "UndergroundOutlinePass");
+            LoadBossShader(EffectsRegistry.Names.SlimeRage, "SlimeRagePass");
         }
     }
 
@@ -32,6 +33,12 @@ partial class AcidicBosses : Mod
     private void LoadPrimShader(string name, string pass)
     {
         var effect = LoadEffect($"PrimitiveShaders/{name}");
+        GameShaders.Misc[name] = new MiscShaderData(effect, pass);
+    }
+
+    private void LoadBossShader(string name, string pass)
+    {
+        var effect = LoadEffect($"BossEffects/{name}");
         GameShaders.Misc[name] = new MiscShaderData(effect, pass);
     }
 

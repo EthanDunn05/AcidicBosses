@@ -286,3 +286,4 @@ __pycache__/
 *.xsd.cs
 fxcompiler.exe
 Assets/Effects/*.dll
+Assets/Effects/**/*.dll

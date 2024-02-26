@@ -12,6 +12,7 @@ public static class EffectsRegistry
         public const string KsCrownLaser = "KsCrownLaser";
         public const string BasicTexture = "BasicTexture";
         public const string UndergroundOutline = "UndergroundOutline";
+        public const string SlimeRage = "SlimeRage";
     }
 
     public static Filter Shockwave => Filters.Scene[Names.Shockwave];
@@ -20,4 +21,5 @@ public static class EffectsRegistry
     public static MiscShaderData KsCrownLaser => GameShaders.Misc[Names.KsCrownLaser];
     public static MiscShaderData BasicTexture => GameShaders.Misc[Names.BasicTexture];
     public static MiscShaderData UndergroundOutline => GameShaders.Misc[Names.UndergroundOutline];
+    public static MiscShaderData SlimeRage => GameShaders.Misc[Names.SlimeRage];
 }

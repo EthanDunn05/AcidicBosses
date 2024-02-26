@@ -1,7 +1,9 @@
-﻿using Microsoft.Xna.Framework;
+﻿using AcidicBosses.Common.Textures;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
 using Terraria;
+using Terraria.GameContent;
 using Terraria.Graphics.Effects;
 using Terraria.ID;
 
@@ -61,5 +63,12 @@ public static class EffectsManager
         EffectsRegistry.UndergroundOutline.UseColor(outlineColor);
         EffectsRegistry.UndergroundOutline.UseSecondaryColor(lightColor);
         EffectsRegistry.UndergroundOutline.Apply();
+    }
+    
+    public static void SlimeRage(Asset<Texture2D> texture)
+    {
+        EffectsRegistry.SlimeRage.UseImage0(texture);
+        EffectsRegistry.SlimeRage.UseImage1(TextureRegistry.RgbPerlin);
+        EffectsRegistry.SlimeRage.Apply();
     }
 }
