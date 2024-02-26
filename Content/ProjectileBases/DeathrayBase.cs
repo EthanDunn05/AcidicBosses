@@ -99,6 +99,8 @@ public abstract class DeathrayBase : ModProjectile
 
     public override bool PreDraw(ref Color lightColor)
     {
+        if (!doneFirstFrame) return false;
+    
         // Have to rotate the visual for vertically aligned stuff
         var rotation = Projectile.rotation.ToRotationVector2();
         var r = Projectile.rotation - MathHelper.PiOver2;
