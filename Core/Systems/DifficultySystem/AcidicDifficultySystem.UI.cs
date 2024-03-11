@@ -13,13 +13,14 @@ namespace AcidicBosses.Core.Systems.DifficultySystem;
 public enum AcidicEnabledID
 {
     Enabled,
-    Disabled
+    Disabled,
+    None
 }
 
 public partial class AcidicDifficultySystem : ModSystem
 {
     private GroupOptionButton<AcidicEnabledID>[] enableOptions = new GroupOptionButton<AcidicEnabledID>[2];
-    private AcidicEnabledID selectionOption;
+    private AcidicEnabledID selectionOption = AcidicEnabledID.None;
     
     public override void Load()
     {

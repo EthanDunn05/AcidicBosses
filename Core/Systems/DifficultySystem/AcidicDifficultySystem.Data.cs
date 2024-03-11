@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using Terraria;
 using Terraria.ModLoader;
 using Terraria.ModLoader.IO;
 
@@ -15,10 +16,7 @@ public partial class AcidicDifficultySystem : ModSystem
 
     public override void SaveWorldData(TagCompound tag)
     {
-        if (!tag.ContainsKey("AcidicActive"))
-        {
-            AcidicActive = selectionOption == AcidicEnabledID.Enabled;
-        }
+        if (selectionOption != AcidicEnabledID.None) AcidicActive = selectionOption == AcidicEnabledID.Enabled;
         
         tag["AcidicActive"] = AcidicActive;
     }
