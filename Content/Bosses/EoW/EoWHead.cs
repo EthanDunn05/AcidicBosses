@@ -35,6 +35,7 @@ public class EoWHead : AcidicNPCOverride
     {
         Intro,
         Chill,
+        Aggressive,
         Test
     }
 
@@ -177,10 +178,15 @@ public class EoWHead : AcidicNPCOverride
         if (BossBar.CurrentWorms <= 0)
         {
             AiTimer = 0;
-            CurrentPhase = PhaseState.Test;
+            CurrentPhase = PhaseState.Aggressive;
             Npc.dontTakeDamage = false;
         }
         
+        WormUtils.HeadDigAI(Npc, 10, 0.05f, null);
+    }
+
+    void Phase_Aggressive()
+    {
         WormUtils.HeadDigAI(Npc, 10, 0.05f, null);
     }
     
@@ -193,7 +199,7 @@ public class EoWHead : AcidicNPCOverride
 
     #region Attack Behaviors
 
-    // Put attack methods here
+    
 
     private NPC NewServant()
     {
@@ -206,7 +212,7 @@ public class EoWHead : AcidicNPCOverride
 
     #region Drawing
 
-    public override bool PreDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color lightColor)
+    public override bool AcidicDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color lightColor)
     {
         CommonPreDraw(npc, spriteBatch, screenPos, lightColor);
 

@@ -246,7 +246,7 @@ public class CreeperOverride : AcidicNPCOverride
     
     #endregion
 
-    public override bool PreDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
+    public override bool AcidicDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
     {
         var drawPos = npc.Center - Main.screenPosition;
         var texture = TextureAssets.Npc[npc.type].Value;

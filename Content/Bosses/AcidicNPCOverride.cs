@@ -3,7 +3,9 @@ using System.IO;
 using System.Linq;
 using AcidicBosses.Common.Effects;
 using AcidicBosses.Core.Systems;
+using AcidicBosses.Core.Systems.DifficultySystem;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -32,6 +34,8 @@ public abstract class AcidicNPCOverride : GlobalNPC
 
     private bool isFirstFrame = true;
 
+    private static bool AcidicActive => AcidicDifficultySystem.AcidicActive;
+
     public override bool AppliesToEntity(NPC entity, bool lateInstantiation)
     {
         return entity.type == OverriddenNpc;
@@ -48,6 +52,8 @@ public abstract class AcidicNPCOverride : GlobalNPC
     
     public sealed override bool PreAI(NPC npc)
     {
+        if (!AcidicActive) return true;
+        
         // First frame setup
         if (isFirstFrame)
         {
@@ -104,6 +110,8 @@ public abstract class AcidicNPCOverride : GlobalNPC
 
     public sealed override void SendExtraAI(NPC npc, BitWriter bitWriter, BinaryWriter binaryWriter)
     {
+        if (!AcidicActive) return;
+        
         for (var i = 0; i < 4; i++)
         {
             binaryWriter.Write(ExtraAI[i]);
@@ -125,6 +133,8 @@ public abstract class AcidicNPCOverride : GlobalNPC
 
     public sealed override void ReceiveExtraAI(NPC npc, BitReader bitReader, BinaryReader binaryReader)
     {
+        if (!AcidicActive) return;
+        
         for (var i = 0; i < 4; i++)
         {
             ExtraAI[i] = binaryReader.ReadSingle();
@@ -151,11 +161,25 @@ public abstract class AcidicNPCOverride : GlobalNPC
     
     public override void HitEffect(NPC npc, NPC.HitInfo hit)
     {
+        if (!AcidicActive) return;
+        
         if (npc.life <= 0)
         {
             EffectsManager.BossRageKill();
             EffectsManager.ShockwaveKill();
         }
+    }
+
+    // Wrapper for PreDraw
+    public virtual bool AcidicDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color lightColor)
+    {
+        return true;
+    }
+
+    public sealed override bool PreDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
+    {
+        if (!AcidicActive) return true;
+        return AcidicDraw(npc, spriteBatch, screenPos, drawColor);
     }
 
     protected virtual void LookTowards(Vector2 target, float power)

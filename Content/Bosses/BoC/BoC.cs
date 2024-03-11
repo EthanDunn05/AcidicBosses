@@ -589,7 +589,7 @@ public class BoC : AcidicNPCOverride
 
     #region Drawing
 
-    public override bool PreDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color lightColor)
+    public override bool AcidicDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color lightColor)
     {
         var drawPos = npc.Center - Main.screenPosition;
         var brainTexture = TextureAssets.Npc[npc.type].Value;

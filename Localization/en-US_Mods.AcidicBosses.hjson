@@ -39,3 +39,21 @@ Items: {
 		DisplayName: Difficulty Activator
 	}
 }
+
+UI: {
+	AcidicToggle: {
+		Title: "[c/CE32FF:Acidic Bosses]"
+		Description:
+			'''
+			[c/CE32FF:Acidic Bosses] is meant to be
+			played in [c/FF9900:Expert] or [c/FF2619:Master] mode.
+
+			While other difficulties are
+			supported, this mod is designed
+			around the items from [c/FF9900:Expert]
+			or higher.
+			'''
+		EnableText: "[c/CE32FF:Enable]"
+		DisableText: Disable
+	}
+}

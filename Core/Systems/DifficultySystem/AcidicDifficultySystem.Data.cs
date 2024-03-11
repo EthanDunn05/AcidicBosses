@@ -2,12 +2,12 @@
 using Terraria.ModLoader;
 using Terraria.ModLoader.IO;
 
-namespace AcidicBosses.Core.Systems;
+namespace AcidicBosses.Core.Systems.DifficultySystem;
 
-public class DifficultySystem : ModSystem
+public partial class AcidicDifficultySystem : ModSystem
 {
     public static bool AcidicActive { get; set; }
-
+    
     public override void ClearWorld()
     {
         AcidicActive = false;
@@ -15,12 +15,24 @@ public class DifficultySystem : ModSystem
 
     public override void SaveWorldData(TagCompound tag)
     {
+        if (!tag.ContainsKey("AcidicActive"))
+        {
+            AcidicActive = selectionOption == AcidicEnabledID.Enabled;
+        }
+        
         tag["AcidicActive"] = AcidicActive;
     }
 
     public override void LoadWorldData(TagCompound tag)
     {
-        AcidicActive = tag.GetBool("AcidicActive");
+        if (tag.ContainsKey("AcidicActive"))
+        {
+            AcidicActive = tag.GetBool("AcidicActive");
+        }
+        else
+        {
+            AcidicActive = false;
+        }
     }
 
     public override void NetSend(BinaryWriter writer)

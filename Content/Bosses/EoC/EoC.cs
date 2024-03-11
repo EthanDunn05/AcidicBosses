@@ -862,7 +862,7 @@ public class EoC : AcidicNPCOverride
 
     #region Drawing
 
-    public override bool PreDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
+    public override bool AcidicDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
     {
         var effects = SpriteEffects.None;
         if (npc.spriteDirection == 1)

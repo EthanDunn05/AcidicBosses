@@ -863,7 +863,7 @@ public class WoF : AcidicNPCOverride
 
     #region Drawing
 
-    public override bool PreDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color lightColor)
+    public override bool AcidicDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color lightColor)
     {
         // Don't draw lmao
         return false;

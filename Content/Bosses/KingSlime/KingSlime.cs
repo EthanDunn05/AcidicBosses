@@ -702,7 +702,7 @@ public class KingSlime : AcidicNPCOverride
 
     #region Draw
 
-    public override bool PreDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color lightColor)
+    public override bool AcidicDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color lightColor)
     {
         DrawNinja(npc, spriteBatch, screenPos, lightColor);
         
