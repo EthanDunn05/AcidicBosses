@@ -55,9 +55,8 @@ float4 PixelShaderFunction(float2 coords : TEXCOORD0) : COLOR0
     coords.y = (coords.y / 6.0 + frame / 6.0);
 
     float4 color = tex2D(uImage0, coords);
-    color.r /= SampleNoise(noiseCoords).r;
-    color.bg *= SampleNoise(noiseCoords).bg * 0.5;
-    color.a *= smoothstep(0.3, 0.5, SampleNoise(noiseCoords).b);
+    color.r /= 0.5;
+    color.bg *= float2(1.0, 1.0) * 0.3;
 
     return color;
 }
