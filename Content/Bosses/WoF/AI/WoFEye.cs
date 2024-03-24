@@ -15,6 +15,12 @@ public class WoFEye : AcidicNPCOverride
         get => (WoFPartPosition) Npc.ai[0];
         set => Npc.ai[0] = (float) value;
     }
+
+    private WoFPartState PartState
+    {
+        get => (WoFPartState) Npc.ai[2];
+        set => Npc.ai[2] = (float) value;
+    }
     
     private float WallDistance => WoF.ai[3];
 
@@ -51,6 +57,15 @@ public class WoFEye : AcidicNPCOverride
         if (WoF.life > 0)
         {
             Npc.life = WoF.life;
+        }
+        
+        if ((PartState & WoFPartState.FaceTarget) != 0)
+        {
+            LookTowards(Main.player[Npc.target].Center, 0.05f);
+        }
+        else
+        {
+            Npc.rotation = Npc.rotation.AngleLerp(0f, 0.05f);
         }
         
         // Sync stuff

@@ -11,9 +11,9 @@ namespace AcidicBosses.Content.Bosses.WoF.Projectiles;
 public class WoFLaser : BaseLineProjectile
 {
     protected override float Length => 25000;
-    protected override float Width => 1f;
+    protected override float Width => 10f;
     protected override Color Color => Color.Purple;
-    protected override Asset<Texture2D> LineTexture => TextureRegistry.Line;
+    protected override Asset<Texture2D> LineTexture => TextureRegistry.GlowLine;
 
     protected override bool anchorRotation => false;
 

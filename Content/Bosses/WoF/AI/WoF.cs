@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using AcidicBosses.Common.Effects;
 using AcidicBosses.Content.Bosses.Skeletron;
 using AcidicBosses.Content.Bosses.WoF.Projectiles;
 using AcidicBosses.Helpers;
@@ -251,6 +252,10 @@ public class WoF : AcidicNPCOverride
     
     private void Phase_One()
     {
+
+        var goalDistance = MathHelper.Lerp(750, 800, AiTimer / 60f);
+        WallDistance = MathHelper.Lerp(WallDistance, goalDistance, 0.05f);
+        
         if (AiTimer > 0 && !countUpTimer)
         {
             if (Npc.GetLifePercent() < 0.6f)
@@ -612,10 +617,25 @@ public class WoF : AcidicNPCOverride
 
         var pos = laserSpamOrder.Get();
 
+        if (AiTimer == 0)
+        {
+            // Set the face target bit to true
+            TryFindPartAtPos(out var eye, pos);
+            var state = (WoFPartState) eye.ai[2];
+            state |= WoFPartState.FaceTarget;
+            eye.ai[2] = (int) state;
+        }
+        
         if (isDone)
         {
             countUpTimer = false;
             laserSpamOrder.Next();
+            
+            // Set the face target bit to false
+            TryFindPartAtPos(out var eye, pos);
+            var state = (WoFPartState) eye.ai[2];
+            state &= ~WoFPartState.FaceTarget;
+            eye.ai[2] = (int) state;
         }
 
         if (Main.netMode == NetmodeID.MultiplayerClient) return;

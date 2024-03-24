@@ -79,6 +79,7 @@ public abstract class DeathrayBase : ModProjectile
             Projectile.rotation = Offset;
         }
 
+        AiEffects();
         
         var rotation = Projectile.rotation.ToRotationVector2();
         for (var i = 0; i < Distance; i += CollisionWidth)
@@ -94,6 +95,8 @@ public abstract class DeathrayBase : ModProjectile
             SpawnDust(randPos);
         }
     }
+    
+    protected virtual void AiEffects() {}
     
     protected virtual void SpawnDust(Vector2 position) {}
 

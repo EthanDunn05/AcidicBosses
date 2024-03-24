@@ -61,6 +61,32 @@ public static class EffectsManager
         return true;
     }
     
+    // Chromatic Abberation //
+
+    public static bool AberrationActivate(float offset)
+    {
+        if (Main.netMode == NetmodeID.Server || EffectsRegistry.ChromaticAberration.IsActive()) return false;
+
+        Filters.Scene.Activate(EffectsRegistry.Names.ChromaticAberration).GetShader()
+            .UseIntensity(offset);
+        return true;
+    }
+    
+    public static bool AberrationProgress(float offset)
+    {
+        if (Main.netMode == NetmodeID.Server || !EffectsRegistry.ChromaticAberration.IsActive()) return false;
+        EffectsRegistry.ChromaticAberration.GetShader()
+            .UseIntensity(offset);
+        return true;
+    }
+
+    public static bool AberrationKill()
+    {
+        if (Main.netMode == NetmodeID.Server || !EffectsRegistry.ChromaticAberration.IsActive()) return false;
+        EffectsRegistry.ChromaticAberration.Deactivate();
+        return true;
+    }
+    
     // Other Shaders //
 
     /**

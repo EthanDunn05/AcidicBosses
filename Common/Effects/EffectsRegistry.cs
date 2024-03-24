@@ -23,6 +23,7 @@ public static class EffectsRegistry
     {
         public const string Shockwave = "Shockwave";
         public const string BossRage = "BossRage";
+        public const string ChromaticAberration = "ChromaticAbberation"; // Yes this is misspelled
         public const string KsCrownLaser = "KsCrownLaser";
         public const string BasicTexture = "BasicTexture";
         public const string UndergroundOutline = "UndergroundOutline";
@@ -32,6 +33,7 @@ public static class EffectsRegistry
     // Screen shaders
     public static Filter Shockwave => Filters.Scene[Names.Shockwave];
     public static Filter BossRage => Filters.Scene[Names.BossRage];
+    public static Filter ChromaticAberration => Filters.Scene[Names.ChromaticAberration];
     
     // Misc Shaders
     public static MiscShaderData KsCrownLaser => GameShaders.Misc[Names.KsCrownLaser];
@@ -48,6 +50,7 @@ public static class EffectsRegistry
         
         LoadScreenShader(Names.Shockwave, EffectPriority.High);
         LoadScreenShader(Names.BossRage, EffectPriority.VeryHigh);
+        LoadScreenShader(Names.ChromaticAberration, EffectPriority.High);
         
         LoadPrimShader(Names.BasicTexture, "TrailPass");
         

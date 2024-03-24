@@ -23,6 +23,12 @@ public class WoFMouth : AcidicNPC
         get => (WoFPartPosition) NPC.ai[0];
         set => NPC.ai[0] = (float) value;
     }
+    
+    private WoFPartState PartState
+    {
+        get => (WoFPartState) NPC.ai[2];
+        set => NPC.ai[2] = (float) value;
+    }
 
     public override void SetStaticDefaults()
     {
@@ -93,6 +99,15 @@ public class WoFMouth : AcidicNPC
         if (WoF.life > 0)
         {
             NPC.life = WoF.life;
+        }
+
+        if ((PartState & WoFPartState.FaceTarget) != 0)
+        {
+            LookTowards(Main.player[NPC.target].Center, 0.05f);
+        }
+        else
+        {
+            NPC.rotation = NPC.rotation.AngleLerp(0f, 0.05f);
         }
         
         // Sync stuff
@@ -168,5 +183,12 @@ public class WoFMouth : AcidicNPC
         {
             NPC.frame.Y = 0;
         }
+    }
+    
+    protected override void LookTowards(Vector2 target, float power)
+    {
+        var offset = 0f;
+        if (NPC.direction < 0) offset = MathHelper.Pi;
+        NPC.rotation = NPC.rotation.AngleLerp(NPC.AngleTo(target) + offset, power);
     }
 }
