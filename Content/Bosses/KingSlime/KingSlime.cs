@@ -15,6 +15,8 @@ using Terraria.ModLoader.IO;
 
 namespace AcidicBosses.Content.Bosses.KingSlime;
 
+// This Boss's code is very out of date compared to the rest of the bosses.
+// Someday this should be improved to match all the other bosses
 public class KingSlime : AcidicNPCOverride
 {
     protected override int OverriddenNpc => NPCID.KingSlime;
@@ -807,14 +809,14 @@ public class KingSlime : AcidicNPCOverride
         npc.position.Y -= npc.height;
     }
 
-    public override void SendAcidAI(NPC npc, BitWriter bitWriter, BinaryWriter binaryWriter)
+    public override void SendAcidAI(BitWriter bitWriter, BinaryWriter binaryWriter)
     {
         bitWriter.WriteBit(BypassActionTimer);
         bitWriter.WriteBit(isGrounded);
         bitWriter.WriteBit(isFleeing);
     }
 
-    public override void ReceiveAcidAI(NPC npc, BitReader bitReader, BinaryReader binaryReader)
+    public override void ReceiveAcidAI(BitReader bitReader, BinaryReader binaryReader)
     {
         BypassActionTimer = bitReader.ReadBit();
         isGrounded = bitReader.ReadBit();

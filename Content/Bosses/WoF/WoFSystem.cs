@@ -12,7 +12,8 @@ namespace AcidicBosses.Content.Bosses.WoF;
 
 /// <summary>
 /// This is for managing hooks that are outside the control of a GlobalNPC
-/// I need to use this to untangle the spaghetti that is the WoF code
+/// I need to use this to untangle the spaghetti that is the WoF code.
+/// This doesn't work perfectly, but it works good enough
 /// </summary>
 public class WoFSystem : ModSystem
 {

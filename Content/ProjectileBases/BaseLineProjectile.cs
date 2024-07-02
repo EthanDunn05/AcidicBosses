@@ -23,7 +23,7 @@ public abstract class BaseLineProjectile : ModProjectile, IPrimDrawer
 
     private Vector2? startoffset;
 
-    public int AnchorTo => (int) Projectile.ai[1];
+    public int AnchorTo => (int) Projectile.ai[1] - 1;
 
     private LinePrimDrawer lineDrawer;
     
@@ -37,8 +37,8 @@ public abstract class BaseLineProjectile : ModProjectile, IPrimDrawer
     
     protected abstract Asset<Texture2D> LineTexture { get; }
     
-    protected virtual bool anchorPosition => true;
-    protected virtual bool anchorRotation => true;
+    protected virtual bool AnchorPosition => true;
+    protected virtual bool AnchorRotation => true;
     
     public override void SetDefaults()
     {
@@ -50,17 +50,17 @@ public abstract class BaseLineProjectile : ModProjectile, IPrimDrawer
     
     public override void AI()
     {
-        if(AnchorTo > 0)
+        if(AnchorTo >= 0)
         {
             var owner = Main.npc[AnchorTo];
             if (owner != null)
             {
                 startoffset ??= owner.Center - Projectile.position;
                 
-                if (anchorRotation) Projectile.rotation = owner.rotation + Offset;
+                if (AnchorRotation) Projectile.rotation = owner.rotation + Offset;
                 else Projectile.rotation = Offset;
                 
-                if (anchorPosition)
+                if (AnchorPosition)
                     Projectile.position = (Vector2) (owner.Center + startoffset);
             }
         }

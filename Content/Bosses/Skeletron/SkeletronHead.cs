@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
-using System.Linq;
 using AcidicBosses.Common.Effects;
+using AcidicBosses.Core.StateManagement;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
@@ -18,81 +18,10 @@ public class SkeletronHead : AcidicNPCOverride
 {
     // Set this to the boss to override
     protected override int OverriddenNpc => NPCID.SkeletronHead;
+    
 
-    #region Phases
-
-    public enum PhaseState
-    {
-        Intro,
-        One,
-        Transition,
-        Two
-    }
-
-    private PhaseState CurrentPhase
-    {
-        get => (PhaseState) Npc.ai[1];
-        set => Npc.ai[1] = (float) value;
-    }
-
-    private Action CurrentAi => CurrentPhase switch
-    {
-        PhaseState.Intro => Phase_Intro,
-        PhaseState.One => Phase_One,
-        PhaseState.Transition => Phase_Transition,
-        PhaseState.Two => Phase_Two,
-        _ => throw new UsageException(
-            $"The PhaseState {CurrentPhase} and does not have an ai")
-    };
-
-    #endregion
-
-    #region Attacks
-
-    private enum Attack
-    {
-        SlapPlayer,
-        AlternatingSlaps,
-        Spin,
-        RisingSkulls,
-        MuramasaBarrage,
-        ShadowflameBurst,
-    }
-
-    private Attack[] phaseOneAp =
-    {
-        Attack.SlapPlayer,
-        Attack.SlapPlayer,
-        Attack.Spin,
-        Attack.AlternatingSlaps,
-        Attack.RisingSkulls,
-    };
-
-    private Attack[] phaseTwoAp =
-    {
-        Attack.Spin,
-        Attack.MuramasaBarrage,
-        Attack.AlternatingSlaps,
-        Attack.ShadowflameBurst,
-        Attack.RisingSkulls,
-    };
-
-    private Attack[] CurrentAttackPattern => CurrentPhase switch
-    {
-        PhaseState.One => phaseOneAp,
-        PhaseState.Two => phaseTwoAp,
-        _ => throw new UsageException(
-            $"BoC is in the PhaseState {CurrentPhase} and does not have an attack pattern")
-    };
-
-    private int CurrentAttackIndex
-    {
-        get => (int) Npc.ai[2];
-        set => Npc.ai[2] = value;
-    }
-
-    private Attack CurrentAttack => CurrentAttackPattern[CurrentAttackIndex];
-
+    #region AI
+    
     public enum HandState
     {
         HoverSide,
@@ -109,37 +38,25 @@ public class SkeletronHead : AcidicNPCOverride
         set => Npc.ai[3] = (float) value;
     }
 
-    private void NextAttack()
-    {
-        CurrentAttackIndex = (CurrentAttackIndex + 1) % CurrentAttackPattern.Length;
-    }
-
-    #endregion
-
-    #region AI
-
-    private bool countUpTimer = false;
+    private PhaseTracker phaseTracker;
 
     private bool isFleeing = false;
 
-    private int AiTimer
-    {
-        get => (int) Npc.ai[0];
-        set => Npc.ai[0] = value;
-    }
-
     public override void OnFirstFrame(NPC npc)
     {
-        CurrentPhase = PhaseState.Intro;
-        AiTimer = 0;
+        phaseTracker = new PhaseTracker([
+            PhaseIntro,
+            PhaseOne,
+            PhaseTransition,
+            PhaseTwo
+        ]);
+        
+        AttackManager.Reset();
         Npc.damage = 0;
     }
 
     public override bool AcidAI(NPC npc)
     {
-        if (AiTimer > 0 && !countUpTimer)
-            AiTimer--;
-
         // Flee when no players are alive
         var target = Main.player[npc.target];
         if (IsTargetGone(npc) && !isFleeing)
@@ -148,9 +65,9 @@ public class SkeletronHead : AcidicNPCOverride
             target = Main.player[npc.target];
             if (IsTargetGone(npc))
             {
-                countUpTimer = true;
+                AttackManager.CountUp = true;
                 isFleeing = true;
-                AiTimer = 0;
+                AttackManager.AiTimer = 0;
             }
         }
 
@@ -160,10 +77,7 @@ public class SkeletronHead : AcidicNPCOverride
             DungeonGuardianAI();
             return false;
         }
-        else CurrentAi.Invoke();
-
-        if (countUpTimer)
-            AiTimer++;
+        else phaseTracker.RunPhaseAI();
 
         return false;
     }
@@ -186,16 +100,20 @@ public class SkeletronHead : AcidicNPCOverride
         var vel = Npc.DirectionTo(goal) * 25;
         Npc.SimpleFlyMovement(vel, 0.25f);
     }
+    
+    #endregion
 
     #region Phase AIs
 
+    private PhaseState PhaseIntro => new(Phase_Intro);
+
     private void Phase_Intro()
     {
-        countUpTimer = true;
+        AttackManager.CountUp = true;
         Npc.dontTakeDamage = true;
         Npc.damage = 0;
 
-        switch (AiTimer)
+        switch (AttackManager.AiTimer)
         {
             case < 120:
             {
@@ -220,11 +138,11 @@ public class SkeletronHead : AcidicNPCOverride
 
                 break;
             case 150:
-                countUpTimer = false;
                 Npc.dontTakeDamage = false;
                 Npc.damage = Npc.defDamage;
-                AiTimer = 0;
-                CurrentPhase = PhaseState.One;
+                
+                AttackManager.Reset();
+                phaseTracker.NextPhase();
                 
                 var punch = new PunchCameraModifier(Npc.Center, (Main.rand.NextFloat() * ((float)Math.PI * 2f)).ToRotationVector2(), 20f, 6f, 20, 1000f, FullName);
                 Main.instance.CameraModifiers.Add(punch);
@@ -233,51 +151,49 @@ public class SkeletronHead : AcidicNPCOverride
         }
     }
 
+    private PhaseState PhaseOne => new(Phase_One, EnterPhaseOne);
+
+    private void EnterPhaseOne()
+    {
+        var slap = new AttackState(() => Attack_SlapPlayer(false), 90);
+        var alternatingSlaps = new AttackState(() => Attack_AlternatingSlaps(false), 90);
+        var spin = new AttackState(() => Attack_Spin(7.5f, false), 120);
+        var risingSkulls = new AttackState(() => Attack_RisingSkulls(20f, 150f, false), 60);
+        
+        AttackManager.SetAttackPattern([
+            slap,
+            slap,
+            spin,
+            alternatingSlaps,
+            risingSkulls,
+        ]);
+    }
+
     private void Phase_One()
     {
-        if (Npc.GetLifePercent() <= 0.6f && AiTimer == 0)
+        if (Npc.GetLifePercent() <= 0.6f && AttackManager.AiTimer == 0)
         {
-            CurrentPhase = PhaseState.Transition;
-            AiTimer = 0;
-            CurrentAttackIndex = 0;
+            phaseTracker.NextPhase();
+            AttackManager.Reset();
             return;
         }
         
-        if (AiTimer > 0 && !countUpTimer)
+        if (AttackManager.AiTimer > 0 && !AttackManager.CountUp)
         {
             Attack_LockAbove();
             return;
         }
 
-        var isDone = false;
-        switch (CurrentAttack)
-        {
-            case Attack.SlapPlayer:
-                Attack_SlapPlayer(out isDone);
-                if (isDone) AiTimer = 90;
-                break;
-            case Attack.AlternatingSlaps:
-                Attack_AlternatingSlaps(out isDone);
-                if (isDone) AiTimer = 90;
-                break;
-            case Attack.Spin:
-                Attack_Spin(out isDone, 7.5f);
-                if (isDone) AiTimer = 120;
-                break;
-            case Attack.RisingSkulls:
-                Attack_RisingSkulls(out isDone, 20f, 150f);
-                if (isDone) AiTimer = 60;
-                break;
-        }
-
-        if (isDone) NextAttack();
+        AttackManager.RunAttackPattern();
     }
 
+    private PhaseState PhaseTransition => new(Phase_Transition);
+    
     private void Phase_Transition()
     {
-        countUpTimer = true;
+        AttackManager.CountUp = true;
         
-        if (AiTimer == 0)
+        if (AttackManager.AiTimer == 0)
         {
             var punch = new PunchCameraModifier(Npc.Center, Main.rand.NextVector2Unit(), 10f, 12f, 20, 1000f, FullName);
             Main.instance.CameraModifiers.Add(punch);
@@ -289,29 +205,28 @@ public class SkeletronHead : AcidicNPCOverride
             CurrentHandState = HandState.LockHead;
         }
 
-        if (AiTimer < 30)
+        if (AttackManager.AiTimer < 30)
         {
-            var shockT = AiTimer / 30f;
+            var shockT = AttackManager.AiTimer / 30f;
             EffectsManager.ShockwaveProgress(shockT);
         }
         
-        if (AiTimer == 30)
+        if (AttackManager.AiTimer == 30)
         {
             EffectsManager.ShockwaveKill();
         }
 
         // Spin
-        if (AiTimer <= 300)
+        if (AttackManager.AiTimer <= 300)
         {
             const float dAngle = MathHelper.TwoPi / 30f;
             Npc.rotation = MathHelper.WrapAngle(Npc.rotation + dAngle);
         }
 
-        if (AiTimer >= 300)
+        if (AttackManager.AiTimer >= 300)
         {
-            countUpTimer = false;
-            AiTimer = 0;
-            CurrentPhase = PhaseState.Two;
+            AttackManager.Reset();
+            phaseTracker.NextPhase();
             CurrentHandState = HandState.LockSide;
             ResetExtraAI();
             Npc.rotation = 0f;
@@ -319,56 +234,46 @@ public class SkeletronHead : AcidicNPCOverride
 
         if (Main.netMode == NetmodeID.MultiplayerClient) return;
         
-        if (AiTimer % 20 == 0)
+        if (AttackManager.AiTimer % 20 == 0)
         {
             Attack_Muramasa(20, 400);
         }
         
-        if (AiTimer % 60 == 0)
+        if (AttackManager.AiTimer % 60 == 0)
         {
             Attack_ShadowflameBurst(8);
         }
     }
 
+    private PhaseState PhaseTwo => new(Phase_Two, EnterPhaseTwo);
+
+    private void EnterPhaseTwo()
+    {
+        var slap = new AttackState(() => Attack_SlapPlayer(true), 90);
+        var alternatingSlaps = new AttackState(() => Attack_AlternatingSlaps(true), 60);
+        var spin = new AttackState(() => Attack_Spin(10f, true), 60);
+        var risingSkulls = new AttackState(() => Attack_RisingSkulls( 20f, 125f, true), 90);
+        var muramasaBarrage = new AttackState(Attack_MuramasaBarrage, 60);
+        var shadowflameBurst = new AttackState(() => Attack_ShadowflameBurst(10), 30);
+        
+        AttackManager.SetAttackPattern([
+            spin,
+            muramasaBarrage,
+            alternatingSlaps,
+            shadowflameBurst,
+            risingSkulls
+        ]);
+    }
+
     private void Phase_Two()
     {
-        if (AiTimer > 0 && !countUpTimer)
+        if (AttackManager.AiTimer > 0 && !AttackManager.CountUp)
         {
             Attack_LockAbove();
             return;
         }
 
-        var isDone = false;
-        switch (CurrentAttack)
-        {
-            case Attack.SlapPlayer:
-                Attack_SlapPlayer(out isDone);
-                if (isDone) AiTimer = 90;
-                break;
-            case Attack.AlternatingSlaps:
-                Attack_AlternatingSlaps(out isDone);
-                if (isDone) AiTimer = 60;
-                break;
-            case Attack.Spin:
-                Attack_Spin(out isDone, 10f);
-                if (isDone) AiTimer = 60;
-                break;
-            case Attack.RisingSkulls:
-                Attack_RisingSkulls(out isDone, 20f, 125f);
-                if (isDone) AiTimer = 90;
-                break;
-            case Attack.MuramasaBarrage:
-                Attack_MuramasaBarrage(out isDone);
-                if (isDone) AiTimer = 60;
-                break;
-            case Attack.ShadowflameBurst:
-                Attack_ShadowflameBurst(10);
-                AiTimer = 30;
-                isDone = true;
-                break;
-        }
-
-        if (isDone) NextAttack();
+        AttackManager.RunAttackPattern();
     }
 
     #endregion
@@ -407,60 +312,64 @@ public class SkeletronHead : AcidicNPCOverride
         else Npc.rotation = MathHelper.Lerp(0, MathHelper.PiOver4, lerp);
     }
 
-    private void Attack_SlapPlayer(out bool isDone)
+    private bool Attack_SlapPlayer(bool spawnHomingSkulls)
     {
-        countUpTimer = true;
+        AttackManager.CountUp = true;
         CurrentHandState = HandState.Slap;
-        isDone = AiTimer >= SkeletronHand.SlapLength;
+        var isDone = AttackManager.AiTimer >= SkeletronHand.SlapLength;
 
         Attack_LockAbove();
 
         if (isDone)
         {
             CurrentHandState = HandState.HoverSide;
-            if(CurrentPhase == PhaseState.Two) Attack_HomingSkulls();
-            countUpTimer = false;
+            if(spawnHomingSkulls) Attack_HomingSkulls();
+            AttackManager.CountUp = false;
         }
+
+        return isDone;
     }
 
-    private void Attack_AlternatingSlaps(out bool isDone)
+    private bool Attack_AlternatingSlaps(bool spawnShadowflameBurst)
     {
-        countUpTimer = true;
+        AttackManager.CountUp = true;
         CurrentHandState = HandState.AlternatingSlaps;
-        isDone = AiTimer >= 300;
+        var isDone = AttackManager.AiTimer >= 300;
 
         Attack_HoverAbove();
 
-        if (CurrentPhase == PhaseState.Two)
+        if (spawnShadowflameBurst)
         {
-            if (AiTimer == 150) Attack_ShadowflameBurst(6);
+            if (AttackManager.AiTimer == 150) Attack_ShadowflameBurst(6);
         }
 
         if (isDone)
         {
             CurrentHandState = HandState.HoverSide;
-            countUpTimer = false;
+            AttackManager.CountUp = false;
         }
+
+        return isDone;
     }
 
-    private void Attack_Spin(out bool isDone, float speed)
+    private bool Attack_Spin(float speed, bool spawnHomingSkulls)
     {
         const int length = 60 * 5;
         const float dAngle = MathHelper.TwoPi / 30f;
 
-        countUpTimer = true;
+        AttackManager.CountUp = true;
         CurrentHandState = HandState.NoInteractLockHead;
         
-        if (AiTimer >= length)
+        if (AttackManager.AiTimer >= length)
         {
-            isDone = Attack_SpinRecovery(length, 10);
+            var isDone = Attack_SpinRecovery(length, 10);
             Npc.rotation = 0;
             CurrentHandState = HandState.HoverSide;
             Npc.defense = Npc.defDefense;
-            return;
+            return isDone;
         }
 
-        if (AiTimer == 0)
+        if (AttackManager.AiTimer == 0)
         {
             TargetRandom();
             
@@ -470,14 +379,14 @@ public class SkeletronHead : AcidicNPCOverride
             Npc.damage *= 2;
         }
         
-        if(CurrentPhase == PhaseState.Two && AiTimer % 60 == 0) Attack_HomingSkulls();
+        if(spawnHomingSkulls && AttackManager.AiTimer % 60 == 0) Attack_HomingSkulls();
 
         Npc.rotation = MathHelper.WrapAngle(Npc.rotation + dAngle);
         var goal = Main.player[Npc.target].Center;
         var vel = Npc.DirectionTo(goal) * speed;
         Npc.SimpleFlyMovement(vel, 0.1f);
-
-        isDone = false;
+        
+        return false;
     }
 
     // Allow a bit of buffer time where skeletron does no damage in case the player is above it
@@ -485,18 +394,18 @@ public class SkeletronHead : AcidicNPCOverride
     {
         Attack_LockAbove();
         
-        if (AiTimer < length + recoverTime)
+        if (AttackManager.AiTimer < length + recoverTime)
         {
             Npc.damage = 0;
             return false;
         }
 
         Npc.damage = Npc.defDamage;
-        countUpTimer = false;
+        AttackManager.CountUp = false;
         return true;
     }
 
-    private void Attack_RisingSkulls(out bool isDone, float speed, float spacing)
+    private bool Attack_RisingSkulls(float speed, float spacing, bool shouldSlap)
     {
         const int length = 120;
         const int indicatorLength = 30;
@@ -507,34 +416,34 @@ public class SkeletronHead : AcidicNPCOverride
         ref var centerX = ref Npc.localAI[0];
         ref var centerY = ref Npc.localAI[1];
 
-        countUpTimer = true;
+        AttackManager.CountUp = true;
 
         Attack_LockAbove();
 
-        isDone = false;
-        if (AiTimer >= length)
+        var isDone = false;
+        if (AttackManager.AiTimer >= length)
         {
             isDone = true;
             CurrentHandState = HandState.HoverSide;
             
-            countUpTimer = false;
+            AttackManager.CountUp = false;
         }
 
-        if (AiTimer == 0)
+        if (AttackManager.AiTimer == 0)
         {
             SoundEngine.PlaySound(SoundID.ForceRoarPitched, Npc.Center);
             CurrentHandState = HandState.LockHead;
         }
 
-        if (AiTimer == indicatorLength && CurrentPhase == PhaseState.Two)
+        if (AttackManager.AiTimer == indicatorLength && shouldSlap)
         {
             CurrentHandState = HandState.Slap;
         }
 
-        if (Main.netMode == NetmodeID.MultiplayerClient) return;
+        if (Main.netMode == NetmodeID.MultiplayerClient) return isDone;
 
         // Start Indicating
-        if (AiTimer == 0)
+        if (AttackManager.AiTimer == 0)
         {
             var center = Main.player[Npc.target].Center;
             centerX = center.X;
@@ -564,7 +473,7 @@ public class SkeletronHead : AcidicNPCOverride
         }
 
         // Spawn Skulls
-        if (AiTimer == indicatorLength)
+        if (AttackManager.AiTimer == indicatorLength)
         {
             var center = new Vector2(centerX, centerY);
             center.Y += distanceBelowPlayer;
@@ -587,9 +496,11 @@ public class SkeletronHead : AcidicNPCOverride
                 var skull = NewCursedSkull(pos, Vector2.UnitY * -speed);
             }
         }
+
+        return isDone;
     }
 
-    private void Attack_Muramasa(float speed, float spawnDist)
+    private bool Attack_Muramasa(float speed, float spawnDist)
     {
         var player = RandomTargetablePlayer();
 
@@ -601,12 +512,14 @@ public class SkeletronHead : AcidicNPCOverride
 
         NewMuramasaLine(pos, rotation.ToRotation());
         NewMuramasa(pos, rotation * speed);
+
+        return true;
     }
     
-    private void Attack_MuramasaBarrage(out bool isDone)
+    private bool Attack_MuramasaBarrage()
     {
-        isDone = false;
-        countUpTimer = true;
+        var isDone = false;
+        AttackManager.CountUp = true;
 
         const int shots = 10;
         const int delay = 20;
@@ -615,35 +528,35 @@ public class SkeletronHead : AcidicNPCOverride
 
         ref var shotsDone = ref ExtraAI[0];
 
-        if (AiTimer == 0)
+        if (AttackManager.AiTimer == 0)
         {
             ExtraAI[0] = 0;
         }
 
-        if (AiTimer > delay * shots + 30)
+        if (AttackManager.AiTimer > delay * shots + 30)
         {
             isDone = true;
-            countUpTimer = false;
+            AttackManager.CountUp = false;
             ResetExtraAI();
         }
         
         Attack_LockAbove();
-
         
-
-        if (AiTimer % delay == 0 && shotsDone < shots)
+        if (AttackManager.AiTimer % delay == 0 && shotsDone < shots)
         {
             shotsDone++;
 
-            if (Main.netMode == NetmodeID.MultiplayerClient) return;
+            if (Main.netMode == NetmodeID.MultiplayerClient) return isDone;
             
             Attack_Muramasa(speed, distance);
         }
+
+        return isDone;
     }
 
-    private void Attack_HomingSkulls()
+    private bool Attack_HomingSkulls()
     {
-        if (Main.netMode == NetmodeID.MultiplayerClient) return;
+        if (Main.netMode == NetmodeID.MultiplayerClient) return true;
 
         const float speed = 2f;
         const float dAngle = MathHelper.TwoPi / 6f;
@@ -655,11 +568,13 @@ public class SkeletronHead : AcidicNPCOverride
             dir = MathHelper.WrapAngle(dir + dAngle * i);
             NewHomingSkull(Npc.Center,  dir.ToRotationVector2() * speed);
         }
+
+        return true;
     }
 
-    private void Attack_ShadowflameBurst(int bolts)
+    private bool Attack_ShadowflameBurst(int bolts)
     {
-        if (Main.netMode == NetmodeID.MultiplayerClient) return;
+        if (Main.netMode == NetmodeID.MultiplayerClient) return true;
         const float speed = 3f;
         
         var step = MathHelper.TwoPi / bolts;
@@ -670,6 +585,8 @@ public class SkeletronHead : AcidicNPCOverride
 
             NewShadowflame(Npc.Center, vel);
         }
+
+        return true;
     }
     
     #endregion
@@ -725,8 +642,6 @@ public class SkeletronHead : AcidicNPCOverride
 
     #endregion
 
-    #endregion
-
     #region Drawing
 
     public override bool AcidicDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color lightColor)
@@ -746,4 +661,14 @@ public class SkeletronHead : AcidicNPCOverride
     }
 
     #endregion
+
+    public override void SendAcidAI(BitWriter bitWriter, BinaryWriter binaryWriter)
+    {
+        phaseTracker.Serialize(binaryWriter);
+    }
+
+    public override void ReceiveAcidAI(BitReader bitReader, BinaryReader binaryReader)
+    {
+        phaseTracker.Deserialize(binaryReader);
+    }
 }

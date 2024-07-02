@@ -15,7 +15,7 @@ public class WoFLaser : BaseLineProjectile
     protected override Color Color => Color.Purple;
     protected override Asset<Texture2D> LineTexture => TextureRegistry.GlowLine;
 
-    protected override bool anchorRotation => false;
+    protected override bool AnchorRotation => false;
 
     private int laserDamage = 0;
     private Vector2 laserVel;

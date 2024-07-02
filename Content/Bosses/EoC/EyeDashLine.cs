@@ -4,6 +4,9 @@ using AcidicBosses.Helpers;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
+using ReLogic.Graphics;
+using Terraria;
+using Terraria.GameContent;
 
 namespace AcidicBosses.Content.Bosses.EoC;
 
@@ -28,8 +31,9 @@ public class EyeDashLine : BaseLineProjectile
 
     public override void AI()
     {
+        base.AI();
+        
         // Set the max time if it hasn't been set already
         maxTimeLeft ??= Projectile.timeLeft;
-        base.AI();
     }
 }

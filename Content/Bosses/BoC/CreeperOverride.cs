@@ -239,7 +239,7 @@ public class CreeperOverride : AcidicNPCOverride
     
     private Projectile NewDashLine(Vector2 position, float offset, bool anchor = true)
     {
-        var ai1 = anchor ? Npc.whoAmI : 0;
+        var ai1 = anchor ? Npc.whoAmI + 1 : 0;
         return Projectile.NewProjectileDirect(Npc.GetSource_FromAI(), position, Vector2.Zero,
             ModContent.ProjectileType<CreeperDashLine>(), 0, 0, ai0: offset, ai1: ai1);
     }

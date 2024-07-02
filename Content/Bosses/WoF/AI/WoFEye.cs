@@ -92,18 +92,6 @@ public class WoFEye : AcidicNPCOverride
         return false;
     }
 
-    
-
-    #region Phase AIs
-
-    #endregion
-
-    #region Attack Behaviors
-
-    // Put attack methods here
-
-    #endregion
-
     #endregion
     
     #region Drawing

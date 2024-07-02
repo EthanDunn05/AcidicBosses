@@ -1,11 +1,9 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
-using AcidicBosses.Common.Effects;
-using AcidicBosses.Content.Bosses.Skeletron;
 using AcidicBosses.Content.Bosses.WoF.Projectiles;
+using AcidicBosses.Core.StateManagement;
 using AcidicBosses.Helpers;
-using Humanizer;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
@@ -13,7 +11,6 @@ using Terraria.Audio;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.ModLoader.IO;
-using Terraria.UI;
 
 namespace AcidicBosses.Content.Bosses.WoF.AI;
 
@@ -45,118 +42,22 @@ public class WoF : AcidicNPCOverride
         index = -1;
     }
 
-    #region Phases
-
-    public enum PhaseState
-    {
-        Intro,
-        One,
-        MoveTransition,
-        Two,
-        Three
-    }
-
-    private PhaseState CurrentPhase
-    {
-        get => (PhaseState) Npc.ai[1];
-        set => Npc.ai[1] = (float) value;
-    }
-
-    private Action CurrentAi => CurrentPhase switch
-    {
-        PhaseState.Intro => Phase_Intro,
-        PhaseState.One => Phase_One,
-        PhaseState.Two => Phase_Two,
-        PhaseState.MoveTransition => Phase_MoveTransition,
-        PhaseState.Three => Phase_Three,
-        _ => throw new UsageException(
-            $"The PhaseState {CurrentPhase} and does not have an ai")
-    };
-
-    #endregion
-
-    #region Attacks
-
-    public enum Attack
-    {
-        Deathray,
-        DoubleFireballBurst,
-        FireballStaggeredBursts,
-        Squeeze,
-        SpawnBiomeMobs,
-        LaserSpam,
-        LaserShotgun,
-        LaserWall,
-    }
-    
-    private Attack[] phase1Ap =
-    {
-        Attack.LaserShotgun,
-        Attack.FireballStaggeredBursts,
-        Attack.Deathray,
-        Attack.LaserShotgun,
-        Attack.LaserWall,
-    };
-
-    private Attack[] phase2Ap =
-    {
-        Attack.DoubleFireballBurst,
-        Attack.Squeeze,
-        Attack.LaserSpam,
-        Attack.LaserShotgun,
-        Attack.SpawnBiomeMobs
-    };
-    
-    private Attack[] phase3Ap =
-    {
-        Attack.Deathray,
-        Attack.LaserShotgun,
-        Attack.SpawnBiomeMobs,
-        Attack.DoubleFireballBurst,
-        Attack.LaserSpam,
-        Attack.FireballStaggeredBursts
-    };
-
-    private Attack[] CurrentAttackPattern => CurrentPhase switch
-    {
-        PhaseState.One => phase1Ap,
-        PhaseState.Two => phase2Ap,
-        PhaseState.Three => phase3Ap,
-        _ => throw new UsageException(
-            $"Boss is in the PhaseState {CurrentPhase} and does not have an attack pattern")
-    };
-
-    private int CurrentAttackIndex
-    {
-        get => (int) Npc.ai[2];
-        set => Npc.ai[2] = value;
-    }
-
-    private Attack CurrentAttack => CurrentAttackPattern[CurrentAttackIndex];
-
-    private void NextAttack()
-    {
-        CurrentAttackIndex = (CurrentAttackIndex + 1) % CurrentAttackPattern.Length;
-    }
-
-    #endregion
-
     #region AI
 
-    private bool countUpTimer = false;
+    private PhaseTracker phaseTracker;
 
     private bool isFleeing = false;
 
-    private int AiTimer
-    {
-        get => (int) Npc.ai[0];
-        set => Npc.ai[0] = value;
-    }
-
     public override void OnFirstFrame(NPC npc)
     {
-        CurrentPhase = PhaseState.Intro;
-        AiTimer = 0;
+        phaseTracker = new PhaseTracker([
+            PhaseIntro,
+            PhaseOne,
+            PhaseMoveTransition,
+            PhaseTwo,
+            PhaseThree
+        ]);
+        AttackManager.Reset();
         WallDistance = 3000;
 
         Main.wofNPCIndex = Npc.whoAmI;
@@ -179,9 +80,6 @@ public class WoF : AcidicNPCOverride
 
     public override bool AcidAI(NPC npc)
     {
-        if (AiTimer > 0 && !countUpTimer)
-            AiTimer--;
-
         // Flee when no players are alive or it is day  
         var target = Main.player[npc.target];
         if (IsTargetGone(npc) && !isFleeing)
@@ -190,9 +88,9 @@ public class WoF : AcidicNPCOverride
             target = Main.player[npc.target];
             if (IsTargetGone(npc))
             {
-                countUpTimer = true;
+                AttackManager.CountUp = true;
                 isFleeing = true;
-                AiTimer = 0;
+                AttackManager.AiTimer = 0;
             }
         }
 
@@ -200,10 +98,7 @@ public class WoF : AcidicNPCOverride
         SetWoFArea();
 
         if (isFleeing) FleeAI();
-        else CurrentAi.Invoke();
-
-        if (countUpTimer)
-            AiTimer++;
+        else phaseTracker.RunPhaseAI();
 
         return false;
     }
@@ -214,7 +109,7 @@ public class WoF : AcidicNPCOverride
         if (!HasValidConditions()) Npc.active = false;
         Npc.TargetClosest();
 
-        Npc.velocity.X = Npc.spriteDirection * EasingHelper.QuadIn(AiTimer / 30f);
+        Npc.velocity.X = Npc.spriteDirection * EasingHelper.QuadIn(AttackManager.AiTimer / 30f);
     }
 
     // Check if WoF is in the right conditions to be alive
@@ -230,150 +125,155 @@ public class WoF : AcidicNPCOverride
 
     #region Phase AIs
 
+    private PhaseState PhaseIntro => new(Phase_Intro);
+    
     private void Phase_Intro()
     {
-        countUpTimer = true;
+        AttackManager.CountUp = true;
 
-        switch (AiTimer)
+        switch (AttackManager.AiTimer)
         {
             case < 120:
-                var t = AiTimer / 120f;
+                var t = AttackManager.AiTimer / 120f;
                 t = EasingHelper.QuadInOut(t);
                 WallDistance = MathHelper.Lerp(3000, 750, t);
                 break;
             case 120:
-                countUpTimer = false;
-                AiTimer = 0;
-                CurrentPhase = PhaseState.One;
+                AttackManager.Reset();
+                phaseTracker.NextPhase();
                 WallDistance = 750;
                 break;
         }
     }
+
+    private PhaseState PhaseOne => new(Phase_One, EnterPhaseOne);
+
+    private void EnterPhaseOne()
+    {
+        var laserShotgun = new AttackState(() => Attack_LaserShotgun(10, MathHelper.Pi / 2f), 10);
+        var laserSpam = new AttackState(() => Attack_LaserSpam(5, 15), 30);
+        var laserWall = new AttackState(() => Attack_LaserWall(), 30);
+        var staggeredBursts = new AttackState(() => Attack_FireballStaggeredBursts(2, 6, 5f, 30), 15);
+        var deathray = new AttackState(() => Attack_Deathray(60), 15);
+        
+        AttackManager.SetAttackPattern([
+            laserShotgun,
+            staggeredBursts,
+            deathray,
+            laserShotgun,
+            laserWall,
+        ]);
+    }
     
     private void Phase_One()
     {
-
-        var goalDistance = MathHelper.Lerp(750, 800, AiTimer / 60f);
+        var goalDistance = MathHelper.Lerp(750, 800, AttackManager.AiTimer / 60f);
         WallDistance = MathHelper.Lerp(WallDistance, goalDistance, 0.05f);
         
-        if (AiTimer > 0 && !countUpTimer)
+        if (AttackManager.AiTimer > 0 && !AttackManager.CountUp)
         {
             if (Npc.GetLifePercent() < 0.6f)
             {
-                CurrentPhase = PhaseState.MoveTransition;
-                CurrentAttackIndex = 0;
+                AttackManager.Reset();
+                phaseTracker.NextPhase();
                 return;
             }
             return;
         }
 
-        var isDone = false;
-        switch (CurrentAttack)
-        {
-            case Attack.LaserShotgun:
-                Attack_LaserShotgun(out isDone, 10, MathHelper.Pi / 2f);
-                if (isDone) AiTimer = 10;
-                break;
-            case Attack.LaserSpam:
-                Attack_LaserSpam(out isDone, 5, 15);
-                if (isDone) AiTimer = 30;
-                break;
-            case Attack.LaserWall:
-                Attack_LaserWall(out isDone);
-                if (isDone) AiTimer = 30;
-                break;
-            case Attack.FireballStaggeredBursts:
-                Attack_FireballStaggeredBursts(out isDone, 2, 6, 5f, 30);
-                if (isDone) AiTimer = 15;
-                break;
-            case Attack.Deathray:
-                Attack_Deathray(out isDone, 60);
-                if (isDone) AiTimer = 15;
-                break;
-        }
-
-        if (isDone) NextAttack();
+        AttackManager.RunAttackPattern();
     }
+
+    private PhaseState PhaseMoveTransition => new(Phase_MoveTransition);
     
     private void Phase_MoveTransition()
     {
-        countUpTimer = true;
+        AttackManager.CountUp = true;
 
-        if (AiTimer == 0)
+        if (AttackManager.AiTimer == 0)
         {
             SoundEngine.PlaySound(SoundID.Roar, Npc.Center);
         }
 
-        switch (AiTimer)
+        switch (AttackManager.AiTimer)
         {
             case < 120:
-                var shrinkT = AiTimer / 120f;
+                var shrinkT = AttackManager.AiTimer / 120f;
                 shrinkT = EasingHelper.QuadInOut(shrinkT);
                 WallDistance = MathHelper.Lerp(750, 1000, shrinkT);
                 break;
             case < 240:
                 WallDistance = 1000;
-                var speedT = (AiTimer - 120f) / 120f;
+                var speedT = (AttackManager.AiTimer - 120f) / 120f;
                 speedT = EasingHelper.QuadInOut(speedT);
                 Npc.velocity.X = MathHelper.Lerp(0f, Npc.spriteDirection * 2f, speedT);
                 break;
             case 240:
                 Npc.velocity.X = Npc.spriteDirection * 2f;
-                countUpTimer = false;
-                AiTimer = 0;
-                CurrentPhase = PhaseState.Two;
+                AttackManager.Reset();
+                phaseTracker.NextPhase();
                 break;
         }
     }
 
+    private PhaseState PhaseTwo => new(Phase_Two, EnterPhaseTwo);
+
+    private void EnterPhaseTwo()
+    {
+        var deathray = new AttackState(() => Attack_Deathray(60), 60);
+        var squeeze = new AttackState(() => Attack_Squeeze(250), 90);
+        var doubleFireball = new AttackState(() => Attack_DoubleFireballBurst(10, 5f), 30);
+        var summon = new AttackState(() => Attack_SpawnBiomeMobs(2, 10), 60);
+        var laserSpam = new AttackState(() => Attack_LaserSpam(10, 10), 30);
+        var laserShotgun = new AttackState(() => Attack_LaserShotgun(14, MathHelper.Pi / 2f), 15);
+        
+        AttackManager.SetAttackPattern([
+            doubleFireball,
+            squeeze,
+            laserSpam,
+            laserShotgun,
+            summon
+        ]);
+    }
+    
     private void Phase_Two()
     {
         Npc.velocity.X = Npc.spriteDirection * 2f;
         
-        if (AiTimer > 0 && !countUpTimer)
+        if (AttackManager.AiTimer > 0 && !AttackManager.CountUp)
         {
             if (Npc.GetLifePercent() < 0.4f)
             {
-                CurrentPhase = PhaseState.Three;
-                CurrentAttackIndex = 0;
+                AttackManager.Reset();
+                phaseTracker.NextPhase();
                 return;
             }
             return;
         }
         
+        AttackManager.RunAttackPattern();
+    }
+
+    private PhaseState PhaseThree => new(Phase_Three, EnterPhaseThree);
+
+    private void EnterPhaseThree()
+    {
+        var deathray = new AttackState(() => Attack_Deathray(60), 15);
+        var doubleFireball = new AttackState(() => Attack_DoubleFireballBurst(10, 5f), 30);
+        var staggeredBursts = new AttackState(() => Attack_FireballStaggeredBursts(4, 8, 5f, 60), 45);
+        var summon = new AttackState(() => Attack_SpawnBiomeMobs(3, 7), 45);
+        var laserSpam =  new AttackState(() => Attack_LaserSpam(15, 10), 30);
+        var laserShotgun = new AttackState(() => Attack_LaserShotgun(16, MathHelper.Pi / 2f), 30);
+        var laserWall = new AttackState(Attack_LaserWall, 30);
         
-
-        var isDone = false;
-        switch (CurrentAttack)
-        {
-            case Attack.Deathray:
-                Attack_Deathray(out isDone, 60);
-                if (isDone) AiTimer = 60;
-                break;
-            case Attack.Squeeze:
-                Attack_Squeeze(out isDone, 250);
-                if (isDone) AiTimer = 90;
-                break;
-            case Attack.DoubleFireballBurst:
-                Attack_DoubleFireballBurst(10, 5f);
-                AiTimer = 30;
-                isDone = true;
-                break;
-            case Attack.SpawnBiomeMobs:
-                Attack_SpawnBiomeMobs(out isDone, 2, 10);
-                if (isDone) AiTimer = 60;
-                break;
-            case Attack.LaserSpam:
-                Attack_LaserSpam(out isDone, 10, 10);
-                if (isDone) AiTimer = 30;
-                break;
-            case Attack.LaserShotgun:
-                Attack_LaserShotgun(out isDone, 14, MathHelper.Pi / 2f);
-                if (isDone) AiTimer = 15;
-                break;
-        }
-
-        if (isDone) NextAttack();
+        AttackManager.SetAttackPattern([
+            deathray,
+            laserShotgun,
+            summon,
+            doubleFireball,
+            laserSpam,
+            staggeredBursts
+        ]);
     }
     
     private void Phase_Three()
@@ -383,46 +283,12 @@ public class WoF : AcidicNPCOverride
         speedT = EasingHelper.QuadIn(speedT);
         Npc.velocity.X = MathHelper.Lerp(Npc.spriteDirection * 2, Npc.spriteDirection * 4, speedT);
         
-        if (AiTimer > 0 && !countUpTimer)
+        if (AttackManager.AiTimer > 0 && !AttackManager.CountUp)
         {
             return;
         }
 
-        var isDone = false;
-        switch (CurrentAttack)
-        {
-            case Attack.Deathray:
-                Attack_Deathray(out isDone, 60);
-                if (isDone) AiTimer = 15;
-                break;
-            case Attack.DoubleFireballBurst:
-                Attack_DoubleFireballBurst(10, 5f);
-                AiTimer = 30;
-                isDone = true;
-                break;
-            case Attack.FireballStaggeredBursts:
-                Attack_FireballStaggeredBursts(out isDone, 4, 8, 5f, 60);
-                if (isDone) AiTimer = 45;
-                break;
-            case Attack.SpawnBiomeMobs:
-                Attack_SpawnBiomeMobs(out isDone, 3, 7);
-                if (isDone) AiTimer = 45;
-                break;
-            case Attack.LaserSpam:
-                Attack_LaserSpam(out isDone, 15, 10);
-                if (isDone) AiTimer = 30;
-                break;
-            case Attack.LaserShotgun:
-                Attack_LaserShotgun(out isDone, 16, MathHelper.Pi / 2f);
-                if (isDone) AiTimer = 30;
-                break;
-            case Attack.LaserWall:
-                Attack_LaserWall(out isDone);
-                if (isDone) AiTimer = 30;
-                break;
-        }
-
-        if (isDone) NextAttack();
+        AttackManager.RunAttackPattern();
     }
 
     #endregion
@@ -449,10 +315,10 @@ public class WoF : AcidicNPCOverride
     private Counter<WoFPartPosition> laserSpamOrder = new(CwEyeOrder);
     private Counter<WoFPartPosition> laserShotgunOrder = new(CcwEyeOrder);
 
-    private void Attack_Deathray(out bool done, int telegraphTime)
+    private bool Attack_Deathray(int telegraphTime)
     {
-        countUpTimer = true;
-        done = false;
+        AttackManager.CountUp = true;
+        var done = false;
 
         var partPos = deathrayOrder.Get();
         var raySpawnPos = PartPosToWorldPos(partPos);
@@ -460,7 +326,7 @@ public class WoF : AcidicNPCOverride
         if (Main.netMode != NetmodeID.MultiplayerClient)
         {
             ref var targetRot = ref Npc.localAI[0];
-            if (AiTimer == 0)
+            if (AttackManager.AiTimer == 0)
             {
                 targetRot = raySpawnPos.DirectionTo(Main.player[Npc.target].Center).ToRotation();
                 if (TryFindPartAtPos(out var part, partPos))
@@ -473,7 +339,7 @@ public class WoF : AcidicNPCOverride
                 }
             }
 
-            if (AiTimer == telegraphTime)
+            if (AttackManager.AiTimer == telegraphTime)
             {
                 if (TryFindPartAtPos(out var part, partPos))
                 {
@@ -491,18 +357,20 @@ public class WoF : AcidicNPCOverride
         {
             deathrayOrder.Next();
             Npc.localAI[0] = 0;
-            countUpTimer = false;
+            AttackManager.CountUp = false;
         }
+
+        return done;
     }
 
-    private void Attack_Squeeze(out bool done, float distance)
+    private bool Attack_Squeeze(float distance)
     {
-        countUpTimer = true;
-        done = false;
+        AttackManager.CountUp = true;
+        var done = false;
 
         ref var initialDist = ref Npc.localAI[0];
 
-        if (AiTimer == 0)
+        if (AttackManager.AiTimer == 0)
         {
             initialDist = WallDistance;
             SoundEngine.PlaySound(SoundID.Roar);
@@ -518,20 +386,20 @@ public class WoF : AcidicNPCOverride
             }
         }
         
-        switch (AiTimer)
+        switch (AttackManager.AiTimer)
         {
             case < 30:
                 break;
             case < 30 + 120:
             {
-                var t = (AiTimer - 30) / 120f;
+                var t = (AttackManager.AiTimer - 30) / 120f;
                 t = EasingHelper.QuadInOut(t);
                 WallDistance = MathHelper.Lerp(initialDist, distance, t);
                 break;
             }
             case < 30 + 120 + 60:
             {
-                var t = (AiTimer - 30 - 120) / 60f;
+                var t = (AttackManager.AiTimer - 30 - 120) / 60f;
                 t = EasingHelper.QuadInOut(t);
                 WallDistance = MathHelper.Lerp(distance, initialDist, t);
                 break;
@@ -545,13 +413,15 @@ public class WoF : AcidicNPCOverride
         {
             Npc.localAI[0] = 0;
             Npc.localAI[1] = 0;
-            countUpTimer = false;
+            AttackManager.CountUp = false;
         }
+
+        return done;
     }
 
-    private void Attack_FireballBurst(int projectiles, float spread, float angle, float speed, WoFPartPosition pos)
+    private bool Attack_FireballBurst(int projectiles, float spread, float angle, float speed, WoFPartPosition pos)
     {
-        if (Main.netMode == NetmodeID.MultiplayerClient) return;
+        if (Main.netMode == NetmodeID.MultiplayerClient) return true;
 
         var position = PartPosToWorldPos(pos);
         var targetPos = Main.player[Npc.target].Center;
@@ -566,39 +436,43 @@ public class WoF : AcidicNPCOverride
 
             NewFireball(position, vel);
         }
+
+        return true;
     }
 
-    private void Attack_DoubleFireballBurst(int projectiles, float speed)
+    private bool Attack_DoubleFireballBurst(int projectiles, float speed)
     {
-        if (Main.netMode == NetmodeID.MultiplayerClient) return;
+        if (Main.netMode == NetmodeID.MultiplayerClient) return true;
         
         Attack_FireballBurst(projectiles, MathHelper.PiOver2, 0f, speed, WoFPartPosition.Left | WoFPartPosition.Center);
         Attack_FireballBurst(projectiles, MathHelper.PiOver2, MathHelper.Pi, speed, WoFPartPosition.Right | WoFPartPosition.Center);
+
+        return true;
     }
     
-    private void Attack_FireballStaggeredBursts(out bool isDone, int waves, int ballsPerWave, float speed, int waveInterval)
+    private bool Attack_FireballStaggeredBursts(int waves, int ballsPerWave, float speed, int waveInterval)
     {
-        countUpTimer = true;
+        AttackManager.CountUp = true;
 
-        isDone = AiTimer > (waves - 1) * waveInterval;
+        var isDone = AttackManager.AiTimer > (waves - 1) * waveInterval;
 
         if (isDone)
         {
-            countUpTimer = false;
-            return;
+            AttackManager.CountUp = false;
+            return true;
         }
         
-        if (Main.netMode == NetmodeID.MultiplayerClient) return;
+        if (Main.netMode == NetmodeID.MultiplayerClient) return false;
 
-        if (AiTimer == 0) Npc.localAI[0] = (int) Main.rand.NextFromList(WoFPartPosition.Left, WoFPartPosition.Right);
+        if (AttackManager.AiTimer == 0) Npc.localAI[0] = (int) Main.rand.NextFromList(WoFPartPosition.Left, WoFPartPosition.Right);
 
-        if (AiTimer % waveInterval == 0)
+        if (AttackManager.AiTimer % waveInterval == 0)
         {
             var side = (WoFPartPosition) Npc.localAI[0];
             var direction = 0f;
             if (side == WoFPartPosition.Right) direction = MathHelper.Pi;
 
-            if (AiTimer % (waveInterval * 2) == 0)
+            if (AttackManager.AiTimer % (waveInterval * 2) == 0)
             {
                 Attack_FireballBurst(ballsPerWave, MathHelper.PiOver2, direction, speed, side | WoFPartPosition.Center);
             } 
@@ -607,17 +481,19 @@ public class WoF : AcidicNPCOverride
                 Attack_FireballBurst(ballsPerWave + 1, MathHelper.PiOver2, direction, speed, side | WoFPartPosition.Center);
             }
         }
+
+        return false;
     }
 
-    private void Attack_LaserSpam(out bool isDone, int shots, int delay)
+    private bool Attack_LaserSpam(int shots, int delay)
     {
-        countUpTimer = true;
+        AttackManager.CountUp = true;
         const int indicateTime = 30;
-        isDone = AiTimer > shots * delay + indicateTime;
+        var isDone = AttackManager.AiTimer > shots * delay + indicateTime;
 
         var pos = laserSpamOrder.Get();
 
-        if (AiTimer == 0)
+        if (AttackManager.AiTimer == 0)
         {
             // Set the face target bit to true
             TryFindPartAtPos(out var eye, pos);
@@ -628,7 +504,7 @@ public class WoF : AcidicNPCOverride
         
         if (isDone)
         {
-            countUpTimer = false;
+            AttackManager.CountUp = false;
             laserSpamOrder.Next();
             
             // Set the face target bit to false
@@ -638,9 +514,9 @@ public class WoF : AcidicNPCOverride
             eye.ai[2] = (int) state;
         }
 
-        if (Main.netMode == NetmodeID.MultiplayerClient) return;
+        if (Main.netMode == NetmodeID.MultiplayerClient) return isDone;
 
-        if (AiTimer % delay == 0)
+        if (AttackManager.AiTimer % delay == 0)
         {
             var position = PartPosToWorldPos(pos);
             TryFindPartAtPos(out var anchor, pos);
@@ -653,24 +529,26 @@ public class WoF : AcidicNPCOverride
             var laser = NewLaser(position, vel * 25f, vel.ToRotation(), 0);
             laser.timeLeft = indicateTime;
         }
+
+        return isDone;
     }
     
-    private void Attack_LaserShotgun(out bool isDone, int lasers, float spread)
+    private bool Attack_LaserShotgun(int lasers, float spread)
     {
-        countUpTimer = true;
+        AttackManager.CountUp = true;
         const int indicateTime = 30;
-        isDone = AiTimer > indicateTime;
+        var isDone = AttackManager.AiTimer > indicateTime;
 
         var pos = laserShotgunOrder.Get();
 
         if (isDone)
         {
-            countUpTimer = false;
+            AttackManager.CountUp = false;
             laserShotgunOrder.Next();
         }
 
-        if (AiTimer != 0) return;
-        if (Main.netMode == NetmodeID.MultiplayerClient) return;
+        if (AttackManager.AiTimer != 0) return isDone;
+        if (Main.netMode == NetmodeID.MultiplayerClient) return isDone;
 
         for (int i = 0; i < lasers; i++)
         {
@@ -692,22 +570,24 @@ public class WoF : AcidicNPCOverride
             var laser = NewLaser(position, vel * 25f, vel.ToRotation(), anchor.whoAmI);
             laser.timeLeft = indicateTime;
         }
+
+        return isDone;
     }
 
-    private void Attack_LaserWall(out bool isDone)
+    private bool Attack_LaserWall()
     {
-        countUpTimer = true;
+        AttackManager.CountUp = true;
         const int indicateTime = 60;
         
-        isDone = AiTimer > indicateTime;
+        var isDone = AttackManager.AiTimer > indicateTime;
         
         if (isDone)
         {
-            countUpTimer = false;
+            AttackManager.CountUp = false;
         }
         
-        if (AiTimer != 0) return;
-        if (Main.netMode == NetmodeID.MultiplayerClient) return;
+        if (AttackManager.AiTimer != 0) return isDone;
+        if (Main.netMode == NetmodeID.MultiplayerClient) return isDone;
 
         var side = Main.rand.NextFromList(WoFPartPosition.Left, WoFPartPosition.Right);
         
@@ -738,24 +618,26 @@ public class WoF : AcidicNPCOverride
             var laser = NewLaser(new Vector2(x, y), angle.ToRotationVector2() * 25f, angle);
             laser.timeLeft = indicateTime;
         }
+
+        return isDone;
     }
 
-    private void Attack_SpawnBiomeMobs(out bool isDone, int count, int delay)
+    private bool Attack_SpawnBiomeMobs(int count, int delay)
     {
-        countUpTimer = true;
-        isDone = AiTimer > delay * count;
+        AttackManager.CountUp = true;
+        var isDone = AttackManager.AiTimer > delay * count;
 
-        if (AiTimer % delay == 0) SoundEngine.PlaySound(SoundID.NPCDeath13, Npc.Center);
+        if (AttackManager.AiTimer % delay == 0) SoundEngine.PlaySound(SoundID.NPCDeath13, Npc.Center);
 
         if (isDone)
         {
-            countUpTimer = false;
-            AiTimer = 0;
-            return;
+            AttackManager.CountUp = false;
+            AttackManager.AiTimer = 0;
+            return true;
         }
         
-        if (Main.netMode == NetmodeID.MultiplayerClient) return;
-        if (AiTimer % delay == 0)
+        if (Main.netMode == NetmodeID.MultiplayerClient) return false;
+        if (AttackManager.AiTimer % delay == 0)
         {
             if (Main.rand.NextBool())
             {
@@ -770,6 +652,8 @@ public class WoF : AcidicNPCOverride
                 NewHallowMob(pos);
             }
         }
+
+        return false;
     }
 
     
@@ -802,14 +686,14 @@ public class WoF : AcidicNPCOverride
 
     private Projectile NewDeathrayIndicator(Vector2 pos, float rotation, int anchor = 0)
     {
-        var ai1 = anchor;
+        var ai1 = anchor + 1;
         return Projectile.NewProjectileDirect(Npc.GetSource_FromAI(), pos, Vector2.Zero,
             ModContent.ProjectileType<WoFDeathrayIndicator>(), 0, 0, ai0: rotation, ai1: ai1);
     }
     
     private Projectile NewLineIndicator(Vector2 pos, float rotation, int anchor = 0)
     {
-        var ai1 = anchor;
+        var ai1 = anchor + 1;
         return Projectile.NewProjectileDirect(Npc.GetSource_FromAI(), pos, Vector2.Zero,
             ModContent.ProjectileType<WoFMoveIndicator>(), 0, 0, ai0: rotation, ai1: ai1);
     }
@@ -1175,17 +1059,21 @@ public class WoF : AcidicNPCOverride
 
     #endregion
 
-    public override void SendAcidAI(NPC npc, BitWriter bitWriter, BinaryWriter binaryWriter)
+    public override void SendAcidAI(BitWriter bitWriter, BinaryWriter binaryWriter)
     {
         deathrayOrder.SendData(binaryWriter);
         laserSpamOrder.SendData(binaryWriter);
         laserShotgunOrder.SendData(binaryWriter);
+        
+        phaseTracker.Serialize(binaryWriter);
     }
 
-    public override void ReceiveAcidAI(NPC npc, BitReader bitReader, BinaryReader binaryReader)
+    public override void ReceiveAcidAI(BitReader bitReader, BinaryReader binaryReader)
     {
         deathrayOrder.RecieveData(binaryReader);
         laserSpamOrder.RecieveData(binaryReader);
         laserShotgunOrder.RecieveData(binaryReader);
+        
+        phaseTracker.Deserialize(binaryReader);
     }
 }

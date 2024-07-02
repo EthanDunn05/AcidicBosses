@@ -19,12 +19,6 @@ public class SkeletronHand : AcidicNPCOverride
     private int HeadID => (int) Npc.ai[1];
 
     private NPC Head => Main.npc[HeadID];
-
-    private SkeletronHead.PhaseState HeadPhase
-    {
-        get => (SkeletronHead.PhaseState) Head.ai[1];
-        set => Head.ai[1] = (float) value;
-    }
     
     private SkeletronHead.HandState HeadAttack
     {
@@ -218,7 +212,7 @@ public class SkeletronHand : AcidicNPCOverride
     
     private Projectile NewDashLine(Vector2 position, float offset, bool anchorToBoss = true)
     {
-        var ai1 = anchorToBoss ? Npc.whoAmI : 0;
+        var ai1 = anchorToBoss ? Npc.whoAmI + 1 : 0;
         return Projectile.NewProjectileDirect(Npc.GetSource_FromAI(), position, Vector2.Zero,
             ModContent.ProjectileType<SkeletronHandDashLine>(), 0, 0, ai0: offset, ai1: ai1);
     }

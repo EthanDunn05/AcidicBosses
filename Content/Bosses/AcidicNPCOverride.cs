@@ -1,8 +1,7 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Linq;
 using AcidicBosses.Common.Effects;
-using AcidicBosses.Core.Systems;
+using AcidicBosses.Core.StateManagement;
 using AcidicBosses.Core.Systems.DifficultySystem;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -22,9 +21,18 @@ public abstract class AcidicNPCOverride : GlobalNPC
     public override bool InstancePerEntity => true;
     
     /// <summary>
+    /// Common data and management used in all bosses.
+    /// </summary>
+    public AttackManager AttackManager { get; } = new();
+    
+    /// <summary>
     /// The NPCID of the npc to override
     /// </summary>
     protected abstract int OverriddenNpc { get; }
+    
+    /// <summary>
+    /// The npc... Not much to say about this.
+    /// </summary>
     protected NPC Npc { get; private set; }
     
     /// <summary>
@@ -50,6 +58,7 @@ public abstract class AcidicNPCOverride : GlobalNPC
         
     }
     
+    // Manages internal stuff
     public sealed override bool PreAI(NPC npc)
     {
         if (!AcidicActive) return true;
@@ -62,15 +71,19 @@ public abstract class AcidicNPCOverride : GlobalNPC
             isFirstFrame = false;
         }
         
-        return AcidAI(npc);
+        AttackManager.PreAttackAi();
+        var runBase = AcidAI(npc);
+        AttackManager.PostAttackAi();
+
+        return runBase;
     }
 
     /// <summary>
     /// The main AI method of an Acidic NPC.
     /// This is where the primary logic takes place.
     /// </summary>
-    /// <param name="npc">The npc</param>
-    /// <returns>True to run vanilla AI, false to not. Same as PreAI</returns>
+    /// <param name="npc">Use <see cref="Npc"/> instead. This parameter only exists for king slime.</param>
+    /// <returns>True to run vanilla AI, false to not. Same as <see cref="PreAI"/></returns>
     public virtual bool AcidAI(NPC npc)
     {
         return true;
@@ -100,10 +113,9 @@ public abstract class AcidicNPCOverride : GlobalNPC
     /// Send stuff to be synced between server and client.
     /// Sending and receiving must be done in the same order.
     /// </summary>
-    /// <param name="npc">The npc</param>
     /// <param name="bitWriter">Write booleans</param>
     /// <param name="binaryWriter">Write everything else</param>
-    public virtual void SendAcidAI(NPC npc, BitWriter bitWriter, BinaryWriter binaryWriter)
+    public virtual void SendAcidAI(BitWriter bitWriter, BinaryWriter binaryWriter)
     {
         
     }
@@ -116,17 +128,19 @@ public abstract class AcidicNPCOverride : GlobalNPC
         {
             binaryWriter.Write(ExtraAI[i]);
         }
-        SendAcidAI(npc, bitWriter, binaryWriter);
+        
+        AttackManager.Serialize(binaryWriter);
+        
+        SendAcidAI(bitWriter, binaryWriter);
     }
     
     /// <summary>
     /// Read stuff to be synced between server and client.
     /// Sending and receiving must be done in the same order.
     /// </summary>
-    /// <param name="npc">The npc</param>
     /// <param name="bitReader">Read booleans</param>
     /// <param name="binaryReader">Read everything else</param>
-    public virtual void ReceiveAcidAI(NPC npc, BitReader bitReader, BinaryReader binaryReader)
+    public virtual void ReceiveAcidAI(BitReader bitReader, BinaryReader binaryReader)
     {
         
     }
@@ -139,7 +153,10 @@ public abstract class AcidicNPCOverride : GlobalNPC
         {
             ExtraAI[i] = binaryReader.ReadSingle();
         }
-        ReceiveAcidAI(npc, bitReader, binaryReader);
+        
+        AttackManager.Deserialize(binaryReader);
+        
+        ReceiveAcidAI(bitReader, binaryReader);
     }
 
     protected void ResetExtraAI()
@@ -179,6 +196,7 @@ public abstract class AcidicNPCOverride : GlobalNPC
     public sealed override bool PreDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
     {
         if (!AcidicActive) return true;
+        if (isFirstFrame) return true; // Use vanilla rendering if acidic stuff hasn't taken over yet
         return AcidicDraw(npc, spriteBatch, screenPos, drawColor);
     }
 

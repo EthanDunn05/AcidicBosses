@@ -7,6 +7,9 @@ using Terraria.ModLoader;
 
 namespace AcidicBosses.Content.Bosses.WoF;
 
+/// <summary>
+/// Replacement for the vanilla tongued "buff". This makes it work for two walls
+/// </summary>
 public class NewTonguedBuff : ModBuff
 {
     private NPC WoF => Main.npc[Main.wofNPCIndex];

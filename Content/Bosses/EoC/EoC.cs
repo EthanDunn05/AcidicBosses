@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
+﻿using System.IO;
 using AcidicBosses.Common.Effects;
+using AcidicBosses.Core.StateManagement;
 using AcidicBosses.Helpers;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -20,132 +18,12 @@ namespace AcidicBosses.Content.Bosses.EoC;
 public class EoC : AcidicNPCOverride
 {
     protected override int OverriddenNpc => NPCID.EyeofCthulhu;
-    
-    #region Phases
-    
-    private enum PhaseState
-    {
-        One,
-        TransitionOne,
-        Two,
-        Three,
-        TransitionTwo,
-        Four
-    }
-    
-    private PhaseState CurrentPhase
-    {
-        get => (PhaseState) Npc.ai[1];
-        set => Npc.ai[1] = (float) value;
-    }
-    
-    #endregion
-    
-    #region Attacks
 
-    private enum Attack
-    {
-        Hover,
-        Dash,
-        TelegraphedDash,
-        TripleDash,
-        PhantomCrossDash,
-        PhantomPlusDash,
-        GasterSpin,
-        SummonMinions,
-        Teleport,
-    }
-    
-    private static Attack[] phaseOneAP =
-    {
-        Attack.Hover,
-        Attack.Dash,
-        Attack.SummonMinions,
-        Attack.Hover,
-        Attack.Dash,
-        Attack.Dash
-    };
-
-    private static Attack[] phaseTwoAP =
-    {
-        Attack.Hover,
-        Attack.TelegraphedDash,
-        Attack.Dash,
-        Attack.Hover,
-        Attack.TelegraphedDash,
-        Attack.Teleport,
-    };
-
-    private static Attack[] phaseThreeAP =
-    {
-        // Triple dash should be after some other dash to provide room to dodge between the eyes
-        Attack.Hover,
-        Attack.TelegraphedDash,
-        Attack.TripleDash,
-        Attack.PhantomCrossDash,
-        Attack.Hover,
-        Attack.TelegraphedDash,
-        Attack.Teleport,
-        Attack.TripleDash,
-        Attack.PhantomPlusDash,
-        Attack.Hover,
-        Attack.TelegraphedDash,
-        Attack.TripleDash,
-        Attack.TripleDash,
-        Attack.TripleDash,
-        Attack.SummonMinions
-    };
-
-    private static Attack[] phaseFourAP =
-    {
-        // Triple dash should be after some other dash to provide room to dodge between the eyes
-        Attack.Hover,
-        Attack.TelegraphedDash,
-        Attack.Teleport,
-        Attack.PhantomPlusDash,
-        Attack.PhantomCrossDash,
-        Attack.PhantomPlusDash,
-        Attack.Hover,
-        Attack.TelegraphedDash,
-        Attack.TripleDash,
-        Attack.TripleDash,
-        Attack.Teleport,
-        Attack.SummonMinions,
-        Attack.Hover,
-        Attack.GasterSpin
-    };
-    
-    private int CurrentAttackIndex
-    {
-        get => (int) Npc.ai[2];
-        set => Npc.ai[2] = value;
-    }
-
-    private Attack[] CurrentAttackPattern => CurrentPhase switch
-    {
-        PhaseState.One => phaseOneAP,
-        PhaseState.Two => phaseTwoAP,
-        PhaseState.Three => phaseThreeAP,
-        PhaseState.Four => phaseFourAP,
-        _ => throw new UsageException(
-            $"EoC is in the PhaseState {CurrentPhase} and does not have an attack pattern")
-    };
-
-    private Attack CurrentAttack => CurrentAttackPattern[CurrentAttackIndex];
-    
-    #endregion
-    
     #region AI
-
-    private int AiTimer
-    {
-        get => (int) Npc.ai[0];
-        set => Npc.ai[0] = value;
-    }
+    
+    private PhaseTracker phaseTracker;
 
     private bool useAfterimages = false;
-
-    private bool countUpTimer = false;
 
     private bool isFleeing = false;
 
@@ -153,23 +31,27 @@ public class EoC : AcidicNPCOverride
 
     public override void OnFirstFrame(NPC npc)
     {
-        CurrentPhase = PhaseState.One;
-        AiTimer = 0;
+        phaseTracker = new PhaseTracker([
+            PhaseOne,
+            PhaseTransitionOne,
+            PhaseTwo,
+            PhaseTransitionTwo,
+            PhaseThree,
+            PhaseFour
+        ]);
     }
 
     public override bool AcidAI(NPC npc)
     {
-        if (!countUpTimer) AiTimer = Math.Max(AiTimer - 1, 0);
-
         // Flee when no players are alive or it is day
         if ((IsTargetGone(npc) || Main.dayTime) && !isFleeing)
         {
             npc.TargetClosest();
             if (IsTargetGone(npc) || Main.dayTime)
             {
-                countUpTimer = true;
+                AttackManager.CountUp = true;
                 isFleeing = true;
-                AiTimer = 0;
+                AttackManager.AiTimer = 0;
             }
         }
 
@@ -178,44 +60,25 @@ public class EoC : AcidicNPCOverride
             FleeAI();
         }
         else
-            switch (CurrentPhase)
-            {
-                case PhaseState.One:
-                    Phase_One();
-                    break;
-                case PhaseState.TransitionOne:
-                    Phase_TransitionOne();
-                    break;
-                case PhaseState.Two:
-                    Phase_Two();
-                    break;
-                case PhaseState.Three:
-                    Phase_Three();
-                    break;
-                case PhaseState.TransitionTwo:
-                    Phase_TransitionTwo();
-                    break;
-                case PhaseState.Four:
-                    Phase_Four();
-                    break;
-            }
+        {
+            phaseTracker.RunPhaseAI();
+        }
 
-        if (countUpTimer) AiTimer++;
         return false;
     }
-    
+
     private void FleeAI()
     {
-        countUpTimer = true;
+        AttackManager.CountUp = true;
         if (!IsTargetGone(Npc) && !Main.dayTime)
         {
-            countUpTimer = false;
+            AttackManager.CountUp = false;
             isFleeing = false;
-            AiTimer = 30;
+            AttackManager.AiTimer = 30;
             return;
         }
 
-        if (AiTimer < 120)
+        if (AttackManager.AiTimer < 120)
         {
             var desiredVelocity = -Vector2.UnitY * 7.5f;
             Npc.SimpleFlyMovement(desiredVelocity, 0.05f);
@@ -228,227 +91,211 @@ public class EoC : AcidicNPCOverride
             EffectsManager.ShockwaveKill();
         }
     }
+    
+    #endregion
 
     #region Phase AIs
+    
+    private PhaseState PhaseOne => new(Phase_One, EnterPhaseOne);
+
+    private void EnterPhaseOne()
+    {
+        var hover = new AttackState(() => Attack_Hover(180, 7.5f, 0.05f, 250f), 0);
+        var dash = new AttackState(() => Attack_DashAtPlayer(30, 7.5f, false), 45);
+        var summon = new AttackState(() => Attack_SummonMinions(3), 15);
+
+        AttackManager.SetAttackPattern([
+            hover,
+            dash,
+            summon,
+            hover,
+            dash,
+            dash,
+        ]);
+    }
 
     private void Phase_One()
     {
-        if (Npc.GetLifePercent() <= 0.80f && AiTimer == 0)
+        if (Npc.GetLifePercent() <= 0.80f && AttackManager.AiTimer == 0)
         {
-            CurrentPhase = PhaseState.TransitionOne;
-            AiTimer = 0;
+            phaseTracker.NextPhase();
+            AttackManager.Reset();
             return;
         }
 
-        if (AiTimer > 0 && !countUpTimer)
+        if (AttackManager.AiTimer > 0 && !AttackManager.CountUp)
         {
             Npc.SimpleFlyMovement(Vector2.Zero, 0.25f);
             LookTowards(Main.player[Npc.target].Center, 0.05f);
             return;
         }
 
-        var isDone = true;
-        switch (CurrentAttack)
-        {
-            case Attack.Hover:
-                Attack_Hover(out isDone, 180, 7.5f, 0.05f, 250f);
-                if (isDone) AiTimer = 0;
-                break;
-            case Attack.Dash:
-                Attack_DashAtPlayer(out isDone, 30, 7.5f, false);
-                if (isDone) AiTimer = 45;
-                break;
-            case Attack.SummonMinions:
-                Attack_SummonMinions(out isDone, 3);
-                if (isDone) AiTimer = 15;
-                break;
-        }
-
-        if (isDone) NextAttack();
+        AttackManager.RunAttackPattern();
+    }
+    
+    private PhaseState PhaseTwo => new(Phase_Two, EnterPhaseTwo);
+    
+    private void EnterPhaseTwo()
+    {
+        var hover = new AttackState(() => Attack_Hover(120, 10f, 0.15f, 250f), 0);
+        var telegraphedDash = new AttackState(() => Attack_TelegraphedDash(45, 15f), 15);
+        var dash = new AttackState(() => Attack_DashAtPlayer(45, 15f, true), 15);
+        var teleport = new AttackState(Attack_TeleportBehind, 15);
+        
+        AttackManager.SetAttackPattern([
+            hover,
+            telegraphedDash,
+            dash,
+            hover,
+            telegraphedDash,
+            teleport
+        ]);
     }
 
     private void Phase_Two()
     {
-        if (Npc.GetLifePercent() <= 0.60f && AiTimer == 0)
+        if (Npc.GetLifePercent() <= 0.60f && AttackManager.AiTimer == 0)
         {
-            CurrentPhase = PhaseState.Three;
-            AiTimer = 0;
+            phaseTracker.NextPhase();
+            AttackManager.Reset();
             return;
         }
 
-        if (AiTimer > 0 && !countUpTimer)
+        if (AttackManager.AiTimer > 0 && !AttackManager.CountUp)
         {
             Npc.SimpleFlyMovement(Vector2.Zero, 0.35f);
             LookTowards(Main.player[Npc.target].Center, 0.05f);
             return;
         }
 
-        var isDone = true;
-        switch (CurrentAttack)
-        {
-            case Attack.Hover:
-                Attack_Hover(out isDone, 120, 10f, 0.15f, 250f);
-                if (isDone) AiTimer = 0;
-                break;
-            case Attack.TelegraphedDash:
-                Attack_TelegraphedDash(out isDone, 45, 15f);
-                if (isDone) AiTimer = 15;
-                break;
-            case Attack.Dash:
-                Attack_DashAtPlayer(out isDone, 45, 15f, true);
-                if (isDone) AiTimer = 15;
-                break;
-            case Attack.Teleport:
-                Attack_TeleportBehind();
-                AiTimer = 15;
-                break;
-        }
-
-        if (isDone) NextAttack();
+        AttackManager.RunAttackPattern();
+    }
+    
+    private PhaseState PhaseThree => new(Phase_Three, EnterPhaseThree);
+    
+    private void EnterPhaseThree()
+    {
+        var hover = new AttackState(() => Attack_Hover(90, 10f, 0.15f, 350f), 0);
+        var telegraphedDash = new AttackState(() => Attack_TelegraphedDash(45, 15f), 15);
+        var tripleDash = new AttackState(() => Attack_TripleDash(45, 15f), 15);
+        var phantomCrossDash = new AttackState(Attack_PhantomCrossDash, 15);
+        var phantomPlusDash = new AttackState(Attack_PhantomCrossDash, 15);
+        var teleport = new AttackState(Attack_TeleportBehind, 5);
+        var summon = new AttackState(() => Attack_SummonMinions(3), 15);
+        
+        AttackManager.SetAttackPattern([
+            hover,
+            telegraphedDash,
+            tripleDash,
+            phantomCrossDash,
+            hover,
+            telegraphedDash,
+            teleport,
+            tripleDash,
+            phantomPlusDash,
+            hover,
+            telegraphedDash,
+            tripleDash,
+            tripleDash,
+            tripleDash,
+            summon
+        ]);
     }
 
     private void Phase_Three()
     {
-        if (Npc.GetLifePercent() <= 0.40f && AiTimer == 0)
+        if (Npc.GetLifePercent() <= 0.40f && AttackManager.AiTimer == 0)
         {
-            CurrentPhase = PhaseState.TransitionTwo;
-            AiTimer = 0;
+            phaseTracker.NextPhase();
+            AttackManager.Reset();
             return;
         }
 
-        if (AiTimer > 0 && !countUpTimer)
+        if (AttackManager.AiTimer > 0 && !AttackManager.CountUp)
         {
             Npc.SimpleFlyMovement(Vector2.Zero, 0.35f);
             LookTowards(Main.player[Npc.target].Center, 0.05f);
             return;
         }
 
-        bool isDone = true;
-        switch (CurrentAttack)
-        {
-            case Attack.Hover:
-                Attack_Hover(out isDone, 90, 10f, 0.15f, 350f);
-                if (isDone) AiTimer = 0;
-                break;
-            case Attack.Dash:
-                Attack_DashAtPlayer(out isDone, 45, 15f, true);
-                if (isDone) AiTimer = 15;
-                break;
-            case Attack.TelegraphedDash:
-                Attack_TelegraphedDash(out isDone, 45, 15f);
-                if (isDone) AiTimer = 15;
-                break;
-            case Attack.TripleDash:
-                Attack_TripleDash(out isDone, 45, 15f);
-                if (isDone) AiTimer = 15;
-                break;
-            case Attack.PhantomCrossDash:
-                Attack_PhantomCrossDash(out isDone);
-                if (isDone) AiTimer = 15;
-                break;
-            case Attack.PhantomPlusDash:
-                Attack_PhantomCrossDash(out isDone);
-                if (isDone) AiTimer = 15;
-                break;
-            case Attack.Teleport:
-                Attack_TeleportBehind();
-                AiTimer = 5;
-                break;
-            case Attack.SummonMinions:
-                Attack_SummonMinions(out isDone, 3);
-                if (isDone) AiTimer = 15;
-                break;
-        }
+        AttackManager.RunAttackPattern();
+    }
+    
+    private PhaseState PhaseFour => new(Phase_Four, EnterPhaseFour);
 
-        if (isDone) NextAttack();
+    private void EnterPhaseFour()
+    {
+        var hover = new AttackState(() => Attack_Hover(30, 20f, 0.15f, 250f), 0);
+        var telegraphedDash = new AttackState(() => Attack_TelegraphedDash(45, 20f), 0);
+        var tripleDash = new AttackState(() => Attack_TripleDash(45, 20f), 0)
+        {
+            OnDone = () => Npc.velocity = Vector2.Zero
+        };
+        var phantomCrossDash = new AttackState(Attack_PhantomCrossDash, 5);
+        var phantomPlusDash = new AttackState(Attack_PhantomPlusDash, 5);
+        var gasterSpin = new AttackState(() => Attack_GasterSpinDash(7, 1), 30);
+        var summon = new AttackState(() => Attack_SummonMinions(5), 0);
+        var teleport = new AttackState(Attack_TeleportBehind, 5);
+        
+        AttackManager.SetAttackPattern([
+            hover,
+            telegraphedDash,
+            teleport,
+            phantomPlusDash,
+            phantomCrossDash,
+            phantomPlusDash,
+            hover,
+            telegraphedDash,
+            tripleDash,
+            tripleDash,
+            teleport,
+            summon,
+            hover,
+            gasterSpin
+        ]);
     }
 
     private void Phase_Four()
     {
-        if (AiTimer > 0 && !countUpTimer)
+        if (AttackManager.AiTimer > 0 && !AttackManager.CountUp)
         {
             Npc.SimpleFlyMovement(Vector2.Zero, 0.5f);
             LookTowards(Main.player[Npc.target].Center, 0.15f);
             return;
         }
 
-        var isDone = true;
-        switch (CurrentAttack)
-        {
-            case Attack.Hover:
-                Attack_Hover(out isDone, 30, 20f, 0.15f, 250f);
-                if (isDone) AiTimer = 0;
-                break;
-            case Attack.TelegraphedDash:
-                Attack_TelegraphedDash(out isDone, 45, 20f);
-                if (isDone)
-                {
-                    AiTimer = 0;
-                    Npc.velocity = Vector2.Zero;
-                }
-
-                break;
-            case Attack.TripleDash:
-                Attack_TripleDash(out isDone, 45, 20f);
-                if (isDone)
-                {
-                    AiTimer = 0;
-                    Npc.velocity = Vector2.Zero;
-                }
-
-                break;
-            case Attack.PhantomCrossDash:
-                Attack_PhantomCrossDash(out isDone);
-                if (isDone) AiTimer = 5;
-                break;
-            case Attack.PhantomPlusDash:
-                Attack_PhantomPlusDash(out isDone);
-                if (isDone) AiTimer = 5;
-                break;
-            case Attack.GasterSpin:
-                Attack_GasterSpinDash(out isDone, 7, 1);
-                if (isDone) AiTimer = 30;
-                break;
-            case Attack.SummonMinions:
-                Attack_SummonMinions(out isDone, 5);
-                if (isDone) AiTimer = 0;
-                break;
-            case Attack.Teleport:
-                Attack_TeleportBehind();
-                AiTimer = 5;
-                break;
-        }
-
-        if (isDone) NextAttack();
+        AttackManager.RunAttackPattern();
     }
 
+    private PhaseState PhaseTransitionOne => new(Phase_TransitionOne);
+    
     private void Phase_TransitionOne()
     {
-        countUpTimer = true;
+        AttackManager.CountUp = true;
         const int spinCount = 3;
-        
+
         Npc.SimpleFlyMovement(Vector2.Zero, 0.5f);
 
         // Spin
-        if (AiTimer < 90)
+        if (AttackManager.AiTimer < 90)
         {
             // Don't fly off into the distance
-            if (AiTimer == 0)
+            if (AttackManager.AiTimer == 0)
             {
                 Npc.velocity = Vector2.Zero;
                 Npc.localAI[0] = Npc.rotation;
             }
 
             // Spawn minions like in vanilla
-            if (AiTimer % 15 == 0) NewMinion();
+            if (AttackManager.AiTimer % 15 == 0) NewMinion();
 
             // Spin :)
-            var spinT = AiTimer / 90f;
+            var spinT = AttackManager.AiTimer / 90f;
             var spinOffset = spinCount * MathHelper.TwoPi * EasingHelper.QuadInOut(spinT);
             Npc.rotation = MathHelper.WrapAngle(Npc.localAI[0] + spinOffset);
         }
         // Transform to mouth and start shockwave
-        else if (AiTimer == 90)
+        else if (AttackManager.AiTimer == 90)
         {
             // Yoinked from vanilla code
             SoundEngine.PlaySound(SoundID.NPCHit1, Npc.Center);
@@ -465,7 +312,7 @@ public class EoC : AcidicNPCOverride
                 var speed = Main.rand.NextVector2Square(-30, 31) * 0.2f;
                 Dust.NewDust(Npc.Center, Npc.width, Npc.height, DustID.Blood, speed.X, speed.Y);
             }
-            
+
             var punch = new PunchCameraModifier(Npc.Center, Main.rand.NextVector2Unit(), 10f, 12f, 60, 1000f, FullName);
             Main.instance.CameraModifiers.Add(punch);
 
@@ -474,30 +321,28 @@ public class EoC : AcidicNPCOverride
             EffectsManager.ShockwaveActive(Npc.Center, 0.075f, 0.15f, Color.Transparent);
         }
         // Shockwave Update
-        else if (AiTimer is > 90 and < 180)
+        else if (AttackManager.AiTimer is > 90 and < 180)
         {
-            var shockT = (AiTimer - 90f) / 60f;
+            var shockT = (AttackManager.AiTimer - 90f) / 60f;
             EffectsManager.ShockwaveProgress(shockT);
             LookTowards(Main.player[Npc.target].Center, 0.2f);
         }
         // End and cleanup
-        else if (AiTimer == 180)
+        else if (AttackManager.AiTimer == 180)
         {
-            countUpTimer = false;
-            AiTimer = 0;
-            CurrentPhase = PhaseState.Two;
-            CurrentAttackIndex = 0;
+            phaseTracker.NextPhase();
+            AttackManager.Reset();
             EffectsManager.ShockwaveKill();
             return;
         }
     }
 
+    private PhaseState PhaseTransitionTwo => new(Phase_TransitionTwo);
+    
     private void Phase_TransitionTwo()
     {
-        CurrentPhase = PhaseState.Four;
-        AiTimer = 0;
-        countUpTimer = false;
-        CurrentAttackIndex = 0;
+        phaseTracker.NextPhase();
+        AttackManager.Reset();
 
         // Faster Dashes
         dashAtTime = 20;
@@ -507,7 +352,7 @@ public class EoC : AcidicNPCOverride
     #endregion
 
     #region Attacks
-    
+
     private void Attack_Hover(float speed, float acceleration, float distance)
     {
         var target = Main.player[Npc.target];
@@ -518,16 +363,16 @@ public class EoC : AcidicNPCOverride
         LookTowards(target.Center, 0.2f);
     }
 
-    private void Attack_Hover(out bool isDone, int hoverTime, float speed, float acceleration, float distance)
+    private bool Attack_Hover(int hoverTime, float speed, float acceleration, float distance)
     {
-        countUpTimer = true;
+        AttackManager.CountUp = true;
 
         Attack_Hover(speed, acceleration, distance);
 
-        isDone = AiTimer > hoverTime;
+        if (AttackManager.AiTimer <= hoverTime) return false;
 
-        if (!isDone) return;
-        countUpTimer = false;
+        AttackManager.CountUp = false;
+        return true;
     }
 
     // Dash Stuff
@@ -535,17 +380,17 @@ public class EoC : AcidicNPCOverride
     private static int dashTrackTime = 15;
     private static int dashAtTime = 30;
 
-    private void Attack_DashAtPlayer(out bool isDone, int dashLength, float speed, bool enraged)
+    private bool Attack_DashAtPlayer(int dashLength, float speed, bool enraged)
     {
-        countUpTimer = true;
+        AttackManager.CountUp = true;
         var target = Main.player[Npc.target].Center;
 
-        if (AiTimer < dashTrackTime)
+        if (AttackManager.AiTimer < dashTrackTime)
         {
             Npc.SimpleFlyMovement(Vector2.Zero, 0.75f);
             LookTowards(target, 0.25f);
         }
-        else if (AiTimer == dashAtTime)
+        else if (AttackManager.AiTimer == dashAtTime)
         {
             Npc.velocity = (Npc.rotation + MathHelper.PiOver2).ToRotationVector2() * speed;
             if (enraged)
@@ -554,44 +399,45 @@ public class EoC : AcidicNPCOverride
                 useAfterimages = true;
             }
         }
-        else if (AiTimer >= dashAtTime + dashLength)
+        else if (AttackManager.AiTimer >= dashAtTime + dashLength)
         {
-            isDone = true;
-            countUpTimer = false;
+            AttackManager.CountUp = false;
             useAfterimages = false;
-            return;
+            return true;
         }
 
-        isDone = false;
+        return false;
     }
 
-    private void Attack_TelegraphedDash(out bool isDone, int dashLength, float speed)
+    private bool Attack_TelegraphedDash(int dashLength, float speed)
     {
-        countUpTimer = true;
+        AttackManager.CountUp = true;
 
         // Normal dash movement
-        Attack_DashAtPlayer(out isDone, dashLength, speed, true);
+        var isDone = Attack_DashAtPlayer(dashLength, speed, true);
 
-        if (isDone) countUpTimer = false;
-        if (Main.netMode == NetmodeID.MultiplayerClient) return;
+        if (isDone) AttackManager.CountUp = false;
+        if (Main.netMode == NetmodeID.MultiplayerClient) return isDone;
 
         // Create Telegraph
-        if (AiTimer == 0)
+        if (AttackManager.AiTimer == 0)
         {
             var line = NewDashLine(Npc.Center, MathHelper.PiOver2);
             line.timeLeft = dashAtTime;
         }
+
+        return isDone;
     }
 
-    private void Attack_TripleDash(out bool isDone, int dashLength, float speed)
+    private bool Attack_TripleDash(int dashLength, float speed)
     {
-        countUpTimer = true;
+        AttackManager.CountUp = true;
 
         // Dash Normally for self
-        Attack_DashAtPlayer(out isDone, dashLength, speed, true);
-        
-        if (isDone) countUpTimer = false;
-        if (Main.netMode == NetmodeID.MultiplayerClient) return;
+        var isDone = Attack_DashAtPlayer(dashLength, speed, true);
+
+        if (isDone) AttackManager.CountUp = false;
+        if (Main.netMode == NetmodeID.MultiplayerClient) return isDone;
 
         const float dashOffset = MathHelper.Pi / 6f;
 
@@ -602,19 +448,19 @@ public class EoC : AcidicNPCOverride
             var offsetCoef = i - 1;
 
             // Create Telegraph
-            if (AiTimer == 0 && Main.netMode != NetmodeID.MultiplayerClient)
+            if (AttackManager.AiTimer == 0 && Main.netMode != NetmodeID.MultiplayerClient)
             {
                 // Center
                 var line = NewDashLine(Npc.Center, dashOffset * offsetCoef + MathHelper.PiOver2);
                 line.timeLeft = dashAtTime;
             }
         }
-        
+
         // The phantom eye stuff is owned by server
-        if (Main.netMode == NetmodeID.MultiplayerClient) return;
+        if (Main.netMode == NetmodeID.MultiplayerClient) return isDone;
 
         // Phantom Dashes
-        if (AiTimer == dashAtTime)
+        if (AttackManager.AiTimer == dashAtTime)
         {
             // + dashOffset
             var vel1 = (Npc.rotation + MathHelper.PiOver2 + dashOffset).ToRotationVector2() * speed;
@@ -626,20 +472,22 @@ public class EoC : AcidicNPCOverride
             var eye2 = NewPhantomEoC(Npc.Center, vel2);
             eye2.timeLeft = dashLength;
         }
+
+        return isDone;
     }
 
-    private void Attack_PhantomCrossDash(out bool isDone)
+    private bool Attack_PhantomCrossDash()
     {
-        countUpTimer = true;
+        AttackManager.CountUp = true;
 
         Attack_Hover(10f, 0.05f, 400f);
 
         const int dashLength = 45;
         const float dashSpeed = 40f;
 
-        isDone = AiTimer >= dashLength + dashAtTime;
+        var isDone = AttackManager.AiTimer >= dashLength + dashAtTime;
 
-        if (isDone) countUpTimer = false;
+        if (isDone) AttackManager.CountUp = false;
 
         var targetPos = Main.player[Npc.target].Center;
 
@@ -651,7 +499,7 @@ public class EoC : AcidicNPCOverride
         var vel1 = (targetPos + offsetFromPlayer1).DirectionTo(targetPos) * dashSpeed;
         var pos1 = targetPos + offsetFromPlayer1;
 
-        if (AiTimer == 0)
+        if (AttackManager.AiTimer == 0)
         {
             Main.TeleportEffect(new Rectangle((int) pos0.X, (int) pos0.Y, Npc.width, Npc.height),
                 TeleportationStyleID.RodOfDiscord);
@@ -659,15 +507,15 @@ public class EoC : AcidicNPCOverride
                 TeleportationStyleID.RodOfDiscord);
         }
 
-        if (AiTimer == dashAtTime)
+        if (AttackManager.AiTimer == dashAtTime)
         {
             SoundEngine.PlaySound(SoundID.ForceRoarPitched);
         }
 
-        if (Main.netMode == NetmodeID.MultiplayerClient) return;
+        if (Main.netMode == NetmodeID.MultiplayerClient) return isDone;
 
         // Start the dash stuff
-        if (AiTimer == 0)
+        if (AttackManager.AiTimer == 0)
         {
             // Spawn Right
             var rightEye = NewPhantomEoC(pos0, vel0, dashAtTime);
@@ -681,19 +529,21 @@ public class EoC : AcidicNPCOverride
             var leftLine = NewDashLine(pos1, vel1.ToRotation(), false);
             leftLine.timeLeft = dashAtTime;
         }
+
+        return isDone;
     }
 
-    private void Attack_PhantomPlusDash(out bool isDone)
+    private bool Attack_PhantomPlusDash()
     {
-        countUpTimer = true;
+        AttackManager.CountUp = true;
 
         const int dashLength = 45;
         const float dashSpeed = 40f;
 
         Attack_Hover(10f, 0.05f, 400f);
-        isDone = AiTimer >= dashLength + dashAtTime;
+        var isDone = AttackManager.AiTimer >= dashLength + dashAtTime;
 
-        if (isDone) countUpTimer = false;
+        if (isDone) AttackManager.CountUp = false;
 
         var targetPos = Main.player[Npc.target].Center;
 
@@ -704,7 +554,7 @@ public class EoC : AcidicNPCOverride
         var vel1 = (targetPos + offsetFromPlayer1).DirectionTo(targetPos) * dashSpeed;
         var pos1 = targetPos + offsetFromPlayer1;
 
-        if (AiTimer == 0)
+        if (AttackManager.AiTimer == 0)
         {
             Main.TeleportEffect(new Rectangle((int) pos0.X, (int) pos0.Y, Npc.width, Npc.height),
                 TeleportationStyleID.RodOfDiscord);
@@ -712,15 +562,15 @@ public class EoC : AcidicNPCOverride
                 TeleportationStyleID.RodOfDiscord);
         }
 
-        if (AiTimer == dashAtTime)
+        if (AttackManager.AiTimer == dashAtTime)
         {
             SoundEngine.PlaySound(SoundID.ForceRoarPitched);
         }
 
-        if (Main.netMode == NetmodeID.MultiplayerClient) return;
+        if (Main.netMode == NetmodeID.MultiplayerClient) return isDone;
 
         // Start the dash stuff
-        if (AiTimer == 0)
+        if (AttackManager.AiTimer == 0)
         {
             // Spawn Right
             var rightEye = NewPhantomEoC(pos0, vel0, dashAtTime);
@@ -734,11 +584,13 @@ public class EoC : AcidicNPCOverride
             var leftLine = NewDashLine(pos1, vel1.ToRotation(), false);
             leftLine.timeLeft = dashAtTime;
         }
+
+        return isDone;
     }
 
-    private void Attack_GasterSpinDash(out bool isDone, int delay, int spins)
+    private bool Attack_GasterSpinDash(int delay, int spins)
     {
-        countUpTimer = true;
+        AttackManager.CountUp = true;
 
         const int dashLength = 45;
         const float dashSpeed = 40f;
@@ -748,15 +600,15 @@ public class EoC : AcidicNPCOverride
         ref var originY = ref Npc.localAI[2];
 
         Attack_Hover(10f, 0.05f, 400f);
-        isDone = dashes > dashesPerSpin * spins;
+        var isDone = dashes > dashesPerSpin * spins;
 
         if (isDone)
         {
-            countUpTimer = false;
+            AttackManager.CountUp = false;
             dashes = 0;
         }
 
-        if (AiTimer == 0)
+        if (AttackManager.AiTimer == 0)
         {
             var origin = Main.player[Npc.target].Center;
             originX = origin.X;
@@ -767,61 +619,67 @@ public class EoC : AcidicNPCOverride
         var rot = dashes * (MathHelper.Pi / dashesPerSpin);
         var offsetFromPlayer = new Vector2(1000, 0).RotatedBy(rot);
         var pos = targetPos + offsetFromPlayer;
+        var pos2 = targetPos - offsetFromPlayer;
         var vel = pos.DirectionTo(targetPos) * dashSpeed;
 
-        if (AiTimer % delay == 0)
+        if (AttackManager.AiTimer % delay == 0)
         {
             if (dashes != 0)
             {
                 SoundEngine.PlaySound(SoundID.ForceRoarPitched);
             }
+
             dashes++;
         }
 
-        if (Main.netMode == NetmodeID.MultiplayerClient) return;
+        if (Main.netMode == NetmodeID.MultiplayerClient) return isDone;
 
         // Start the dash stuff
-        if (AiTimer % delay == 0)
+        if (AttackManager.AiTimer % delay == 0)
         {
             // Spawn
             var eye = NewPhantomEoC(pos, vel, dashAtTime);
+            var eye2 = NewPhantomEoC(pos2, -vel, dashAtTime);
             eye.timeLeft = dashAtTime + dashLength;
             var line = NewDashLine(pos, vel.ToRotation(), false);
             line.timeLeft = dashAtTime;
         }
+
+        return isDone;
     }
 
     // Other Random Garbage
 
-    private void Attack_SummonMinions(out bool isDone, int minionCount)
+    private bool Attack_SummonMinions(int minionCount)
     {
-        countUpTimer = true;
+        AttackManager.CountUp = true;
         const int spawnDelay = 15;
 
         // Speen 
-        if (AiTimer == 0) Npc.localAI[0] = Npc.rotation;
+        if (AttackManager.AiTimer == 0) Npc.localAI[0] = Npc.rotation;
         Npc.velocity = Vector2.Zero;
         var spinTime = spawnDelay * minionCount;
-        var spinT = (float) AiTimer / (spinTime - 1);
+        var spinT = (float) AttackManager.AiTimer / (spinTime - 1);
         var dAngle = MathHelper.TwoPi * 2 * EasingHelper.QuadInOut(spinT);
         Npc.rotation = Npc.localAI[0] + dAngle;
 
-        if (AiTimer >= spinTime)
+        if (AttackManager.AiTimer >= spinTime)
         {
-            isDone = true;
-            countUpTimer = false;
-            return;
+            AttackManager.CountUp = false;
+            return true;
         }
 
-        if (AiTimer % spawnDelay == 0) NewMinion();
-        isDone = false;
+        if (AttackManager.AiTimer % spawnDelay == 0) NewMinion();
+        return false;
     }
 
-    private void Attack_TeleportBehind()
+    private bool Attack_TeleportBehind()
     {
         var target = Main.player[Npc.target].Center;
         var destination = target - (Npc.Center - target); // Opposite side of player
         Teleport(destination);
+
+        return true;
     }
 
     private void Teleport(Vector2 destination)
@@ -830,7 +688,7 @@ public class EoC : AcidicNPCOverride
         Npc.velocity = Vector2.Zero;
         Npc.rotation += MathHelper.Pi;
     }
-    
+
     private void NewMinion()
     {
         SoundEngine.PlaySound(SoundID.Item95, Npc.Center);
@@ -843,7 +701,7 @@ public class EoC : AcidicNPCOverride
 
     private Projectile NewDashLine(Vector2 position, float offset, bool anchorToBoss = true)
     {
-        var ai1 = anchorToBoss ? Npc.whoAmI : 0;
+        var ai1 = anchorToBoss ? Npc.whoAmI + 1 : 0;
         return Projectile.NewProjectileDirect(Npc.GetSource_FromAI(), position, Vector2.Zero,
             ModContent.ProjectileType<EyeDashLine>(), 0, 0, ai0: offset, ai1: ai1);
     }
@@ -856,8 +714,6 @@ public class EoC : AcidicNPCOverride
             dashVelocity, ModContent.ProjectileType<PhantomEoC>(), damage, 5, ai0: dashDelay);
     }
 
-    #endregion
-    
     #endregion
 
     #region Drawing
@@ -875,7 +731,7 @@ public class EoC : AcidicNPCOverride
 
         // Afterimages
         if (useAfterimages)
-            for (var i = 1; i < npc.oldPos.Length; i ++)
+            for (var i = 1; i < npc.oldPos.Length; i++)
             {
                 // All of this is heavily simplified from decompiled vanilla
                 var fade = 0.5f * (10 - i) / 20f;
@@ -892,8 +748,8 @@ public class EoC : AcidicNPCOverride
             npc.frame, npc.GetAlpha(drawColor),
             npc.rotation, eyeOrigin, npc.scale,
             effects, 0f);
-        
-        // spriteBatch.DrawString(FontAssets.MouseText.Value, AiTimer.ToString(), drawPos, Color.White);
+
+        spriteBatch.DrawString(FontAssets.MouseText.Value, Npc.whoAmI.ToString(), drawPos, Color.White);
 
         return false;
     }
@@ -933,18 +789,20 @@ public class EoC : AcidicNPCOverride
 
     #endregion
 
-    public override void SendAcidAI(NPC npc, BitWriter bitWriter, BinaryWriter binaryWriter)
+    public override void SendAcidAI(BitWriter bitWriter, BinaryWriter binaryWriter)
     {
+        phaseTracker.Serialize(binaryWriter);
+
         bitWriter.WriteBit(useAfterimages);
-        bitWriter.WriteBit(countUpTimer);
         bitWriter.WriteBit(isFleeing);
         bitWriter.WriteBit(mouthMode);
     }
 
-    public override void ReceiveAcidAI(NPC npc, BitReader bitReader, BinaryReader binaryReader)
+    public override void ReceiveAcidAI(BitReader bitReader, BinaryReader binaryReader)
     {
+        phaseTracker.Deserialize(binaryReader);
+
         useAfterimages = bitReader.ReadBit();
-        countUpTimer = bitReader.ReadBit();
         isFleeing = bitReader.ReadBit();
         mouthMode = bitReader.ReadBit();
     }
@@ -952,10 +810,5 @@ public class EoC : AcidicNPCOverride
     protected override void LookTowards(Vector2 target, float power)
     {
         Npc.rotation = Npc.rotation.AngleLerp(Npc.AngleTo(target) - MathHelper.PiOver2, power);
-    }
-
-    private void NextAttack()
-    {
-        CurrentAttackIndex = (CurrentAttackIndex + 1) % CurrentAttackPattern.Length;
     }
 }
