@@ -4,10 +4,10 @@ using Terraria.ModLoader;
 
 namespace AcidicBosses.Common.Textures;
 
-/**
- * Simple class that holds all of the general use textures for the mod.
- * Mainly used to avoid hard-coded strings when access textures.
- */
+/// <summary>
+/// Simple class that holds all the general use textures for the mod.
+/// Mainly used to avoid hard-coded strings when accessing textures.
+/// </summary>
 public static class TextureRegistry
 {
     public static string InvisPath = "AcidicBosses/Assets/Textures/Invisible";

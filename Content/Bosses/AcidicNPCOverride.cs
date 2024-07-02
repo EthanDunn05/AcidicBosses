@@ -14,6 +14,7 @@ namespace AcidicBosses.Content.Bosses;
 
 /// <summary>
 /// Inherit this when overriding the behavior of a vanilla npc.
+/// Provides a lot of functionality that is shared between bosses.
 /// </summary>
 public abstract class AcidicNPCOverride : GlobalNPC
 {
@@ -23,7 +24,7 @@ public abstract class AcidicNPCOverride : GlobalNPC
     /// <summary>
     /// Common data and management used in all bosses.
     /// </summary>
-    public AttackManager AttackManager { get; } = new();
+    protected AttackManager AttackManager { get; } = new();
     
     /// <summary>
     /// The NPCID of the npc to override
@@ -36,7 +37,7 @@ public abstract class AcidicNPCOverride : GlobalNPC
     protected NPC Npc { get; private set; }
     
     /// <summary>
-    /// 4 extra floats for synced ai stuff.
+    /// 4 extra floats for synced AI stuff.
     /// </summary>
     protected float[] ExtraAI = new float[4];
 
@@ -182,8 +183,10 @@ public abstract class AcidicNPCOverride : GlobalNPC
         
         if (npc.life <= 0)
         {
+            // Kill Shaders
             EffectsManager.BossRageKill();
             EffectsManager.ShockwaveKill();
+            EffectsManager.AberrationKill();
         }
     }
 

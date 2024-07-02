@@ -11,8 +11,8 @@ namespace AcidicBosses.Content.Bosses.KingSlime;
 
 public class KingSlimeLaserIndicator : BaseLineProjectile
 {
-    protected override float Length => 12000;
-    protected override float Width => 5;
+    protected override float Length { get; set; } = 12000;
+    protected override float Width { get; set; } = 5;
     protected override Color Color => Color.Red;
     protected override Asset<Texture2D> LineTexture => TextureRegistry.GlowLine;
     

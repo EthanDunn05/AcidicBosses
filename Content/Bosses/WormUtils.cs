@@ -30,6 +30,17 @@ public static class WormUtils
         return latestNPC;
     }
 
+    /// <summary>
+    /// Spawns the length of a worm out of a head npc.
+    /// All parts of the worm share their health and form a doubly linked list of connections.
+    /// If spawning fails, the npc is killed.
+    /// </summary>
+    /// <remarks>USES AI VALUES 0 AND 1! DO NOT OVERWRITE THESE AI VALUES</remarks>
+    /// <param name="npc">The head npc</param>
+    /// <param name="length">How long the worm should be</param>
+    /// <param name="headType">The NPCID of the head</param>
+    /// <param name="bodyType">The NPCID of the body</param>
+    /// <param name="tailType">The NPCID of the tail</param>
     public static void HeadSpawnSegments(NPC npc, int length, int headType, int bodyType, int tailType)
     {
         if (Main.netMode != NetmodeID.MultiplayerClient)
@@ -99,6 +110,15 @@ public static class WormUtils
         }
     }
 
+    /// <summary>
+    /// Runs digging AI this is common between all worms. This is not exclusive to digging
+    /// as Wyverns use this style of movement.
+    /// </summary>
+    /// <param name="npc">The npc to preform the movement</param>
+    /// <param name="speed">How fast the npc should move</param>
+    /// <param name="acceleration">How fast the npc should be able to turn</param>
+    /// <param name="targetPos">The target position</param>
+    /// <param name="canFly">Can the npc ignore gravity. E.g. Wyverns</param>
     public static void HeadDigAI(NPC npc, float speed, float acceleration, Vector2? targetPos, bool canFly = false)
     {
         bool collision = CheckCollision(npc, true);
@@ -108,6 +128,12 @@ public static class WormUtils
         HeadAI_Movement(npc, collision, speed, acceleration, targetPos, canFly);
     }
 
+    /// <summary>
+    /// Checks if the npc is inside a block.
+    /// </summary>
+    /// <param name="npc">The npc to check</param>
+    /// <param name="useDigEffect">Should a dig effect be played at the block?</param>
+    /// <returns>If the npc is in a block</returns>
     public static bool CheckCollision(NPC npc, bool useDigEffect)
     {
         int minTilePosX = (int) (npc.Left.X / 16) - 1;

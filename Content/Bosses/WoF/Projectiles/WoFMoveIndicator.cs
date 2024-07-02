@@ -9,11 +9,12 @@ namespace AcidicBosses.Content.Bosses.WoF.Projectiles;
 
 public class WoFMoveIndicator : BaseLineProjectile
 {
-    protected override float Length => 50000f;
-    protected override float Width => 25f;
+    protected override float Length { get; set; } = 50000f;
+    protected override float Width { get; set; } = 25f;
     protected override Color Color => GetColor();
     protected override Asset<Texture2D> LineTexture => TextureRegistry.SideGlowLine;
-    
+    protected override bool AnchorRotation => false;
+
     // Nullable to make setting a single time easier
     private int? maxTimeLeft;
 

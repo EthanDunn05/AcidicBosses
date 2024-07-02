@@ -34,6 +34,7 @@ public class PhantomEoC : ModProjectile
         Projectile.tileCollide = false;
         Projectile.hostile = true;
         Projectile.netImportant = true;
+        Projectile.penetrate = -1;
     }
 
     public override void AI()
@@ -74,7 +75,7 @@ public class PhantomEoC : ModProjectile
         aiTimer++;
     }
 
-    public override void Kill(int timeLeft)
+    public override void OnKill(int timeLeft)
     {
         // Yoinked from vanilla code
         SoundEngine.PlaySound(SoundID.NPCDeath1, Projectile.Center);

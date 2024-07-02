@@ -57,7 +57,7 @@ public class EoWServant : AcidicNPC
         lightColor *= npc.Opacity;
 
         // Outline when underground
-        spriteBatch.StartShader();
+        spriteBatch.EnterShader();
         EffectsManager.UndergroundOutlineApply(texAsset, Color.Violet, lightColor);
 
         spriteBatch.Draw(
@@ -66,7 +66,7 @@ public class EoWServant : AcidicNPC
             npc.rotation, origin, npc.scale,
             SpriteEffects.None, 0f);
 
-        spriteBatch.EndShader();
+        spriteBatch.ExitShader();
     }
     
     

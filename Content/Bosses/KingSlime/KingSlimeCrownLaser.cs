@@ -21,7 +21,7 @@ public class KingSlimeCrownLaser : DeathrayBase
 
     protected override void SpawnDust(Vector2 position)
     {
-        if (Main.rand.NextBool(4, 5)) return;
+        if (!Main.rand.NextBool(1, 20)) return;
         Dust.NewDust(position, 0, 0, DustID.GemRuby, Scale: 0.5f);
     }
 }

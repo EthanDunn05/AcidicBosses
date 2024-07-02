@@ -1,5 +1,6 @@
 ﻿using AcidicBosses.Common.Textures;
 using AcidicBosses.Content.ProjectileBases;
+using AcidicBosses.Helpers;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
@@ -10,19 +11,32 @@ namespace AcidicBosses.Content.Bosses.WoF.Projectiles;
 
 public class WoFLaser : BaseLineProjectile
 {
-    protected override float Length => 25000;
-    protected override float Width => 10f;
-    protected override Color Color => Color.Purple;
+    protected override float Length { get; set; } = 25000;
+    protected override float Width { get; set; } = 10f;
+    protected override Color Color => GetColor();
     protected override Asset<Texture2D> LineTexture => TextureRegistry.GlowLine;
 
     protected override bool AnchorRotation => false;
 
     private int laserDamage = 0;
     private Vector2 laserVel;
+    
+    // Nullable to make setting a single time easier
+    private int? maxTimeLeft;
+    
+    private Color GetColor()
+    {
+        var fadeT = (float) Projectile.timeLeft / maxTimeLeft ?? 3600;
+        var color = Color.Purple;
+        color *= EasingHelper.CubicOut(fadeT);
+        return color;
+    }
 
     public override void AI()
     {
         base.AI();
+        
+        maxTimeLeft ??= Projectile.timeLeft;
 
         if (Projectile.damage > 0)
         {

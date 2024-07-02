@@ -1,4 +1,6 @@
 ﻿using System;
+using System.IO;
+using AcidicBosses.Core.StateManagement;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
@@ -6,6 +8,7 @@ using Terraria.Audio;
 using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
+using Terraria.ModLoader.IO;
 
 namespace AcidicBosses.Content.Bosses.EoW;
 
@@ -30,105 +33,31 @@ public class EoWHead : AcidicNPCOverride
         return null;
     }
 
-    #region Phases
-
-    private enum PhaseState
-    {
-        Summon1,
-        Chill1,
-        Aggressive1,
-        Summon2,
-        Chill2,
-        Aggressive2,
-        Test
-    }
-
-    private PhaseState CurrentPhase
-    {
-        get => (PhaseState) Npc.ai[1];
-        set => Npc.ai[1] = (float) value;
-    }
-
-    private Action CurrentAi => CurrentPhase switch
-    {
-        PhaseState.Summon1 => Phase_Summon1,
-        PhaseState.Chill1 => Phase_Chill1,
-        PhaseState.Aggressive1 => Phase_Aggressive1,
-        PhaseState.Summon2 => Phase_Summon2,
-        PhaseState.Chill2 => Phase_Chill2,
-        PhaseState.Aggressive2 => Phase_Aggressive2,
-        PhaseState.Test => Phase_Test,
-        _ => throw new UsageException(
-            $"The PhaseState {CurrentPhase} and does not have an ai")
-    };
-
-    #endregion
-
-    #region Attacks
-
-    private enum Attack
-    {
-        Spit,
-    }
-
-    private Attack[] aggressive1Ap =
-    {
-        Attack.Spit,
-    };
-    
-    private Attack[] aggressive2Ap =
-    {
-        Attack.Spit,
-    };
-
-    private Attack[] CurrentAttackPattern => CurrentPhase switch
-    {
-        PhaseState.Aggressive1 => aggressive1Ap,
-        PhaseState.Aggressive2 => aggressive2Ap,
-        _ => throw new UsageException(
-            $"Boss is in the PhaseState {CurrentPhase} and does not have an attack pattern")
-    };
-
-    private int CurrentAttackIndex
-    {
-        get => (int) Npc.ai[2];
-        set => Npc.ai[2] = value;
-    }
-
-    private Attack CurrentAttack => CurrentAttackPattern[CurrentAttackIndex];
-
-    private void NextAttack()
-    {
-        CurrentAttackIndex = (CurrentAttackIndex + 1) % CurrentAttackPattern.Length;
-    }
-
-    #endregion
-
     #region AI
 
-    private bool countUpTimer = false;
+    private PhaseTracker phaseTracker;
 
     private bool isFleeing = false;
 
-    private int AiTimer
-    {
-        get => (int) Npc.ai[3];
-        set => Npc.ai[3] = value;
-    }
-
     public override void OnFirstFrame(NPC npc)
     {
-        CurrentPhase = PhaseState.Summon1;
-        AiTimer = 0;
+        phaseTracker = new PhaseTracker([
+            PhaseSummon1,
+            PhaseChill1,
+            PhaseAggressive1,
+            PhaseSummon2,
+            PhaseChill2,
+            PhaseAggressive2,
+            PhaseSummon3,
+            PhaseChill3,
+            PhaseAggressive3
+        ]);
         
         WormUtils.HeadSpawnSegments(npc, 72, NPCID.EaterofWorldsHead, NPCID.EaterofWorldsBody, NPCID.EaterofWorldsTail);
     }
 
     public override bool AcidAI(NPC npc)
     {
-        if (AiTimer > 0 && !countUpTimer)
-            AiTimer--;
-        
         CommonEowAI(Npc);
 
         // Flee when no players are alive or it is day  
@@ -139,17 +68,14 @@ public class EoWHead : AcidicNPCOverride
             target = Main.player[npc.target];
             if (IsTargetGone(npc))
             {
-                countUpTimer = true;
+                AttackManager.CountUp = true;
                 isFleeing = true;
-                AiTimer = 0;
+                AttackManager.AiTimer = 0;
             }
         }
 
         if (isFleeing) FleeAI();
-        else CurrentAi.Invoke();
-
-        if (countUpTimer)
-            AiTimer++;
+        else phaseTracker.RunPhaseAI();
 
         return false;
     }
@@ -164,42 +90,47 @@ public class EoWHead : AcidicNPCOverride
     {
         // Put Flee Behavior here
     }
+    
+    #endregion
 
     #region Phase AIs
 
+    private PhaseState PhaseSummon1 => new(Phase_Summon1);
+    
     void Phase_Summon1()
     {
         // Spawn in servants and stop taking damage
-        countUpTimer = true;
+        AttackManager.CountUp = true;
         WormUtils.HeadDigAI(Npc, 10, 0.05f, null);
 
-        if (AiTimer == 0)
+        if (AttackManager.AiTimer == 0)
         {
             Npc.dontTakeDamage = true;
             BossBar.MaxWorms = 5;
         }
 
         // Spawn 5 servants
-        if (AiTimer % 30 == 0)
+        if (AttackManager.AiTimer % 30 == 0)
         {
             NewServant();
         }
         
-        if (AiTimer >= 120)
+        if (AttackManager.AiTimer >= 30 * 4)
         {
-            AiTimer = 0;
-            countUpTimer = false;
-            CurrentPhase = PhaseState.Chill1;
+            AttackManager.Reset();
+            phaseTracker.NextPhase();
         }
     }
+
+    private PhaseState PhaseChill1 => new(Phase_Chill1);
 
     void Phase_Chill1()
     {
         // Very simple AI where it just digs towards the player and waits until all of the servants are dead
         if (BossBar.CurrentWorms <= 0)
         {
-            AiTimer = 300;
-            CurrentPhase = PhaseState.Aggressive1;
+            AttackManager.AiTimer = 300;
+            phaseTracker.NextPhase();
             Npc.dontTakeDamage = false;
             if (Main.netMode != NetmodeID.Server)
             {
@@ -207,67 +138,62 @@ public class EoWHead : AcidicNPCOverride
             }
         }
         
-        WormUtils.HeadDigAI(Npc, 10, 0.05f, null);
+        WormUtils.HeadDigAI(Npc, 15, 0.075f, null);
     }
+
+    private PhaseState PhaseAggressive1 => new(Phase_Aggressive1);
 
     void Phase_Aggressive1()
     {
-        if (Npc.GetLifePercent() <= 0.75 && AiTimer == 0)
+        if (Npc.GetLifePercent() <= 0.75)
         {
-            CurrentPhase = PhaseState.Summon2;
+            phaseTracker.NextPhase();
+            AttackManager.Reset();
         }
         
-        if (AiTimer > 0 && !countUpTimer)
-        {
-            WormUtils.HeadDigAI(Npc, 15, 0.075f, null);
-            return;
-        }
+        WormUtils.HeadDigAI(Npc, 20, 0.1f, null);
+        
+        if (AttackManager.AiTimer > 0) return;
 
-        var isDone = false;
-        switch (CurrentAttack)
-        {
-            case Attack.Spit:
-                Attack_Spit(out isDone);
-                if (isDone) AiTimer = 300;
-                break;
-        }
-        
-        if (isDone) NextAttack();
+        if (Attack_Spit()) AttackManager.AiTimer = 300;
     }
+
+    private PhaseState PhaseSummon2 => new(Phase_Summon2);
     
     void Phase_Summon2()
     {
         // Spawn in servants and stop taking damage
-        countUpTimer = true;
+        AttackManager.CountUp = true;
         WormUtils.HeadDigAI(Npc, 10, 0.05f, null);
 
-        if (AiTimer == 0)
+        if (AttackManager.AiTimer == 0)
         {
             Npc.dontTakeDamage = true;
             BossBar.MaxWorms = 7;
         }
 
         // Spawn 7 servants
-        if (AiTimer % 30 == 0)
+        if (AttackManager.AiTimer % 30 == 0)
         {
             NewServant();
         }
         
-        if (AiTimer >= 180)
+        if (AttackManager.AiTimer >= 30 * 6)
         {
-            AiTimer = 0;
-            countUpTimer = false;
-            CurrentPhase = PhaseState.Chill2;
+            AttackManager.Reset();
+            phaseTracker.NextPhase();
         }
     }
+
+    private PhaseState PhaseChill2 => new(Phase_Chill2);
     
     void Phase_Chill2()
     {
         // Very simple AI where it just digs towards the player and waits until all of the servants are dead
         if (BossBar.CurrentWorms <= 0)
         {
-            AiTimer = 300;
-            CurrentPhase = PhaseState.Aggressive2;
+            AttackManager.AiTimer = 120;
+            phaseTracker.NextPhase();
             Npc.dontTakeDamage = false;
             if (Main.netMode != NetmodeID.Server)
             {
@@ -275,50 +201,99 @@ public class EoWHead : AcidicNPCOverride
             }
         }
         
-        WormUtils.HeadDigAI(Npc, 12, 0.05f, null);
+        WormUtils.HeadDigAI(Npc, 17, 0.075f, null);
     }
+
+    private PhaseState PhaseAggressive2 => new(Phase_Aggressive2);
     
     void Phase_Aggressive2()
     {
-        if (AiTimer > 0 && !countUpTimer)
+        if (Npc.GetLifePercent() <= 0.4)
         {
-            WormUtils.HeadDigAI(Npc, 17, 0.075f, null);
-            return;
-        }
-
-        var isDone = false;
-        switch (CurrentAttack)
-        {
-            case Attack.Spit:
-                Attack_Spit(out isDone);
-                if (isDone) AiTimer = 300;
-                break;
+            phaseTracker.NextPhase();
+            AttackManager.Reset();
         }
         
-        if (isDone) NextAttack();
+        WormUtils.HeadDigAI(Npc, 20, 0.1f, null);
+        
+        if (AttackManager.AiTimer > 0) return;
+
+        if (Attack_Spit()) AttackManager.AiTimer = 120;
     }
     
-    void Phase_Test()
+    private PhaseState PhaseSummon3 => new(Phase_Summon3);
+    
+    void Phase_Summon3()
     {
+        // Spawn in servants and stop taking damage
+        AttackManager.CountUp = true;
         WormUtils.HeadDigAI(Npc, 10, 0.05f, null);
+
+        if (AttackManager.AiTimer == 0)
+        {
+            Npc.dontTakeDamage = true;
+            BossBar.MaxWorms = 15;
+        }
+
+        // Spawn 15 servants
+        if (AttackManager.AiTimer % 30 == 0)
+        {
+            NewServant();
+            NewServant();
+            NewServant();
+        }
+        
+        if (AttackManager.AiTimer >= 30 * 4)
+        {
+            AttackManager.Reset();
+            phaseTracker.NextPhase();
+        }
+    }
+    
+    private PhaseState PhaseChill3 => new(Phase_Chill2);
+    
+    void Phase_Chill3()
+    {
+        // Very simple AI where it just digs towards the player and waits until all of the servants are dead
+        if (BossBar.CurrentWorms <= 0)
+        {
+            AttackManager.AiTimer = 60;
+            phaseTracker.NextPhase();
+            Npc.dontTakeDamage = false;
+            if (Main.netMode != NetmodeID.Server)
+            {
+                SoundEngine.PlaySound(SoundID.ForceRoar, Npc.Center);
+            }
+        }
+        
+        WormUtils.HeadDigAI(Npc, 20, 0.1f, null);
+    }
+    
+    private PhaseState PhaseAggressive3 => new(Phase_Aggressive3);
+    
+    void Phase_Aggressive3()
+    {
+        WormUtils.HeadDigAI(Npc, 30, 0.15f, null);
+        
+        if (AttackManager.AiTimer > 0) return;
+
+        if (Attack_Spit()) AttackManager.AiTimer = 60;
     }
 
     #endregion
 
     #region Attack Behaviors
 
-    private void Attack_Spit(out bool isDone)
+    private bool Attack_Spit()
     {
         // Keep trying until above ground
         if (WormUtils.CheckCollision(Npc, false))
         {
-            WormUtils.HeadDigAI(Npc, 15, 0.075f, null);
-            isDone = false;
-            return;
+            return false;
         }
         
         NewSpit(Npc.Center);
-        isDone = true;
+        return true;
     }
     
     private NPC NewSpit(Vector2 position)
@@ -334,8 +309,6 @@ public class EoWHead : AcidicNPCOverride
         if (Main.netMode == NetmodeID.MultiplayerClient) return null;
         return NPC.NewNPCDirect(Npc.GetSource_FromAI(), Npc.Center, ModContent.NPCType<EoWServant>(), Npc.whoAmI);
     }
-
-    #endregion
 
     #endregion
 
@@ -367,4 +340,14 @@ public class EoWHead : AcidicNPCOverride
     }
     
     #endregion
+
+    public override void SendAcidAI(BitWriter bitWriter, BinaryWriter binaryWriter)
+    {
+        phaseTracker.Serialize(binaryWriter);
+    }
+
+    public override void ReceiveAcidAI(BitReader bitReader, BinaryReader binaryReader)
+    {
+        phaseTracker.Deserialize(binaryReader);
+    }
 }

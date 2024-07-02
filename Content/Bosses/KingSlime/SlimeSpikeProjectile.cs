@@ -18,6 +18,14 @@ public class SlimeSpikeProjectile : ModProjectile
 
     public override bool OnTileCollide(Vector2 oldVelocity)
     {
+        // Bounce dust
+        for (var i = 0; i < 20; i++)
+        {
+            var velY = (-Projectile.velocity.Y) * Main.rand.NextFloat(0.75f, 1f);
+            var velX = Main.rand.NextFloat(-1f, 1f);
+            Dust.NewDust(Projectile.position, Projectile.width, Projectile.height, DustID.Water, velX, velY);
+        }
+        
         // Limit Number of Bounces
         Projectile.penetrate--;
         if (Projectile.penetrate <= 0)

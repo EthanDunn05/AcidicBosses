@@ -17,6 +17,8 @@ public enum AcidicEnabledID
     None
 }
 
+// UI code is so annoying to write
+
 public partial class AcidicDifficultySystem : ModSystem
 {
     private GroupOptionButton<AcidicEnabledID>[] enableOptions = new GroupOptionButton<AcidicEnabledID>[2];
@@ -35,6 +37,7 @@ public partial class AcidicDifficultySystem : ModSystem
         var difficultyPanel = new UIPanel
         {
             // These numbers are partially taken from the vanilla panel's size
+            // I hate these magic numbers so much, but that's UI code for ya!
             Width = StyleDimension.FromPixels(250f),
             Height = StyleDimension.FromPixels(280f + 18),
             Left = StyleDimension.FromPixels(250f + (250f / 2f) + 10f),

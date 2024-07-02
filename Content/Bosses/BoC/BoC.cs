@@ -409,6 +409,7 @@ public class BoC : AcidicNPCOverride
 
                 var fadeT = EasingHelper.QuadOut((float) AttackManager.AiTimer / fadeTime);
                 Npc.Opacity = 1f - fadeT;
+                Npc.damage = 0;
                 break;
             }
             // At Teleport
@@ -435,6 +436,7 @@ public class BoC : AcidicNPCOverride
                 isDone = true;
                 AttackManager.CountUp = false;
                 Npc.Opacity = 1f;
+                Npc.damage = Npc.defDamage;
                 ResetExtraAI();
                 break;
             }

@@ -1,5 +1,6 @@
 ﻿using System;
 using AcidicBosses.Content.Bosses.EoC;
+using AcidicBosses.Content.ProjectileBases;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
@@ -239,9 +240,8 @@ public class CreeperOverride : AcidicNPCOverride
     
     private Projectile NewDashLine(Vector2 position, float offset, bool anchor = true)
     {
-        var ai1 = anchor ? Npc.whoAmI + 1 : 0;
-        return Projectile.NewProjectileDirect(Npc.GetSource_FromAI(), position, Vector2.Zero,
-            ModContent.ProjectileType<CreeperDashLine>(), 0, 0, ai0: offset, ai1: ai1);
+        var ai1 = anchor ? Npc.whoAmI : -1;
+        return BaseLineProjectile.Create<CreeperDashLine>(Npc.GetSource_FromAI(), position, offset, ai1);
     }
     
     #endregion

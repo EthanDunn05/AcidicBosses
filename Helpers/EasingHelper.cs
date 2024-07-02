@@ -25,7 +25,7 @@ public static class EasingHelper
 
     public static float ExpIn(float x) => x == 0 ? 0 : MathF.Pow(2, 10 * x - 10);
     public static float ExpOut(float x) => x == 1 ? 1 : 1 - MathF.Pow(2, -10 * x);
-    public static float ExpInOut(float x) => x == 0
+    public static float ExpInOut(float x) => x == 0 // This is what too many ternary operators does to a mf
         ? 0
         : x == 1
             ? 1

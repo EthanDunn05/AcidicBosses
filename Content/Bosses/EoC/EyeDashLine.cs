@@ -12,9 +12,9 @@ namespace AcidicBosses.Content.Bosses.EoC;
 
 public class EyeDashLine : BaseLineProjectile
 {
-    protected override float Length { get; } = 12000f;
-    protected override float Width { get; } = 35f;
-    protected override Color Color => Color.Crimson;
+    protected override float Length { get; set; } = 12000f;
+    protected override float Width { get; set; } = 33f;
+    protected override Color Color => GetColor();
     
     protected override Asset<Texture2D> LineTexture { get; } = TextureRegistry.InvertedGlowLine;
     
@@ -31,9 +31,9 @@ public class EyeDashLine : BaseLineProjectile
 
     public override void AI()
     {
-        base.AI();
-        
         // Set the max time if it hasn't been set already
         maxTimeLeft ??= Projectile.timeLeft;
+        
+        base.AI();
     }
 }

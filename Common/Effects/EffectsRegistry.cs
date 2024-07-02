@@ -4,18 +4,19 @@ using Terraria;
 using Terraria.Graphics.Effects;
 using Terraria.Graphics.Shaders;
 using Terraria.ModLoader;
+// ReSharper disable MemberHidesStaticFromOuterClass
 
 namespace AcidicBosses.Common.Effects;
 
-/**
- * For registering a shader make sure to do ALL 3 of these things:
- * 1. Add the name to the Names struct
- * 2. Add a variable that gets the shader data
- * 3. Load the shader in the LoadShaders function
- *
- * It's also a good idea to make a function in EffectsRegistry.cs
- * for making the use of the shader easier.
- */
+/// <summary>
+/// For registering a shader make sure to do ALL 3 of these things:
+/// 1. Add the name to the Names struct
+/// 2. Add a variable that gets the shader data
+/// 3. Load the shader in the LoadShaders function
+/// 
+/// It's also a good idea to make a function in EffectsRegistry.cs
+/// for making the use of the shader easier.
+/// </summary>
 public static class EffectsRegistry
 {
     // The name of each shader. Must match filename
@@ -44,6 +45,10 @@ public static class EffectsRegistry
     // Load Shaders
     private static AssetRepository assets; // To avoid passing the asset repository around functions
 
+    /// <summary>
+    /// Loads all shaders from into assets
+    /// </summary>
+    /// <param name="assets">The game's asset repository</param>
     public static void LoadShaders(AssetRepository assets)
     {
         EffectsRegistry.assets = assets;

@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using AcidicBosses.Common.Effects;
+using AcidicBosses.Content.ProjectileBases;
 using AcidicBosses.Core.StateManagement;
 using AcidicBosses.Helpers;
 using Microsoft.Xna.Framework;
@@ -282,7 +283,6 @@ public class EoC : AcidicNPCOverride
             // Don't fly off into the distance
             if (AttackManager.AiTimer == 0)
             {
-                Npc.velocity = Vector2.Zero;
                 Npc.localAI[0] = Npc.rotation;
             }
 
@@ -494,10 +494,14 @@ public class EoC : AcidicNPCOverride
         var offsetFromPlayer0 = new Vector2(800, -800);
         var vel0 = (targetPos + offsetFromPlayer0).DirectionTo(targetPos) * dashSpeed;
         var pos0 = targetPos + offsetFromPlayer0;
+        var vel2 = (targetPos - offsetFromPlayer0).DirectionTo(targetPos) * dashSpeed;
+        var pos2 = targetPos - offsetFromPlayer0;
 
         var offsetFromPlayer1 = new Vector2(-800, -800);
         var vel1 = (targetPos + offsetFromPlayer1).DirectionTo(targetPos) * dashSpeed;
         var pos1 = targetPos + offsetFromPlayer1;
+        var vel3 = (targetPos - offsetFromPlayer1).DirectionTo(targetPos) * dashSpeed;
+        var pos3 = targetPos - offsetFromPlayer1;
 
         if (AttackManager.AiTimer == 0)
         {
@@ -522,12 +526,16 @@ public class EoC : AcidicNPCOverride
             rightEye.timeLeft = dashAtTime + dashLength;
             var rightLine = NewDashLine(pos0, vel0.ToRotation(), false);
             rightLine.timeLeft = dashAtTime;
+            var rightEye1 = NewPhantomEoC(pos2, vel2, dashAtTime);
+            rightEye1.timeLeft = dashAtTime + dashLength;
 
             // Spawn Left
             var leftEye = NewPhantomEoC(pos1, vel1, dashAtTime);
             leftEye.timeLeft = dashAtTime + dashLength;
             var leftLine = NewDashLine(pos1, vel1.ToRotation(), false);
             leftLine.timeLeft = dashAtTime;
+            var leftEye1 = NewPhantomEoC(pos3, vel3, dashAtTime);
+            leftEye1.timeLeft = dashAtTime + dashLength;
         }
 
         return isDone;
@@ -550,9 +558,13 @@ public class EoC : AcidicNPCOverride
         var offsetFromPlayer0 = new Vector2(1000, 0);
         var vel0 = (targetPos + offsetFromPlayer0).DirectionTo(targetPos) * dashSpeed;
         var pos0 = targetPos + offsetFromPlayer0;
+        var vel2 = (targetPos - offsetFromPlayer0).DirectionTo(targetPos) * dashSpeed;
+        var pos2 = targetPos - offsetFromPlayer0;
         var offsetFromPlayer1 = new Vector2(0, -1000);
         var vel1 = (targetPos + offsetFromPlayer1).DirectionTo(targetPos) * dashSpeed;
         var pos1 = targetPos + offsetFromPlayer1;
+        var vel3 = (targetPos - offsetFromPlayer1).DirectionTo(targetPos) * dashSpeed;
+        var pos3 = targetPos - offsetFromPlayer1;
 
         if (AttackManager.AiTimer == 0)
         {
@@ -577,12 +589,16 @@ public class EoC : AcidicNPCOverride
             rightEye.timeLeft = dashAtTime + dashLength;
             var rightLine = NewDashLine(pos0, vel0.ToRotation(), false);
             rightLine.timeLeft = dashAtTime;
+            var rightEye1 = NewPhantomEoC(pos2, vel2, dashAtTime);
+            rightEye1.timeLeft = dashAtTime + dashLength;
 
             // Spawn Left
             var leftEye = NewPhantomEoC(pos1, vel1, dashAtTime);
             leftEye.timeLeft = dashAtTime + dashLength;
             var leftLine = NewDashLine(pos1, vel1.ToRotation(), false);
             leftLine.timeLeft = dashAtTime;
+            var leftEye1 = NewPhantomEoC(pos3, vel3, dashAtTime);
+            leftEye1.timeLeft = dashAtTime + dashLength;
         }
 
         return isDone;
@@ -642,7 +658,7 @@ public class EoC : AcidicNPCOverride
             var eye2 = NewPhantomEoC(pos2, -vel, dashAtTime);
             eye.timeLeft = dashAtTime + dashLength;
             var line = NewDashLine(pos, vel.ToRotation(), false);
-            line.timeLeft = dashAtTime;
+            line.timeLeft = (int) (dashAtTime + dashLength / 2f);
         }
 
         return isDone;
@@ -659,9 +675,9 @@ public class EoC : AcidicNPCOverride
         if (AttackManager.AiTimer == 0) Npc.localAI[0] = Npc.rotation;
         Npc.velocity = Vector2.Zero;
         var spinTime = spawnDelay * minionCount;
-        var spinT = (float) AttackManager.AiTimer / (spinTime - 1);
+        var spinT = (float) AttackManager.AiTimer / (spinTime);
         var dAngle = MathHelper.TwoPi * 2 * EasingHelper.QuadInOut(spinT);
-        Npc.rotation = Npc.localAI[0] + dAngle;
+        Npc.rotation = MathHelper.WrapAngle(Npc.localAI[0] + dAngle);
 
         if (AttackManager.AiTimer >= spinTime)
         {
@@ -701,9 +717,8 @@ public class EoC : AcidicNPCOverride
 
     private Projectile NewDashLine(Vector2 position, float offset, bool anchorToBoss = true)
     {
-        var ai1 = anchorToBoss ? Npc.whoAmI + 1 : 0;
-        return Projectile.NewProjectileDirect(Npc.GetSource_FromAI(), position, Vector2.Zero,
-            ModContent.ProjectileType<EyeDashLine>(), 0, 0, ai0: offset, ai1: ai1);
+        var ai1 = anchorToBoss ? Npc.whoAmI : -1;
+        return BaseLineProjectile.Create<EyeDashLine>(Npc.GetSource_FromAI(), position, offset, ai1);
     }
 
     private Projectile NewPhantomEoC(Vector2 position, Vector2 dashVelocity, int dashDelay = 0)
@@ -748,8 +763,6 @@ public class EoC : AcidicNPCOverride
             npc.frame, npc.GetAlpha(drawColor),
             npc.rotation, eyeOrigin, npc.scale,
             effects, 0f);
-
-        spriteBatch.DrawString(FontAssets.MouseText.Value, Npc.whoAmI.ToString(), drawPos, Color.White);
 
         return false;
     }

@@ -29,6 +29,8 @@ public class IchorShot : ModProjectile
             Projectile.Kill();
         }
         
+        Lighting.AddLight(Projectile.position, TorchID.Ichor);
+        
         for (var i = 0; i < 2; i++)
         {
             if (!Main.rand.NextBool(3))

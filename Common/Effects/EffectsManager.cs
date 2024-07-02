@@ -9,10 +9,10 @@ using Terraria.ID;
 
 namespace AcidicBosses.Common.Effects;
 
-/**
- * Contains functions for managing shaders effects and proving more understandable
- * parameters for those shaders.
- */
+/// <summary>
+/// Contains functions for managing shaders effects and proving more understandable
+/// parameters for those shaders.
+/// </summary>
 public static class EffectsManager
 {
     // Shockwave //
@@ -61,7 +61,7 @@ public static class EffectsManager
         return true;
     }
     
-    // Chromatic Abberation //
+    // Chromatic Aberration //
 
     public static bool AberrationActivate(float offset)
     {
@@ -89,9 +89,9 @@ public static class EffectsManager
     
     // Other Shaders //
 
-    /**
-     * Outlines a texture while in 0 light
-     */
+    /// <summary>
+    /// Outlines a texture while in 0 light
+    /// </summary>
     public static void UndergroundOutlineApply(Asset<Texture2D> texture, Color outlineColor, Color lightColor)
     {
         EffectsRegistry.UndergroundOutline.UseImage0(texture);
@@ -100,10 +100,10 @@ public static class EffectsManager
         EffectsRegistry.UndergroundOutline.Apply();
     }
     
-    /**
-     * Applies the slime rage effect to king slime.
-     * This will not work with another npc because there's specifically 6 frames of animation.
-     */
+    /// <summary>
+    /// Applies the slime rage effect to king slime.
+    /// This will not work with another npc because there's specifically 6 frames of animation.
+    /// </summary>
     public static void SlimeRageApply(Asset<Texture2D> texture)
     {
         EffectsRegistry.SlimeRage.UseImage0(texture);

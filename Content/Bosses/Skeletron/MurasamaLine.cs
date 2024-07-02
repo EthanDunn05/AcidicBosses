@@ -9,8 +9,8 @@ namespace AcidicBosses.Content.Bosses.Skeletron;
 
 public class MurasamaLine : BaseLineProjectile
 {
-    protected override float Length => 12000f;
-    protected override float Width => 10f;
+    protected override float Length { get; set; } = 12000f;
+    protected override float Width { get; set; } = 10f;
     protected override Color Color => GetColor();
     protected override Asset<Texture2D> LineTexture => TextureRegistry.GlowLine;
     private int? maxTimeLeft;

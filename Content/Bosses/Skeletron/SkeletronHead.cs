@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using AcidicBosses.Common.Effects;
+using AcidicBosses.Content.ProjectileBases;
 using AcidicBosses.Core.StateManagement;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -601,8 +602,7 @@ public class SkeletronHead : AcidicNPCOverride
 
     private Projectile NewCursedSkullLine(Vector2 position, float rotation)
     {
-        return Projectile.NewProjectileDirect(Npc.GetSource_FromAI(), position, Vector2.Zero,
-            ModContent.ProjectileType<CursedSkullLine>(), 0, 0, ai0: rotation);
+        return BaseLineProjectile.Create<CursedSkullLine>(Npc.GetSource_FromAI(), position, rotation);
     }
     
     private Projectile NewHomingSkull(Vector2 position, Vector2 velocity)
@@ -613,8 +613,7 @@ public class SkeletronHead : AcidicNPCOverride
 
     private Projectile NewMuramasaLine(Vector2 position, float rotation)
     {
-        var proj = Projectile.NewProjectileDirect(Npc.GetSource_FromAI(), position, Vector2.Zero, 
-            ModContent.ProjectileType<MurasamaLine>(), 0, 0, ai0: rotation);
+        var proj = BaseLineProjectile.Create<MurasamaLine>(Npc.GetSource_FromAI(), position, rotation);
         proj.timeLeft = 60;
         return proj;
     }

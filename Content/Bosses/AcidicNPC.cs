@@ -8,6 +8,10 @@ using Terraria.ModLoader.IO;
 
 namespace AcidicBosses.Content.Bosses;
 
+/// <summary>
+/// This is pretty bare bones compared to the npc override. This is mostly here
+/// to match the methods used in the npc override for better readability between the two.
+/// </summary>
 public abstract class AcidicNPC : ModNPC
 {
     private bool isFirstFrame = true;

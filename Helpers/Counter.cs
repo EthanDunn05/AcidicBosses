@@ -5,9 +5,9 @@ using System.Linq;
 
 namespace AcidicBosses.Helpers;
 
-/**
- * Increments through a given list, returning to the beginning when getting to the end.
- */
+/// <summary>
+/// Increments through a given list, returning to the beginning when getting to the end.
+/// </summary>
 public class Counter<T>
 {
     private IEnumerable<T> List { get; }

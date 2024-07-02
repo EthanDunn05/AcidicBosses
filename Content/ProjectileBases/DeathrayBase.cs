@@ -1,9 +1,9 @@
-﻿using System;
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
 using Terraria;
 using Terraria.Audio;
+using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -15,7 +15,7 @@ public abstract class DeathrayBase : ModProjectile
 
     private Vector2? startOffset;
 
-    public int AnchorTo => (int) Projectile.ai[1];
+    public int AnchorTo => (int) Projectile.ai[1] - 1;
     
     public abstract float Distance { get; }
     
@@ -32,6 +32,8 @@ public abstract class DeathrayBase : ModProjectile
 
     private bool doneFirstFrame = false;
 
+    private bool readyToDraw = false;
+
     public override void SetStaticDefaults()
     {
         ProjectileID.Sets.DrawScreenCheckFluff[Projectile.type] = (int) Distance;
@@ -46,6 +48,12 @@ public abstract class DeathrayBase : ModProjectile
         Projectile.tileCollide = false;
     }
 
+    public static Projectile Create<T>(IEntitySource spawnSource, Vector2 position, float rotation, int anchorTo = 0) where T : DeathrayBase
+    {
+        return Projectile.NewProjectileDirect(spawnSource, position, Vector2.Zero,
+            ModContent.ProjectileType<T>(), 0, 0, ai0: rotation, ai1: anchorTo + 1);
+    }
+
     public virtual void FirstFrame()
     {
         SoundEngine.PlaySound(SoundID.Zombie104, Projectile.Center);
@@ -53,13 +61,16 @@ public abstract class DeathrayBase : ModProjectile
     
     public override void AI()
     {
+        // Avoid flickering when spawning
+        if (doneFirstFrame && !readyToDraw) readyToDraw = true;
+        
         if (!doneFirstFrame)
         {
             FirstFrame();
             doneFirstFrame = true;
         }
 
-        if(AnchorTo > 0)
+        if(AnchorTo >= 0)
         {
             var owner = Main.npc[AnchorTo];
             if (owner != null)
@@ -70,8 +81,15 @@ public abstract class DeathrayBase : ModProjectile
                     Projectile.rotation = owner.rotation + Offset;
                 else Projectile.rotation = Offset;
                 
-                if (AnchorPosition)
-                    Projectile.position = (Vector2) (owner.Center + startOffset);
+                if (AnchorPosition && AnchorRotation)
+                {
+                    var rotatedOffset = startOffset * Offset.ToRotationVector2();
+                    Projectile.position = (Vector2) (owner.Center + rotatedOffset)!;
+                }
+                else if (AnchorPosition)
+                {
+                    Projectile.position = (Vector2) (owner.Center + startOffset)!;
+                }
             }
         }
         else
@@ -84,8 +102,13 @@ public abstract class DeathrayBase : ModProjectile
         var rotation = Projectile.rotation.ToRotationVector2();
         for (var i = 0; i < Distance; i += CollisionWidth)
         {
-
-            var position = Projectile.position + rotation * i * CollisionWidth;
+            var position = Projectile.position + rotation * i;
+            
+            // Don't draw dust offscreen
+            var screenPos = position - Main.screenPosition;
+            if (screenPos.X > Main.screenWidth + CollisionWidth || screenPos.Y > Main.screenHeight + CollisionWidth) continue;
+            if (screenPos.X < -CollisionWidth * 2 || screenPos.Y < -CollisionWidth * 2) continue;
+            
             var rect = new Rectangle();
             rect.X = (int) position.X;
             rect.Y = (int) position.Y;
@@ -102,8 +125,8 @@ public abstract class DeathrayBase : ModProjectile
 
     public override bool PreDraw(ref Color lightColor)
     {
-        if (!doneFirstFrame) return false;
-    
+        if (!readyToDraw) return false;
+        
         // Have to rotate the visual for vertically aligned stuff
         var rotation = Projectile.rotation.ToRotationVector2();
         var r = Projectile.rotation - MathHelper.PiOver2;

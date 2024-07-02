@@ -8,8 +8,8 @@ namespace AcidicBosses.Content.Bosses.Skeletron;
 
 public class SkeletronHandDashLine : BaseLineProjectile
 {
-    protected override float Length => 12000f;
-    protected override float Width => 18f;
+    protected override float Length { get; set; } = 12000f;
+    protected override float Width { get; set; } = 18f;
     protected override Color Color => Color.LightGray;
     protected override Asset<Texture2D> LineTexture { get; } = TextureRegistry.InvertedGlowLine;
 }

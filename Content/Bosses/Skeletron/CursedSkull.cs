@@ -56,7 +56,7 @@ public class CursedSkull : ModProjectile
         return new Color(255, 255, 255, (int)Utils.WrappedLerp(0f, 255f, (float)(Projectile.timeLeft % 40) / 40f));
     }
 
-    public override void Kill(int timeLeft)
+    public override void OnKill(int timeLeft)
     {
         // Just taken straight from vanilla
         for (int num398 = 0; num398 < 20; num398++)
