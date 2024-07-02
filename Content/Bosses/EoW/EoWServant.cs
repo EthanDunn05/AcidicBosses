@@ -14,6 +14,12 @@ public class EoWServant : AcidicNPC
 {
     public override string Texture => TextureRegistry.TerrariaNPC(NPCID.EaterofWorldsHead);
 
+    private int Segments
+    {
+        get => (int) NPC.ai[2];
+        set => NPC.ai[2] = value;
+    }
+
     public override void SetDefaults()
     {
         NPC.CloneDefaults(NPCID.EaterofWorldsHead);
@@ -22,6 +28,7 @@ public class EoWServant : AcidicNPC
         NPC.lifeMax = 128;
 
         NPC.BossBar = ModContent.GetInstance<NoBossBar>();
+        NPC.boss = false;
     }
     
     public override void SetStaticDefaults()
@@ -32,7 +39,7 @@ public class EoWServant : AcidicNPC
     public override void OnFirstFrame()
     {
         NPC.behindTiles = false;
-        WormUtils.HeadSpawnSegments(NPC, 3, Type, NPCID.EaterofWorldsBody, NPCID.EaterofWorldsTail);
+        WormUtils.HeadSpawnSegments(NPC, Segments, Type, NPCID.EaterofWorldsBody, NPCID.EaterofWorldsTail);
     }
 
     public override void AcidAI()
@@ -68,6 +75,4 @@ public class EoWServant : AcidicNPC
 
         spriteBatch.ExitShader();
     }
-    
-    
 }

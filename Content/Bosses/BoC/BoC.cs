@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using AcidicBosses.Common;
 using AcidicBosses.Common.Effects;
 using AcidicBosses.Core.StateManagement;
 using AcidicBosses.Helpers;
@@ -511,6 +512,7 @@ public class BoC : AcidicNPCOverride
 
     public override bool AcidicDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color lightColor)
     {
+        var texAsset = TextureAssets.Npc[npc.type];
         var drawPos = npc.Center - Main.screenPosition;
         var brainTexture = TextureAssets.Npc[npc.type].Value;
         var origin = npc.frame.Size() * 0.5f;
@@ -548,12 +550,23 @@ public class BoC : AcidicNPCOverride
             }
         }
 
+        if (npc.dontTakeDamage)
+        {
+            spriteBatch.EnterShader();
+            EffectsManager.ShieldApply(texAsset, lightColor, npc.alpha, 8);
+        }
+
         spriteBatch.Draw(
             brainTexture, drawPos,
             frame, lightColor,
             npc.rotation, origin, npc.scale,
             SpriteEffects.None, 0f);
 
+        if (npc.dontTakeDamage)
+        {
+            spriteBatch.ExitShader();
+        }
+        
         return false;
     }
 

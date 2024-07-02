@@ -29,6 +29,7 @@ public static class EffectsRegistry
         public const string BasicTexture = "BasicTexture";
         public const string UndergroundOutline = "UndergroundOutline";
         public const string SlimeRage = "SlimeRage";
+        public const string Shield = "Shield";
     }
 
     // Screen shaders
@@ -41,18 +42,16 @@ public static class EffectsRegistry
     public static MiscShaderData BasicTexture => GameShaders.Misc[Names.BasicTexture];
     public static MiscShaderData UndergroundOutline => GameShaders.Misc[Names.UndergroundOutline];
     public static MiscShaderData SlimeRage => GameShaders.Misc[Names.SlimeRage];
+    public static MiscShaderData Shield => GameShaders.Misc[Names.Shield];
     
     // Load Shaders
-    private static AssetRepository assets; // To avoid passing the asset repository around functions
 
     /// <summary>
     /// Loads all shaders from into assets
     /// </summary>
     /// <param name="assets">The game's asset repository</param>
-    public static void LoadShaders(AssetRepository assets)
+    public static void LoadShaders()
     {
-        EffectsRegistry.assets = assets;
-        
         LoadScreenShader(Names.Shockwave, EffectPriority.High);
         LoadScreenShader(Names.BossRage, EffectPriority.VeryHigh);
         LoadScreenShader(Names.ChromaticAberration, EffectPriority.High);
@@ -61,12 +60,13 @@ public static class EffectsRegistry
         
         LoadBossShader(Names.UndergroundOutline, "UndergroundOutlinePass");
         LoadBossShader(Names.SlimeRage, "SlimeRagePass");
+        LoadBossShader(Names.Shield, "ShieldPass");
     }
     
     // Loads a shader from the file
-    private static Ref<Effect> LoadEffect(string name)
+    private static Asset<Effect> LoadEffect(string name)
     {
-        var asset = new Ref<Effect>(assets.Request<Effect>("Assets/Effects/" + name, AssetRequestMode.ImmediateLoad).Value);
+        var asset = ModContent.Request<Effect>("AcidicBosses/Assets/Effects/" + name, AssetRequestMode.ImmediateLoad);
         return asset;
     }
 
@@ -94,7 +94,7 @@ public static class EffectsRegistry
     // Loads a screen shader from the base folder
     private static void LoadScreenShader(string name, EffectPriority priority)
     {
-        var effect = LoadEffect(name);
+        var effect = LoadEffect($"ScreenShaders/{name}");
         Filters.Scene[name] = new Filter(new ScreenShaderData(effect, name), priority);
         Filters.Scene[name].Load();
     }

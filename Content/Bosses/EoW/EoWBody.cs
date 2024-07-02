@@ -16,6 +16,8 @@ public class EoWBody : AcidicNPCOverride
     public NPC FollowingNPC => Main.npc[(int) Npc.ai[1]];
     public NPC FollowerNPC => Main.npc[(int) Npc.ai[0]];
     public bool FollowingBoss => HeadNPC.type == NPCID.EaterofWorldsHead;
+
+    public EoWHead.BodyInstructions Instruction => (EoWHead.BodyInstructions) HeadNPC.ai[2];
     
     public override void SetDefaults(NPC entity)
     {
@@ -34,7 +36,49 @@ public class EoWBody : AcidicNPCOverride
         WormUtils.BodyTailFollow(npc, FollowingNPC);
         if (!FollowingBoss) Npc.behindTiles = false;
 
+        if (FollowingBoss)
+        {
+            switch (Instruction)
+            {
+                case EoWHead.BodyInstructions.Nothing:
+                    break;
+                case EoWHead.BodyInstructions.SpitSlow:
+                    SpitAI(300, 120);
+                    break;
+                case EoWHead.BodyInstructions.SpitFast:
+                    SpitAI(120, 60);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(Instruction));
+            }
+        }
+
         return false;
+    }
+
+    public void SpitAI(int spitInterval, int failPenalty)
+    {
+
+        if (Main.netMode == NetmodeID.MultiplayerClient) return;
+
+        if (AttackManager.AiTimer <= 0)
+        {
+            // 1 in 10 chance to spit. This is on the server, so randomness is fine
+            if (Main.rand.NextBool(10) && WormUtils.CheckCollision(Npc, false))
+            {
+                NewSpit(Npc.Center);
+                AttackManager.AiTimer = spitInterval;
+                return;
+            }
+
+            AttackManager.AiTimer = failPenalty;
+        }
+    }
+    
+    private NPC NewSpit(Vector2 position)
+    {
+        if (Main.netMode == NetmodeID.MultiplayerClient) return null;
+        return NPC.NewNPCDirect(Npc.GetSource_FromAI(), position, NPCID.VileSpitEaterOfWorlds, Npc.whoAmI);
     }
 
     public override bool AcidicDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color lightColor)

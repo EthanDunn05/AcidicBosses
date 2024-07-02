@@ -110,4 +110,13 @@ public static class EffectsManager
         EffectsRegistry.SlimeRage.UseImage1(TextureRegistry.RgbPerlin);
         EffectsRegistry.SlimeRage.Apply();
     }
+    
+    public static void ShieldApply(Asset<Texture2D> texture, Color lightColor, float alpha, int frames = 1)
+    {
+        EffectsRegistry.Shield.UseImage0(texture);
+        EffectsRegistry.Shield.UseSecondaryColor(lightColor);
+        EffectsRegistry.Shield.UseOpacity(alpha);
+        EffectsRegistry.Shield.Shader.Parameters["uFrames"].SetValue(frames);
+        EffectsRegistry.Shield.Apply();
+    }
 }

@@ -1,11 +1,14 @@
 ﻿using System;
 using System.IO;
+using AcidicBosses.Common;
+using AcidicBosses.Common.Effects;
 using AcidicBosses.Core.StateManagement;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.Audio;
 using Terraria.GameContent;
+using Terraria.GameContent.ItemDropRules;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.ModLoader.IO;
@@ -14,6 +17,13 @@ namespace AcidicBosses.Content.Bosses.EoW;
 
 public class EoWHead : AcidicNPCOverride
 {
+    public enum BodyInstructions
+    {
+        Nothing,
+        SpitSlow,
+        SpitFast
+    }
+    
     // Set this to the boss to override
     protected override int OverriddenNpc => NPCID.EaterofWorldsHead;
     
@@ -25,6 +35,7 @@ public class EoWHead : AcidicNPCOverride
         entity.life = 10000;
 
         entity.BossBar = ModContent.GetInstance<EoWBossBar>();
+        entity.boss = true;
     }
     
     public override bool? DrawHealthBar(NPC npc, byte hbPosition, ref float scale, ref Vector2 position)
@@ -34,6 +45,12 @@ public class EoWHead : AcidicNPCOverride
     }
 
     #region AI
+
+    public BodyInstructions BodyInstruction
+    {
+        get => (BodyInstructions) Npc.ai[2];
+        set => Npc.ai[2] = (float) value;
+    }
 
     private PhaseTracker phaseTracker;
 
@@ -53,7 +70,7 @@ public class EoWHead : AcidicNPCOverride
             PhaseAggressive3
         ]);
         
-        WormUtils.HeadSpawnSegments(npc, 72, NPCID.EaterofWorldsHead, NPCID.EaterofWorldsBody, NPCID.EaterofWorldsTail);
+        WormUtils.HeadSpawnSegments(npc, 50, NPCID.EaterofWorldsHead, NPCID.EaterofWorldsBody, NPCID.EaterofWorldsTail);
     }
 
     public override bool AcidAI(NPC npc)
@@ -95,7 +112,7 @@ public class EoWHead : AcidicNPCOverride
 
     #region Phase AIs
 
-    private PhaseState PhaseSummon1 => new(Phase_Summon1);
+    private PhaseState PhaseSummon1 => new(Phase_Summon1, AttackManager.Reset);
     
     void Phase_Summon1()
     {
@@ -112,7 +129,7 @@ public class EoWHead : AcidicNPCOverride
         // Spawn 5 servants
         if (AttackManager.AiTimer % 30 == 0)
         {
-            NewServant();
+            NewServant(5);
         }
         
         if (AttackManager.AiTimer >= 30 * 4)
@@ -158,7 +175,7 @@ public class EoWHead : AcidicNPCOverride
         if (Attack_Spit()) AttackManager.AiTimer = 300;
     }
 
-    private PhaseState PhaseSummon2 => new(Phase_Summon2);
+    private PhaseState PhaseSummon2 => new(Phase_Summon2, AttackManager.Reset);
     
     void Phase_Summon2()
     {
@@ -175,7 +192,7 @@ public class EoWHead : AcidicNPCOverride
         // Spawn 7 servants
         if (AttackManager.AiTimer % 30 == 0)
         {
-            NewServant();
+            NewServant(5);
         }
         
         if (AttackManager.AiTimer >= 30 * 6)
@@ -208,6 +225,7 @@ public class EoWHead : AcidicNPCOverride
     
     void Phase_Aggressive2()
     {
+        BodyInstruction = BodyInstructions.SpitSlow;
         if (Npc.GetLifePercent() <= 0.4)
         {
             phaseTracker.NextPhase();
@@ -221,10 +239,12 @@ public class EoWHead : AcidicNPCOverride
         if (Attack_Spit()) AttackManager.AiTimer = 120;
     }
     
-    private PhaseState PhaseSummon3 => new(Phase_Summon3);
+    private PhaseState PhaseSummon3 => new(Phase_Summon3, AttackManager.Reset);
     
     void Phase_Summon3()
     {
+        BodyInstruction = BodyInstructions.Nothing;
+        
         // Spawn in servants and stop taking damage
         AttackManager.CountUp = true;
         WormUtils.HeadDigAI(Npc, 10, 0.05f, null);
@@ -238,9 +258,9 @@ public class EoWHead : AcidicNPCOverride
         // Spawn 15 servants
         if (AttackManager.AiTimer % 30 == 0)
         {
-            NewServant();
-            NewServant();
-            NewServant();
+            NewServant(3);
+            NewServant(4);
+            NewServant(5);
         }
         
         if (AttackManager.AiTimer >= 30 * 4)
@@ -250,10 +270,12 @@ public class EoWHead : AcidicNPCOverride
         }
     }
     
-    private PhaseState PhaseChill3 => new(Phase_Chill2);
+    private PhaseState PhaseChill3 => new(Phase_Chill3);
     
     void Phase_Chill3()
     {
+        BodyInstruction = BodyInstructions.SpitSlow;
+        
         // Very simple AI where it just digs towards the player and waits until all of the servants are dead
         if (BossBar.CurrentWorms <= 0)
         {
@@ -269,15 +291,27 @@ public class EoWHead : AcidicNPCOverride
         WormUtils.HeadDigAI(Npc, 20, 0.1f, null);
     }
     
-    private PhaseState PhaseAggressive3 => new(Phase_Aggressive3);
+    private PhaseState PhaseAggressive3 => new(Phase_Aggressive3, EnterPhaseAggressive3);
+
+    void EnterPhaseAggressive3()
+    {
+        AttackManager.SetAttackPattern([
+            new AttackState(Attack_Spit, 60),
+            new AttackState(Attack_Spit, 60),
+            new AttackState(Attack_Spit, 60),
+            new AttackState(Attack_Summon, 120)
+        ]);
+    }
     
     void Phase_Aggressive3()
     {
+        BossBar.MaxWorms = 0;
+        BodyInstruction = BodyInstructions.SpitFast;
         WormUtils.HeadDigAI(Npc, 30, 0.15f, null);
         
         if (AttackManager.AiTimer > 0) return;
 
-        if (Attack_Spit()) AttackManager.AiTimer = 60;
+        AttackManager.RunAttackPattern();
     }
 
     #endregion
@@ -296,18 +330,32 @@ public class EoWHead : AcidicNPCOverride
         return true;
     }
     
+    private bool Attack_Summon()
+    {
+        NewServant(3);
+        NewServant(3);
+        NewServant(3);
+        return true;
+    }
+    
     private NPC NewSpit(Vector2 position)
     {
         if (Main.netMode == NetmodeID.MultiplayerClient) return null;
         return NPC.NewNPCDirect(Npc.GetSource_FromAI(), position, NPCID.VileSpitEaterOfWorlds, Npc.whoAmI);
     }
 
-    private NPC NewServant()
+    private NPC NewServant(int length)
     {
         SoundEngine.PlaySound(SoundID.NPCDeath13, Npc.Center);
 
         if (Main.netMode == NetmodeID.MultiplayerClient) return null;
-        return NPC.NewNPCDirect(Npc.GetSource_FromAI(), Npc.Center, ModContent.NPCType<EoWServant>(), Npc.whoAmI);
+        var startVel = Main.rand.NextVector2Unit();
+        const float speed = 5f;
+        
+        var npc = NPC.NewNPCDirect(Npc.GetSource_FromAI(), Npc.Center, ModContent.NPCType<EoWServant>(), Npc.whoAmI, ai2: length);
+        npc.velocity = startVel * speed;
+
+        return npc;
     }
 
     #endregion
@@ -332,11 +380,22 @@ public class EoWHead : AcidicNPCOverride
         var origin = npc.frame.Size() * 0.5f;
         lightColor *= npc.Opacity;
 
+        if (npc.dontTakeDamage)
+        {
+            spriteBatch.EnterShader();
+            EffectsManager.ShieldApply(texAsset, lightColor, npc.alpha);
+        }
+
         spriteBatch.Draw(
             texture, drawPos,
             npc.frame, lightColor,
             npc.rotation, origin, npc.scale,
             SpriteEffects.None, 0f);
+        
+        if (npc.dontTakeDamage)
+        {
+            spriteBatch.ExitShader();
+        }
     }
     
     #endregion
@@ -349,5 +408,19 @@ public class EoWHead : AcidicNPCOverride
     public override void ReceiveAcidAI(BitReader bitReader, BinaryReader binaryReader)
     {
         phaseTracker.Deserialize(binaryReader);
+    }
+
+    public override void OnKill(NPC npc)
+    {
+        
+    }
+
+    public override void ModifyNPCLoot(NPC npc, NPCLoot npcLoot)
+    {
+        // Drop Tissue Samples directly if the player isn't getting a treasure bag
+        var notExpertRule = new LeadingConditionRule(new Conditions.NotExpert());
+        notExpertRule.OnSuccess(ItemDropRule.Common(ItemID.ShadowScale, 1, 75, 125));
+
+        npcLoot.Add(notExpertRule);
     }
 }
