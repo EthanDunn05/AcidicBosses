@@ -1,5 +1,6 @@
 ﻿using AcidicBosses.Helpers;
 using Microsoft.Xna.Framework;
+using Terraria;
 using Terraria.Audio;
 using Terraria.GameContent.UI.Elements;
 using Terraria.GameContent.UI.States;
@@ -22,11 +23,18 @@ public enum AcidicEnabledID
 public partial class AcidicDifficultySystem : ModSystem
 {
     private GroupOptionButton<AcidicEnabledID>[] enableOptions = new GroupOptionButton<AcidicEnabledID>[2];
-    private AcidicEnabledID selectionOption = AcidicEnabledID.None;
+    private AcidicEnabledID selectionOption = AcidicEnabledID.Enabled;
     
     public override void Load()
     {
         On_UIWorldCreation.BuildPage += AddCustomElements;
+        On_WorldGen.CreateNewWorld += (orig, self) =>
+        {
+            AcidicActive = selectionOption == AcidicEnabledID.Enabled;
+            loadedKey = true;
+
+            return orig(self);
+        };
     }
 
     private void AddCustomElements(On_UIWorldCreation.orig_BuildPage orig, UIWorldCreation self)

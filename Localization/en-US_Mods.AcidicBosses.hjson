@@ -11,11 +11,11 @@ Projectiles: {
 	CursedSkullLine.DisplayName: Cursed Skull Line
 	Muramasa.DisplayName: Muramasa
 	MurasamaLine.DisplayName: Murasama Line
-	WoFDeathray.DisplayName: WoF Deathray
+	WoFDeathray.DisplayName: Corrupted Deathray
 	WoFDeathrayIndicator.DisplayName: WoF Deathray Indicator
 	WoFLineIndicator.DisplayName: WoF Line Indicator
 	WoFMoveIndicator.DisplayName: WoF Move Indicator
-	WoFLaser.DisplayName: WoF Laser
+	WoFLaser.DisplayName: Laser
 	KingSlimeLaserIndicator.DisplayName: King Slime Laser Indicator
 }
 
@@ -28,9 +28,8 @@ Buffs: {
 
 NPCs: {
 	WoFMouth.DisplayName: Wall of Flesh
-	EasyPixieNPC.DisplayName: Easy Pixie NPC
-	ServantWorm.DisplayName: Servant Worm
-	EoWServant.DisplayName: Eo W Servant
+	EasyPixieNPC.DisplayName: Pixie
+	EoWServant.DisplayName: Servant of the Eater
 }
 
 Items: {
@@ -58,4 +57,7 @@ UI: {
 	}
 }
 
-InfoIcons.AcidicActiveIcon: Acidic Bosses Active
+InfoIcons: {
+	AcidicUnknownIcon: This world is in an unknown state. Enter it to fix this.
+	AcidicActiveIcon: "[c/CE32FF:Acidic Bosses] is Active"
+}
