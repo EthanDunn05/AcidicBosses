@@ -4,6 +4,7 @@ using System.IO;
 using AcidicBosses.Common;
 using AcidicBosses.Common.Effects;
 using AcidicBosses.Helpers;
+using Luminance.Common.Utilities;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
@@ -548,7 +549,7 @@ public class KingSlime : AcidicNPCOverride
 
             const int speed = 10;
             var velocity = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * speed;
-            Projectile.NewProjectile(
+            Utilities.NewProjectileBetter(
                 npc.GetSource_FromAI(),
                 npc.Center,
                 velocity,

@@ -3,6 +3,12 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+fxcompiler.exe
+Assets/Effects/*.dll
+Assets/Effects/**/*.dll
+lib/
+lib/*
+
 # User-specific files
 *.suo
 *.user
@@ -284,6 +290,3 @@ __pycache__/
 *.btm.cs
 *.odx.cs
 *.xsd.cs
-fxcompiler.exe
-Assets/Effects/*.dll
-Assets/Effects/**/*.dll

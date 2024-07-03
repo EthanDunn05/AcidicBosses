@@ -14,6 +14,11 @@ public partial class AcidicDifficultySystem : ModSystem
         AcidicActive = false;
     }
 
+    public override void SaveWorldHeader(TagCompound tag)
+    {
+        tag["AcidicActive"] = AcidicActive;
+    }
+
     public override void SaveWorldData(TagCompound tag)
     {
         if (selectionOption != AcidicEnabledID.None) AcidicActive = selectionOption == AcidicEnabledID.Enabled;

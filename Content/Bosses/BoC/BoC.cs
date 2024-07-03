@@ -5,6 +5,7 @@ using AcidicBosses.Common;
 using AcidicBosses.Common.Effects;
 using AcidicBosses.Core.StateManagement;
 using AcidicBosses.Helpers;
+using Luminance.Common.Utilities;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
@@ -501,7 +502,7 @@ public class BoC : AcidicNPCOverride
 
     private Projectile NewIchorShot(Vector2 position, Vector2 velocity)
     {
-        return Projectile.NewProjectileDirect(Npc.GetSource_FromAI(), position, velocity,
+        return ProjHelper.NewProjectile(Npc.GetSource_FromAI(), position, velocity,
             ModContent.ProjectileType<IchorShot>(),
             Npc.damage / 4, 3);
     }

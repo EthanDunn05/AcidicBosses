@@ -1,4 +1,6 @@
-﻿using Microsoft.Xna.Framework;
+﻿using AcidicBosses.Helpers;
+using Luminance.Common.Utilities;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
 using Terraria;
@@ -48,10 +50,10 @@ public abstract class DeathrayBase : ModProjectile
         Projectile.tileCollide = false;
     }
 
-    public static Projectile Create<T>(IEntitySource spawnSource, Vector2 position, float rotation, int anchorTo = 0) where T : DeathrayBase
+    public static Projectile Create<T>(IEntitySource spawnSource, Vector2 position, int damage, float knockback, float rotation, int anchorTo = 0) where T : DeathrayBase
     {
-        return Projectile.NewProjectileDirect(spawnSource, position, Vector2.Zero,
-            ModContent.ProjectileType<T>(), 0, 0, ai0: rotation, ai1: anchorTo + 1);
+        return ProjHelper.NewProjectile(spawnSource, position, Vector2.Zero,
+            ModContent.ProjectileType<T>(), damage, knockback, ai0: rotation, ai1: anchorTo + 1);
     }
 
     public virtual void FirstFrame()

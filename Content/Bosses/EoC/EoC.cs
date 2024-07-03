@@ -3,6 +3,7 @@ using AcidicBosses.Common.Effects;
 using AcidicBosses.Content.ProjectileBases;
 using AcidicBosses.Core.StateManagement;
 using AcidicBosses.Helpers;
+using Luminance.Core.Graphics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Graphics;
@@ -313,8 +314,7 @@ public class EoC : AcidicNPCOverride
                 Dust.NewDust(Npc.Center, Npc.width, Npc.height, DustID.Blood, speed.X, speed.Y);
             }
 
-            var punch = new PunchCameraModifier(Npc.Center, Main.rand.NextVector2Unit(), 10f, 12f, 60, 1000f, FullName);
-            Main.instance.CameraModifiers.Add(punch);
+            ScreenShakeSystem.StartShakeAtPoint(Npc.Center, 4f);
 
             mouthMode = true;
             Npc.damage = 80; // Way more damage now that the mouth is out
@@ -723,10 +723,8 @@ public class EoC : AcidicNPCOverride
 
     private Projectile NewPhantomEoC(Vector2 position, Vector2 dashVelocity, int dashDelay = 0)
     {
-        // Have to counteract the projectile scaling because npc damage is already scaled
-        var damage = (int) (Npc.damage / Main.GameModeInfo.EnemyDamageMultiplier / 2);
-        return Projectile.NewProjectileDirect(Npc.GetSource_FromAI(), position,
-            dashVelocity, ModContent.ProjectileType<PhantomEoC>(), damage, 5, ai0: dashDelay);
+        return ProjHelper.NewProjectile(Npc.GetSource_FromAI(), position,
+            dashVelocity, ModContent.ProjectileType<PhantomEoC>(), Npc.damage / 2, 5, ai0: dashDelay);
     }
 
     #endregion

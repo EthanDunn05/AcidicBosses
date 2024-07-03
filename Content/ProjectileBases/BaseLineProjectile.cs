@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using AcidicBosses.Common;
 using AcidicBosses.Common.Textures;
+using AcidicBosses.Helpers;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
@@ -58,13 +59,13 @@ public abstract class BaseLineProjectile : ModProjectile
 
     public static Projectile Create<T>(IEntitySource spawnSource, Vector2 position, float rotation, int anchorTo = -1) where T : BaseLineProjectile
     {
-        return Projectile.NewProjectileDirect(spawnSource, position, Vector2.Zero,
+        return ProjHelper.NewProjectile(spawnSource, position, Vector2.Zero,
             ModContent.ProjectileType<T>(), 0, 0, ai0: rotation, ai1: anchorTo + 1);
     }
     
     public static Projectile Create<T>(IEntitySource spawnSource, Vector2 position, Vector2 velocity, float rotation, int anchorTo = -1) where T : BaseLineProjectile
     {
-        return Projectile.NewProjectileDirect(spawnSource, position, velocity,
+        return ProjHelper.NewProjectile(spawnSource, position, velocity,
             ModContent.ProjectileType<T>(), 0, 0, ai0: rotation, ai1: anchorTo + 1);
     }
 

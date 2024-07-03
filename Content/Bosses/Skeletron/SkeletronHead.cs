@@ -3,6 +3,8 @@ using System.IO;
 using AcidicBosses.Common.Effects;
 using AcidicBosses.Content.ProjectileBases;
 using AcidicBosses.Core.StateManagement;
+using AcidicBosses.Helpers;
+using Luminance.Core.Graphics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
@@ -196,8 +198,7 @@ public class SkeletronHead : AcidicNPCOverride
         
         if (AttackManager.AiTimer == 0)
         {
-            var punch = new PunchCameraModifier(Npc.Center, Main.rand.NextVector2Unit(), 10f, 12f, 20, 1000f, FullName);
-            Main.instance.CameraModifiers.Add(punch);
+            ScreenShakeSystem.StartShakeAtPoint(Npc.Center, 10f);
             SoundEngine.PlaySound(SoundID.Roar);
             Npc.velocity = Vector2.Zero;
             
@@ -596,7 +597,7 @@ public class SkeletronHead : AcidicNPCOverride
 
     private Projectile NewCursedSkull(Vector2 position, Vector2 velocity)
     {
-        return Projectile.NewProjectileDirect(Npc.GetSource_FromAI(), position, velocity,
+        return ProjHelper.NewProjectile(Npc.GetSource_FromAI(), position, velocity,
             ModContent.ProjectileType<CursedSkull>(), Npc.damage / 2, 3);
     }
 
@@ -607,7 +608,7 @@ public class SkeletronHead : AcidicNPCOverride
     
     private Projectile NewHomingSkull(Vector2 position, Vector2 velocity)
     {
-        return Projectile.NewProjectileDirect(Npc.GetSource_FromAI(), position, velocity,
+        return ProjHelper.NewProjectile(Npc.GetSource_FromAI(), position, velocity,
             ProjectileID.Skull, Npc.damage / 8, 3);
     }
 
@@ -620,13 +621,13 @@ public class SkeletronHead : AcidicNPCOverride
 
     private Projectile NewMuramasa(Vector2 position, Vector2 velocity)
     {
-        return Projectile.NewProjectileDirect(Npc.GetSource_FromAI(), position, velocity,
+        return ProjHelper.NewProjectile(Npc.GetSource_FromAI(), position, velocity,
             ModContent.ProjectileType<Muramasa>(), Npc.damage / 2, 3);
     }
     
     private Projectile NewShadowflame(Vector2 position, Vector2 velocity)
     {
-        return Projectile.NewProjectileDirect(Npc.GetSource_FromAI(), position, velocity,
+        return ProjHelper.NewProjectile(Npc.GetSource_FromAI(), position, velocity,
             ProjectileID.Shadowflames, Npc.damage / 4, 3);
     }
 

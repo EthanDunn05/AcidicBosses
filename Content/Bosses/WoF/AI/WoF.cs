@@ -380,9 +380,9 @@ public class WoF : AcidicNPCOverride
             {
                 var offsetL = new Vector2(-distance, -1750);
                 var offsetR = new Vector2(distance, 1750);
-                var l = NewLineIndicator(Npc.Center + offsetL, MathHelper.PiOver2, Npc.whoAmI);
+                var l = NewLineIndicator(Npc.Center + offsetL, -MathHelper.PiOver2, Npc.whoAmI);
                 l.timeLeft = 120;
-                var r = NewLineIndicator(Npc.Center + offsetR, -MathHelper.PiOver2, Npc.whoAmI);
+                var r = NewLineIndicator(Npc.Center + offsetR, MathHelper.PiOver2, Npc.whoAmI);
                 r.timeLeft = 120;
             }
         }
@@ -662,7 +662,7 @@ public class WoF : AcidicNPCOverride
     
     private Projectile NewFireball(Vector2 pos, Vector2 vel)
     {
-        var proj = Projectile.NewProjectileDirect(Npc.GetSource_FromAI(), pos, vel, 
+        var proj = ProjHelper.NewProjectile(Npc.GetSource_FromAI(), pos, vel, 
             ProjectileID.CursedFlameHostile, damage / 4, 3);
         proj.scale = 0.9f;
         proj.tileCollide = false;
@@ -672,7 +672,7 @@ public class WoF : AcidicNPCOverride
     
     private Projectile NewLaser(Vector2 pos, Vector2 vel, float rotation, int anchor = 0)
     {
-        var proj = Projectile.NewProjectileDirect(Npc.GetSource_FromAI(), pos, vel, 
+        var proj = ProjHelper.NewProjectile(Npc.GetSource_FromAI(), pos, vel, 
             ModContent.ProjectileType<WoFLaser>(), damage / 4, 3, ai0: rotation, ai1: anchor + 1);
 
         return proj;
@@ -680,7 +680,7 @@ public class WoF : AcidicNPCOverride
 
     private Projectile NewDeathray(Vector2 pos, float rotation, int anchor = 0)
     {
-        return DeathrayBase.Create<WoFDeathray>(Npc.GetSource_FromAI(), pos, rotation, anchor);
+        return DeathrayBase.Create<WoFDeathray>(Npc.GetSource_FromAI(), pos, damage, 5, rotation, anchor);
     }
 
     private Projectile NewDeathrayIndicator(Vector2 pos, float rotation, int anchor = 0)

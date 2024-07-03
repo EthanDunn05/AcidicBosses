@@ -1,12 +1,38 @@
 ﻿using System.Linq;
+using Luminance.Common.Utilities;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
+using Terraria.DataStructures;
 
 namespace AcidicBosses.Helpers;
 
 public static class ProjHelper
 {
+    public static Projectile NewProjectile(IEntitySource source, float spawnX, float spawnY, float velocityX, float velocityY, int type, int damage, float knockback, int owner = -1, float ai0 = 0f, float ai1 = 0f, float ai2 = 0f)
+    {
+        // Blatantly stolen from luminance
+        // The only difference between this and Luminance's implementation is that this doesn't default to the player
+        // as the owner and defaults to the server like normal
+        float damageJankCorrectionFactor = 0.5f;
+        if (Main.expertMode)
+            damageJankCorrectionFactor = 0.25f;
+        if (Main.masterMode)
+            damageJankCorrectionFactor = 0.1667f;
+        damage = (int)(damage * damageJankCorrectionFactor);
+
+        int index = Projectile.NewProjectile(source, spawnX, spawnY, velocityX, velocityY, type, damage, knockback, owner, ai0, ai1, ai2);
+        if (index >= 0 && index < Main.maxProjectiles)
+            Main.projectile[index].netUpdate = true;
+
+        return Main.projectile[index];
+    }
+    
+    public static Projectile NewProjectile(IEntitySource source, Vector2 center, Vector2 velocity, int type, int damage, float knockback, int owner = -1, float ai0 = 0f, float ai1 = 0f, float ai2 = 0f)
+    {
+        return NewProjectile(source, center.X, center.Y, velocity.X, velocity.Y, type, damage, knockback, owner, ai0, ai1, ai2);
+    }
+    
     public static void DrawAfterimages(Projectile projectile, Texture2D texture, ref Color lightColor, int afterimageInterval = 1)
     {
         var rect = texture.Frame(1, Main.projFrames[projectile.type], 0, projectile.frame);

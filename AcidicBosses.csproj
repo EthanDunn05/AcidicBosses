@@ -7,6 +7,6 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <Folder Include="Content\Bosses\QueenBee\" />
+    <Reference Include="lib\Luminance.dll"/>
   </ItemGroup>
 </Project>
