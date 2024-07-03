@@ -2,7 +2,9 @@
 using System.IO;
 using AcidicBosses.Common;
 using AcidicBosses.Common.Effects;
+using AcidicBosses.Common.RenderManagers;
 using AcidicBosses.Core.StateManagement;
+using Luminance.Core.Graphics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
@@ -379,23 +381,18 @@ public class EoWHead : AcidicNPCOverride
         var texture = texAsset.Value;
         var origin = npc.frame.Size() * 0.5f;
         lightColor *= npc.Opacity;
-
-        if (npc.dontTakeDamage)
-        {
-            spriteBatch.EnterShader();
-            EffectsManager.ShieldApply(texAsset, lightColor, npc.alpha);
-        }
-
-        spriteBatch.Draw(
-            texture, drawPos,
-            npc.frame, lightColor,
-            npc.rotation, origin, npc.scale,
-            SpriteEffects.None, 0f);
         
-        if (npc.dontTakeDamage)
+        // Batch shade because there are a lot of these
+        BatchShadingManager.DrawNpc(EffectsRegistry.Shield, sb =>
         {
-            spriteBatch.ExitShader();
-        }
+            if (npc.dontTakeDamage) EffectsManager.ShieldApply(texAsset, lightColor, npc.alpha);
+        
+            sb.Draw(
+                texture, drawPos,
+                npc.frame, lightColor,
+                npc.rotation, origin, npc.scale,
+                SpriteEffects.None, 0f);
+        });
     }
     
     #endregion

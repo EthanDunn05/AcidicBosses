@@ -1,5 +1,6 @@
 ﻿using AcidicBosses.Common;
 using AcidicBosses.Common.Effects;
+using AcidicBosses.Common.RenderManagers;
 using AcidicBosses.Common.Textures;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -64,15 +65,15 @@ public class EoWServant : AcidicNPC
         lightColor *= npc.Opacity;
 
         // Outline when underground
-        spriteBatch.EnterShader();
-        EffectsManager.UndergroundOutlineApply(texAsset, Color.Violet, lightColor);
+        BatchShadingManager.DrawNpc(EffectsRegistry.UndergroundOutline, sb =>
+        {
+            EffectsManager.UndergroundOutlineApply(texAsset, Color.Violet, lightColor);
 
-        spriteBatch.Draw(
-            texture, drawPos,
-            npc.frame, lightColor,
-            npc.rotation, origin, npc.scale,
-            SpriteEffects.None, 0f);
-
-        spriteBatch.ExitShader();
+            sb.Draw(
+                texture, drawPos,
+                npc.frame, lightColor,
+                npc.rotation, origin, npc.scale,
+                SpriteEffects.None, 0f);
+        });
     }
 }

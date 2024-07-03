@@ -6,6 +6,7 @@ using AcidicBosses.Common.Effects;
 using AcidicBosses.Core.StateManagement;
 using AcidicBosses.Helpers;
 using Luminance.Common.Utilities;
+using Luminance.Core.Graphics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
@@ -551,22 +552,11 @@ public class BoC : AcidicNPCOverride
             }
         }
 
-        if (npc.dontTakeDamage)
-        {
-            spriteBatch.EnterShader();
-            EffectsManager.ShieldApply(texAsset, lightColor, npc.alpha, 8);
-        }
-
         spriteBatch.Draw(
             brainTexture, drawPos,
             frame, lightColor,
             npc.rotation, origin, npc.scale,
             SpriteEffects.None, 0f);
-
-        if (npc.dontTakeDamage)
-        {
-            spriteBatch.ExitShader();
-        }
         
         return false;
     }
