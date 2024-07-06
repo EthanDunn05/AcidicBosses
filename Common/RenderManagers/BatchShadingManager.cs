@@ -17,7 +17,8 @@ public class BatchShadingManager : ModSystem
 {
     public delegate void ShadedDrawAction(SpriteBatch spritebatch);
 
-    private static readonly Dictionary<MiscShaderData, List<ShadedDrawAction>> NpcsToDraw = new();
+    private static readonly Dictionary<MiscShaderData, List<ShadedDrawAction>> NpcsToDrawBehind = new();
+    private static readonly Dictionary<MiscShaderData, List<ShadedDrawAction>> NpcsToDrawAbove = new();
     private static readonly Dictionary<MiscShaderData, List<ShadedDrawAction>> ProjsToDraw = new();
     
     public override void OnModLoad()
@@ -32,11 +33,25 @@ public class BatchShadingManager : ModSystem
         On_Main.DrawProjectiles -= DrawShadedProjectiles;
     }
 
-    public static void DrawNpc(MiscShaderData shader, ShadedDrawAction drawAction)
+    public static void DrawNpc(NPC npc, MiscShaderData shader, ShadedDrawAction drawAction)
     {
-        if (!NpcsToDraw.ContainsKey(shader)) NpcsToDraw.Add(shader, []);
-        
-        NpcsToDraw[shader].Add(drawAction);
+        switch (npc.behindTiles)
+        {
+            case true:
+            {
+                if (!NpcsToDrawBehind.ContainsKey(shader)) NpcsToDrawBehind.Add(shader, []);
+
+                NpcsToDrawBehind[shader].Add(drawAction);
+                break;
+            }
+            case false:
+            {
+                if (!NpcsToDrawAbove.ContainsKey(shader)) NpcsToDrawAbove.Add(shader, []);
+
+                NpcsToDrawAbove[shader].Add(drawAction);
+                break;
+            }
+        }
     }
     
     public static void DrawProjectile(MiscShaderData shader, ShadedDrawAction drawAction)
@@ -48,35 +63,32 @@ public class BatchShadingManager : ModSystem
     
     private void DrawShadedNpcs(On_Main.orig_DrawNPCs orig, Main self, bool behindtiles)
     {
-        foreach (var batch in NpcsToDraw)
-        {
-            Main.spriteBatch.EnterShader();
-            foreach (var drawAction in batch.Value)
-            {
-                drawAction.Invoke(Main.spriteBatch);
-            }
-            Main.spriteBatch.ExitShader();
-        }
-        
-        NpcsToDraw.Clear();
+        if (behindtiles) DrawBatches(NpcsToDrawBehind);
+        else DrawBatches(NpcsToDrawAbove);
         
         orig(self, behindtiles);
     }
     
     private void DrawShadedProjectiles(On_Main.orig_DrawProjectiles orig, Main self)
     {
-        foreach (var batch in ProjsToDraw)
+        DrawBatches(ProjsToDraw);
+        
+        orig(self);
+    }
+
+    private void DrawBatches(Dictionary<MiscShaderData, List<ShadedDrawAction>> batches)
+    {
+        foreach (var batch in batches)
         {
             Main.spriteBatch.EnterShader();
             foreach (var drawAction in batch.Value)
             {
                 drawAction.Invoke(Main.spriteBatch);
             }
+
             Main.spriteBatch.ExitShader();
         }
         
-        ProjsToDraw.Clear();
-        
-        orig(self);
+        batches.Clear();
     }
 }

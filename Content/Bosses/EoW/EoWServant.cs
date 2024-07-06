@@ -66,7 +66,7 @@ public class EoWServant : AcidicNPC
         lightColor *= npc.Opacity;
 
         // Outline when underground
-        BatchShadingManager.DrawNpc(EffectsRegistry.UndergroundOutline, sb =>
+        BatchShadingManager.DrawNpc(npc, EffectsRegistry.UndergroundOutline, sb =>
         {
             EffectsManager.UndergroundOutlineApply(texAsset, Color.Violet, lightColor);
 

@@ -385,7 +385,7 @@ public class EoWHead : AcidicNPCOverride
         lightColor *= npc.Opacity;
         
         // Batch shade because there are a lot of these
-        BatchShadingManager.DrawNpc(EffectsRegistry.Shield, sb =>
+        BatchShadingManager.DrawNpc(npc, EffectsRegistry.Shield, sb =>
         {
             if (npc.dontTakeDamage) EffectsManager.ShieldApply(texAsset, lightColor, npc.alpha);
         
