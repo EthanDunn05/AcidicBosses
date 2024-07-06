@@ -21,22 +21,17 @@ public class WoFLaser : BaseLineProjectile
     private int laserDamage = 0;
     private Vector2 laserVel;
     
-    // Nullable to make setting a single time easier
-    private int? maxTimeLeft;
-    
     private Color GetColor()
     {
-        var fadeT = (float) Projectile.timeLeft / maxTimeLeft ?? 3600;
+        var fadeT = (float) Projectile.timeLeft / maxTimeLeft;
         var color = Color.Purple;
         color *= EasingHelper.CubicOut(fadeT);
         return color;
     }
-
+    
     public override void AI()
     {
         base.AI();
-        
-        maxTimeLeft ??= Projectile.timeLeft;
 
         if (Projectile.damage > 0)
         {

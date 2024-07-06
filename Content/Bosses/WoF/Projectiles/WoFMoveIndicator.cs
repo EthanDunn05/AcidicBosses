@@ -15,20 +15,10 @@ public class WoFMoveIndicator : BaseLineProjectile
     protected override Asset<Texture2D> LineTexture => TextureRegistry.SideGlowLine;
     protected override bool AnchorRotation => false;
 
-    // Nullable to make setting a single time easier
-    private int? maxTimeLeft;
-
     // Fade over Time
     private Color GetColor()
     {
-        var fadeT = (float) Projectile.timeLeft / maxTimeLeft ?? 3600;
+        var fadeT = (float) Projectile.timeLeft / maxTimeLeft;
         return Color.Aquamarine * EasingHelper.QuadOut(fadeT);
-    }
-
-    public override void AI()
-    {
-        // Set the max time if it hasn't been set already
-        maxTimeLeft ??= Projectile.timeLeft;
-        base.AI();
     }
 }

@@ -1,4 +1,5 @@
-﻿using AcidicBosses.Common.Effects;
+﻿using System.IO;
+using AcidicBosses.Common.Effects;
 using AcidicBosses.Content.ProjectileBases;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -19,18 +20,16 @@ public class WoFDeathray : DeathrayBase
     protected override bool AnchorRotation => false;
 
     private const float AberrationStrength = 0.003f;
-    private float totalTime;
 
     public override void FirstFrame()
     {
         base.FirstFrame();
-        totalTime = Projectile.timeLeft;
         EffectsManager.AberrationActivate(AberrationStrength);
     }
 
     protected override void AiEffects()
     {
-        EffectsManager.AberrationProgress(MathHelper.Lerp(0f, AberrationStrength, Projectile.timeLeft / totalTime));
+        EffectsManager.AberrationProgress(MathHelper.Lerp(0f, AberrationStrength, Projectile.timeLeft / (float) maxTimeLeft));
     }
 
     public override void OnKill(int timeLeft)

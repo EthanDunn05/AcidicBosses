@@ -28,6 +28,10 @@ public class EoWTail : AcidicNPCOverride
 
     public override bool AcidAI(NPC npc)
     {
+        if (FollowingNPC.type == NPCID.EaterofWorldsBody)
+            Npc.realLife = (int) FollowingNPC.realLife;
+        else Npc.realLife = (int) Npc.ai[1];
+        
         EoWHead.CommonEowAI(npc);
 
         WormUtils.BodyTailFollow(npc, FollowingNPC);

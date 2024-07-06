@@ -15,21 +15,10 @@ public class CursedSkullLine : BaseLineProjectile
     protected override Color Color => GetColor();
 
     protected override Asset<Texture2D> LineTexture { get; } = TextureRegistry.GlowLine;
-
-    // Nullable to make setting a single time easier
-    private int? maxTimeLeft;
-
     // Fade over Time
     private Color GetColor()
     {
-        var fadeT = (float) Projectile.timeLeft / maxTimeLeft ?? 3600;
+        var fadeT = (float) Projectile.timeLeft / maxTimeLeft;
         return Color.OrangeRed * EasingHelper.QuadOut(fadeT);
-    }
-
-    public override void AI()
-    {
-        // Set the max time if it hasn't been set already
-        maxTimeLeft ??= Projectile.timeLeft;
-        base.AI();
     }
 }

@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
 using AcidicBosses.Common;
 using AcidicBosses.Common.Textures;
 using AcidicBosses.Helpers;
@@ -42,6 +44,8 @@ public abstract class BaseLineProjectile : ModProjectile
 
     private bool doneFirstFrame = false;
     private bool readyToDraw = false;
+
+    protected int maxTimeLeft = 0;
     
     public override void SetStaticDefaults()
     {
@@ -57,23 +61,35 @@ public abstract class BaseLineProjectile : ModProjectile
         Projectile.hide = DrawBehindNpcs;
     }
 
-    public static Projectile Create<T>(IEntitySource spawnSource, Vector2 position, float rotation, int anchorTo = -1) where T : BaseLineProjectile
+    public static Projectile Create<T>(IEntitySource spawnSource, Vector2 position, float rotation, int lifetime, int anchorTo = -1) where T : BaseLineProjectile
     {
         return ProjHelper.NewProjectile(spawnSource, position, Vector2.Zero,
-            ModContent.ProjectileType<T>(), 0, 0, ai0: rotation, ai1: anchorTo + 1);
+            ModContent.ProjectileType<T>(), 0, 0, ai0: rotation, ai1: anchorTo + 1, ai2: lifetime);
     }
     
-    public static Projectile Create<T>(IEntitySource spawnSource, Vector2 position, Vector2 velocity, float rotation, int anchorTo = -1) where T : BaseLineProjectile
+    public static Projectile Create<T>(IEntitySource spawnSource, Vector2 position, Vector2 velocity, float rotation, int lifetime, int anchorTo = -1) where T : BaseLineProjectile
     {
         return ProjHelper.NewProjectile(spawnSource, position, velocity,
-            ModContent.ProjectileType<T>(), 0, 0, ai0: rotation, ai1: anchorTo + 1);
+            ModContent.ProjectileType<T>(), 0, 0, ai0: rotation, ai1: anchorTo + 1, ai2: lifetime);
     }
+    
+    public static Projectile Create<T>(IEntitySource spawnSource, Vector2 position, Vector2 velocity, int damage, float knockback, float rotation, int lifetime, int anchorTo = -1) where T : BaseLineProjectile
+    {
+        return ProjHelper.NewProjectile(spawnSource, position, velocity,
+            ModContent.ProjectileType<T>(), damage, knockback, ai0: rotation, ai1: anchorTo + 1, ai2: lifetime);
+    }
+
 
     public override void AI()
     {
         // Avoid flickering when spawning
         if (doneFirstFrame && !readyToDraw) readyToDraw = true;
-        if (!doneFirstFrame) doneFirstFrame = true;
+        if (!doneFirstFrame)
+        {
+            FirstFrame();
+            Projectile.netUpdate = true;
+            doneFirstFrame = true;
+        }
         
         if (AnchorTo >= 0)
         {
@@ -103,6 +119,12 @@ public abstract class BaseLineProjectile : ModProjectile
         }
     }
 
+    public virtual void FirstFrame()
+    {
+        Projectile.timeLeft = (int) Projectile.ai[2];
+        maxTimeLeft = (int) Projectile.ai[2];
+    }
+
     public override void DrawBehind(int index, List<int> behindNPCsAndTiles, List<int> behindNPCs,
         List<int> behindProjectiles, List<int> overPlayers,
         List<int> overWiresUI)
@@ -130,5 +152,23 @@ public abstract class BaseLineProjectile : ModProjectile
         if (Shader != null) Main.spriteBatch.ExitShader();
 
         return false;
+    }
+
+    public virtual void SendAI(BinaryWriter writer)
+    {
+    }
+
+    public sealed override void SendExtraAI(BinaryWriter writer)
+    {
+        SendAI(writer);
+    }
+    
+    public virtual void RecieveAI(BinaryReader reader)
+    {
+    }
+
+    public sealed override void ReceiveExtraAI(BinaryReader reader)
+    {
+        RecieveAI(reader);
     }
 }

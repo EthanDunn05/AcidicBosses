@@ -7,6 +7,7 @@ using AcidicBosses.Core.StateManagement;
 using Luminance.Core.Graphics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using ReLogic.Graphics;
 using Terraria;
 using Terraria.Audio;
 using Terraria.GameContent;
@@ -73,12 +74,13 @@ public class EoWHead : AcidicNPCOverride
         ]);
         
         WormUtils.HeadSpawnSegments(npc, 50, NPCID.EaterofWorldsHead, NPCID.EaterofWorldsBody, NPCID.EaterofWorldsTail);
+        NetSync(npc);
     }
 
     public override bool AcidAI(NPC npc)
     {
         CommonEowAI(Npc);
-
+        
         // Flee when no players are alive or it is day  
         var target = Main.player[npc.target];
         if (IsTargetGone(npc) && !isFleeing)

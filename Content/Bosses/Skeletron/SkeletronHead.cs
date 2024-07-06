@@ -452,16 +452,14 @@ public class SkeletronHead : AcidicNPCOverride
             centerY = center.Y;
             center.Y += distanceBelowPlayer;
 
-            var centerSkull = NewCursedSkullLine(center, -MathHelper.PiOver2);
-            centerSkull.timeLeft = indicatorLength;
+            var centerSkull = NewCursedSkullLine(center, -MathHelper.PiOver2, indicatorLength);
 
             // Left
             for (var i = 1; i <= skullsToEachSide; i++)
             {
                 var pos = center;
                 pos.X -= spacing * i;
-                var skull = NewCursedSkullLine(pos, -MathHelper.PiOver2);
-                skull.timeLeft = indicatorLength;
+                var skull = NewCursedSkullLine(pos, -MathHelper.PiOver2, indicatorLength);
             }
 
             // Right
@@ -469,8 +467,7 @@ public class SkeletronHead : AcidicNPCOverride
             {
                 var pos = center;
                 pos.X += spacing * i;
-                var skull = NewCursedSkullLine(pos, -MathHelper.PiOver2);
-                skull.timeLeft = indicatorLength;
+                var skull = NewCursedSkullLine(pos, -MathHelper.PiOver2, indicatorLength);
             }
         }
 
@@ -601,9 +598,9 @@ public class SkeletronHead : AcidicNPCOverride
             ModContent.ProjectileType<CursedSkull>(), Npc.damage / 2, 3);
     }
 
-    private Projectile NewCursedSkullLine(Vector2 position, float rotation)
+    private Projectile NewCursedSkullLine(Vector2 position, float rotation, int lifetime)
     {
-        return BaseLineProjectile.Create<CursedSkullLine>(Npc.GetSource_FromAI(), position, rotation);
+        return BaseLineProjectile.Create<CursedSkullLine>(Npc.GetSource_FromAI(), position, rotation, lifetime);
     }
     
     private Projectile NewHomingSkull(Vector2 position, Vector2 velocity)
@@ -614,8 +611,7 @@ public class SkeletronHead : AcidicNPCOverride
 
     private Projectile NewMuramasaLine(Vector2 position, float rotation)
     {
-        var proj = BaseLineProjectile.Create<MurasamaLine>(Npc.GetSource_FromAI(), position, rotation);
-        proj.timeLeft = 60;
+        var proj = BaseLineProjectile.Create<MurasamaLine>(Npc.GetSource_FromAI(), position, rotation, 60);
         return proj;
     }
 

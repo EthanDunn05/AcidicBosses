@@ -206,8 +206,7 @@ public class CreeperOverride : AcidicNPCOverride
 
         if (AiTimer == 0 && Main.netMode != NetmodeID.MultiplayerClient)
         {
-            var line = NewDashLine(Npc.Center, 0f);
-            line.timeLeft = dashAtTime;
+            var line = NewDashLine(Npc.Center, 0f, dashAtTime);
         }
 
         if (AiTimer == 0)
@@ -238,10 +237,10 @@ public class CreeperOverride : AcidicNPCOverride
         isDone = false;
     }
     
-    private Projectile NewDashLine(Vector2 position, float offset, bool anchor = true)
+    private Projectile NewDashLine(Vector2 position, float offset, int lifetime, bool anchor = true)
     {
         var ai1 = anchor ? Npc.whoAmI : -1;
-        return BaseLineProjectile.Create<CreeperDashLine>(Npc.GetSource_FromAI(), position, offset, ai1);
+        return BaseLineProjectile.Create<CreeperDashLine>(Npc.GetSource_FromAI(), position, offset, lifetime, ai1);
     }
     
     #endregion

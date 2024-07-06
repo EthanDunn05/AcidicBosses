@@ -41,6 +41,7 @@ public class EoWServant : AcidicNPC
     {
         NPC.behindTiles = false;
         WormUtils.HeadSpawnSegments(NPC, Segments, Type, NPCID.EaterofWorldsBody, NPCID.EaterofWorldsTail);
+        NetSync();
     }
 
     public override void AcidAI()

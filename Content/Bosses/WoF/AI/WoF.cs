@@ -5,6 +5,7 @@ using AcidicBosses.Content.Bosses.WoF.Projectiles;
 using AcidicBosses.Content.ProjectileBases;
 using AcidicBosses.Core.StateManagement;
 using AcidicBosses.Helpers;
+using Luminance.Core.Graphics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
@@ -168,9 +169,6 @@ public class WoF : AcidicNPCOverride
     
     private void Phase_One()
     {
-        var goalDistance = MathHelper.Lerp(750, 800, AttackManager.AiTimer / 60f);
-        WallDistance = MathHelper.Lerp(WallDistance, goalDistance, 0.05f);
-        
         if (AttackManager.AiTimer > 0 && !AttackManager.CountUp)
         {
             if (Npc.GetLifePercent() < 0.6f)
@@ -335,8 +333,7 @@ public class WoF : AcidicNPCOverride
                     var pos = raySpawnPos;
                     if ((partPos & WoFPartPosition.Right) != 0) pos.X += part.width;
                     
-                    var indicator = NewDeathrayIndicator(pos, targetRot, part.whoAmI);
-                    indicator.timeLeft = telegraphTime;
+                    var indicator = NewDeathrayIndicator(pos, targetRot, telegraphTime, part.whoAmI);
                 }
             }
 
@@ -347,8 +344,7 @@ public class WoF : AcidicNPCOverride
                     var pos = raySpawnPos;
                     if ((partPos & WoFPartPosition.Right) != 0) pos.X += part.width;
                     
-                    var ray = NewDeathray(pos, targetRot, part.whoAmI);
-                    ray.timeLeft = 120;
+                    var ray = NewDeathray(pos, targetRot, 120, part.whoAmI);
                 }
                 done = true;
             }
@@ -378,12 +374,10 @@ public class WoF : AcidicNPCOverride
 
             if (Main.netMode != NetmodeID.MultiplayerClient)
             {
-                var offsetL = new Vector2(-distance, -1750);
-                var offsetR = new Vector2(distance, 1750);
-                var l = NewLineIndicator(Npc.Center + offsetL, -MathHelper.PiOver2, Npc.whoAmI);
-                l.timeLeft = 120;
-                var r = NewLineIndicator(Npc.Center + offsetR, MathHelper.PiOver2, Npc.whoAmI);
-                r.timeLeft = 120;
+                var offsetL = new Vector2(-distance, 1750);
+                var offsetR = new Vector2(distance, -1750);
+                var l = NewLineIndicator(Npc.Center + offsetL, MathHelper.PiOver2, 120, Npc.whoAmI);
+                var r = NewLineIndicator(Npc.Center + offsetR, -MathHelper.PiOver2, 120, Npc.whoAmI);
             }
         }
         
@@ -527,8 +521,7 @@ public class WoF : AcidicNPCOverride
             
             var vel = targetPos.DirectionTo(Main.player[Npc.target].Center);
             
-            var laser = NewLaser(position, vel * 25f, vel.ToRotation(), 0);
-            laser.timeLeft = indicateTime;
+            var laser = NewLaser(position, vel * 25f, vel.ToRotation(), indicateTime);
         }
 
         return isDone;
@@ -568,8 +561,7 @@ public class WoF : AcidicNPCOverride
             // Randomize spread a little
             vel = vel.RotateRandom(spread / lasers / 2);
 
-            var laser = NewLaser(position, vel * 25f, vel.ToRotation(), anchor.whoAmI);
-            laser.timeLeft = indicateTime;
+            var laser = NewLaser(position, vel * 25f, vel.ToRotation(), indicateTime, anchor.whoAmI);
         }
 
         return isDone;
@@ -593,7 +585,7 @@ public class WoF : AcidicNPCOverride
         var side = Main.rand.NextFromList(WoFPartPosition.Left, WoFPartPosition.Right);
         
         var direction = 0f;
-        if (side == WoFPartPosition.Right) direction = MathHelper.Pi;
+        if (side == WoFPartPosition.Left) direction = MathHelper.Pi;
 
         var wallHeight = 0f;
         if (side == WoFPartPosition.Right)
@@ -608,16 +600,14 @@ public class WoF : AcidicNPCOverride
         var laserSpacing = 125;
         var lasers =(int) (wallHeight / laserSpacing);
 
-        var x = PartPosToWorldPos(WoFPartPosition.Right).X;
+        var x = PartPosToWorldPos(side).X;
         if (side == WoFPartPosition.Left) x += 100;
 
         for (int i = 0; i < lasers; i++)
         {
             var y = WoFSystem.WofDrawAreaTopRight + i * laserSpacing;
-            var angle = MathHelper.Pi;
 
-            var laser = NewLaser(new Vector2(x, y), angle.ToRotationVector2() * 25f, angle);
-            laser.timeLeft = indicateTime;
+            var laser = NewLaser(new Vector2(x, y), direction.ToRotationVector2() * 25f, direction, indicateTime);
         }
 
         return isDone;
@@ -670,27 +660,26 @@ public class WoF : AcidicNPCOverride
     }
     
     
-    private Projectile NewLaser(Vector2 pos, Vector2 vel, float rotation, int anchor = 0)
+    private Projectile NewLaser(Vector2 pos, Vector2 vel, float rotation, int lifetime, int anchor = -1)
     {
-        var proj = ProjHelper.NewProjectile(Npc.GetSource_FromAI(), pos, vel, 
-            ModContent.ProjectileType<WoFLaser>(), damage / 4, 3, ai0: rotation, ai1: anchor + 1);
+        var proj = BaseLineProjectile.Create<WoFLaser>(Npc.GetSource_FromAI(), pos, vel, damage / 4, 3, rotation, lifetime, anchor);
 
         return proj;
     }
 
-    private Projectile NewDeathray(Vector2 pos, float rotation, int anchor = 0)
+    private Projectile NewDeathray(Vector2 pos, float rotation, int lifetime, int anchor = -1)
     {
-        return DeathrayBase.Create<WoFDeathray>(Npc.GetSource_FromAI(), pos, damage, 5, rotation, anchor);
+        return DeathrayBase.Create<WoFDeathray>(Npc.GetSource_FromAI(), pos, damage, 5, rotation, lifetime, anchor);
     }
 
-    private Projectile NewDeathrayIndicator(Vector2 pos, float rotation, int anchor = 0)
+    private Projectile NewDeathrayIndicator(Vector2 pos, float rotation, int lifetime, int anchor = -1)
     {
-        return BaseLineProjectile.Create<WoFDeathrayIndicator>(Npc.GetSource_FromAI(), pos, rotation, anchor);
+        return BaseLineProjectile.Create<WoFDeathrayIndicator>(Npc.GetSource_FromAI(), pos, rotation, lifetime, anchor);
     }
     
-    private Projectile NewLineIndicator(Vector2 pos, float rotation, int anchor = 0)
+    private Projectile NewLineIndicator(Vector2 pos, float rotation, int lifetime, int anchor = -1)
     {
-        return BaseLineProjectile.Create<WoFMoveIndicator>(Npc.GetSource_FromAI(), pos, rotation, anchor);
+        return BaseLineProjectile.Create<WoFMoveIndicator>(Npc.GetSource_FromAI(), pos, rotation, lifetime, anchor);
     }
     
     private NPC NewEvilMob(WoFPartPosition pos)
@@ -1061,6 +1050,11 @@ public class WoF : AcidicNPCOverride
         laserShotgunOrder.SendData(binaryWriter);
         
         phaseTracker.Serialize(binaryWriter);
+        
+        binaryWriter.Write(WoFSystem.WofDrawAreaBottomLeft);
+        binaryWriter.Write(WoFSystem.WofDrawAreaBottomRight);
+        binaryWriter.Write(WoFSystem.WofDrawAreaTopRight);
+        binaryWriter.Write(WoFSystem.WofDrawAreaTopLeft);
     }
 
     public override void ReceiveAcidAI(BitReader bitReader, BinaryReader binaryReader)
@@ -1070,5 +1064,10 @@ public class WoF : AcidicNPCOverride
         laserShotgunOrder.RecieveData(binaryReader);
         
         phaseTracker.Deserialize(binaryReader);
+        
+        WoFSystem.WofDrawAreaBottomLeft = binaryReader.ReadSingle();
+        WoFSystem.WofDrawAreaBottomRight = binaryReader.ReadSingle();
+        WoFSystem.WofDrawAreaTopRight = binaryReader.ReadSingle();
+        WoFSystem.WofDrawAreaTopLeft = binaryReader.ReadSingle();
     }
 }

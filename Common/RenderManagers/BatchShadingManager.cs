@@ -12,6 +12,7 @@ namespace AcidicBosses.Common.RenderManagers;
 /// Organizes drawing of sprites with a shader into batches to improve performance when
 /// drawing a lot of sprites with the same shader.
 /// </summary>
+[Autoload(Side = ModSide.Client)]
 public class BatchShadingManager : ModSystem
 {
     public delegate void ShadedDrawAction(SpriteBatch spritebatch);

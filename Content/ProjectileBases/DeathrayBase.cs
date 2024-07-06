@@ -1,5 +1,5 @@
-﻿using AcidicBosses.Helpers;
-using Luminance.Common.Utilities;
+﻿using System.IO;
+using AcidicBosses.Helpers;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
@@ -35,6 +35,8 @@ public abstract class DeathrayBase : ModProjectile
     private bool doneFirstFrame = false;
 
     private bool readyToDraw = false;
+    
+    protected int maxTimeLeft = 0;
 
     public override void SetStaticDefaults()
     {
@@ -50,15 +52,17 @@ public abstract class DeathrayBase : ModProjectile
         Projectile.tileCollide = false;
     }
 
-    public static Projectile Create<T>(IEntitySource spawnSource, Vector2 position, int damage, float knockback, float rotation, int anchorTo = 0) where T : DeathrayBase
+    public static Projectile Create<T>(IEntitySource spawnSource, Vector2 position, int damage, float knockback, float rotation, int lifetime, int anchorTo = 0) where T : DeathrayBase
     {
         return ProjHelper.NewProjectile(spawnSource, position, Vector2.Zero,
-            ModContent.ProjectileType<T>(), damage, knockback, ai0: rotation, ai1: anchorTo + 1);
+            ModContent.ProjectileType<T>(), damage, knockback, ai0: rotation, ai1: anchorTo + 1, ai2: lifetime);
     }
 
     public virtual void FirstFrame()
     {
         SoundEngine.PlaySound(SoundID.Zombie104, Projectile.Center);
+        Projectile.timeLeft = (int) Projectile.ai[2];
+        maxTimeLeft = (int) Projectile.ai[2];
     }
     
     public override void AI()
@@ -69,6 +73,7 @@ public abstract class DeathrayBase : ModProjectile
         if (!doneFirstFrame)
         {
             FirstFrame();
+            Projectile.netUpdate = true;
             doneFirstFrame = true;
         }
 
@@ -98,7 +103,7 @@ public abstract class DeathrayBase : ModProjectile
         {
             Projectile.rotation = Offset;
         }
-
+        
         AiEffects();
         
         var rotation = Projectile.rotation.ToRotationVector2();
@@ -162,5 +167,23 @@ public abstract class DeathrayBase : ModProjectile
         
         return Collision.CheckAABBvLineCollision(targetHitbox.TopLeft(), targetHitbox.Size(), Projectile.Center,
             Projectile.Center + Projectile.rotation.ToRotationVector2() * Distance, CollisionWidth, ref point);
+    }
+    
+    public virtual void SendAI(BinaryWriter writer)
+    {
+    }
+
+    public sealed override void SendExtraAI(BinaryWriter writer)
+    {
+        SendAI(writer);
+    }
+    
+    public virtual void RecieveAI(BinaryReader reader)
+    {
+    }
+
+    public sealed override void ReceiveExtraAI(BinaryReader reader)
+    {
+        RecieveAI(reader);
     }
 }

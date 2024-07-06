@@ -6,6 +6,7 @@ using Terraria;
 using Terraria.GameContent;
 using Terraria.Graphics.Effects;
 using Terraria.ID;
+using Terraria.ModLoader;
 
 namespace AcidicBosses.Common.Effects;
 
@@ -13,6 +14,7 @@ namespace AcidicBosses.Common.Effects;
 /// Contains functions for managing shaders effects and proving more understandable
 /// parameters for those shaders.
 /// </summary>
+[Autoload(Side = ModSide.Client)]
 public static class EffectsManager
 {
     // Shockwave //

@@ -1,4 +1,5 @@
 ﻿using System;
+using Luminance.Common.Utilities;
 using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.Audio;
@@ -26,6 +27,8 @@ public static class WormUtils
         NPC latest = Main.npc[latestNPC];
         // NPC.realLife is the whoAmI of the NPC that the spawned NPC will share its health with
         latest.realLife = npc.whoAmI;
+        
+        latest.TargetClosest();
 
         return latestNPC;
     }

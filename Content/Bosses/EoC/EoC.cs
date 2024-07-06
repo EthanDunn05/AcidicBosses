@@ -422,8 +422,7 @@ public class EoC : AcidicNPCOverride
         // Create Telegraph
         if (AttackManager.AiTimer == 0)
         {
-            var line = NewDashLine(Npc.Center, MathHelper.PiOver2);
-            line.timeLeft = dashAtTime;
+            var line = NewDashLine(Npc.Center, MathHelper.PiOver2, dashAtTime);
         }
 
         return isDone;
@@ -451,8 +450,7 @@ public class EoC : AcidicNPCOverride
             if (AttackManager.AiTimer == 0 && Main.netMode != NetmodeID.MultiplayerClient)
             {
                 // Center
-                var line = NewDashLine(Npc.Center, dashOffset * offsetCoef + MathHelper.PiOver2);
-                line.timeLeft = dashAtTime;
+                var line = NewDashLine(Npc.Center, dashOffset * offsetCoef + MathHelper.PiOver2, dashAtTime);
             }
         }
 
@@ -524,16 +522,14 @@ public class EoC : AcidicNPCOverride
             // Spawn Right
             var rightEye = NewPhantomEoC(pos0, vel0, dashAtTime);
             rightEye.timeLeft = dashAtTime + dashLength;
-            var rightLine = NewDashLine(pos0, vel0.ToRotation(), false);
-            rightLine.timeLeft = dashAtTime;
+            var rightLine = NewDashLine(pos0, vel0.ToRotation(), dashAtTime, false);
             var rightEye1 = NewPhantomEoC(pos2, vel2, dashAtTime);
             rightEye1.timeLeft = dashAtTime + dashLength;
 
             // Spawn Left
             var leftEye = NewPhantomEoC(pos1, vel1, dashAtTime);
             leftEye.timeLeft = dashAtTime + dashLength;
-            var leftLine = NewDashLine(pos1, vel1.ToRotation(), false);
-            leftLine.timeLeft = dashAtTime;
+            var leftLine = NewDashLine(pos1, vel1.ToRotation(), dashAtTime, false);
             var leftEye1 = NewPhantomEoC(pos3, vel3, dashAtTime);
             leftEye1.timeLeft = dashAtTime + dashLength;
         }
@@ -587,16 +583,14 @@ public class EoC : AcidicNPCOverride
             // Spawn Right
             var rightEye = NewPhantomEoC(pos0, vel0, dashAtTime);
             rightEye.timeLeft = dashAtTime + dashLength;
-            var rightLine = NewDashLine(pos0, vel0.ToRotation(), false);
-            rightLine.timeLeft = dashAtTime;
+            var rightLine = NewDashLine(pos0, vel0.ToRotation(), dashAtTime, false);
             var rightEye1 = NewPhantomEoC(pos2, vel2, dashAtTime);
             rightEye1.timeLeft = dashAtTime + dashLength;
 
             // Spawn Left
             var leftEye = NewPhantomEoC(pos1, vel1, dashAtTime);
             leftEye.timeLeft = dashAtTime + dashLength;
-            var leftLine = NewDashLine(pos1, vel1.ToRotation(), false);
-            leftLine.timeLeft = dashAtTime;
+            var leftLine = NewDashLine(pos1, vel1.ToRotation(), dashAtTime, false);
             var leftEye1 = NewPhantomEoC(pos3, vel3, dashAtTime);
             leftEye1.timeLeft = dashAtTime + dashLength;
         }
@@ -657,8 +651,7 @@ public class EoC : AcidicNPCOverride
             var eye = NewPhantomEoC(pos, vel, dashAtTime);
             var eye2 = NewPhantomEoC(pos2, -vel, dashAtTime);
             eye.timeLeft = dashAtTime + dashLength;
-            var line = NewDashLine(pos, vel.ToRotation(), false);
-            line.timeLeft = (int) (dashAtTime + dashLength / 2f);
+            var line = NewDashLine(pos, vel.ToRotation(), (int) (dashAtTime + dashLength / 2f), false);
         }
 
         return isDone;
@@ -715,10 +708,10 @@ public class EoC : AcidicNPCOverride
         Main.npc[summon].velocity = Main.rand.NextVector2Unit() * 10;
     }
 
-    private Projectile NewDashLine(Vector2 position, float offset, bool anchorToBoss = true)
+    private Projectile NewDashLine(Vector2 position, float offset, int lifetime, bool anchorToBoss = true)
     {
         var ai1 = anchorToBoss ? Npc.whoAmI : -1;
-        return BaseLineProjectile.Create<EyeDashLine>(Npc.GetSource_FromAI(), position, offset, ai1);
+        return BaseLineProjectile.Create<EyeDashLine>(Npc.GetSource_FromAI(), position, offset, lifetime, ai1);
     }
 
     private Projectile NewPhantomEoC(Vector2 position, Vector2 dashVelocity, int dashDelay = 0)

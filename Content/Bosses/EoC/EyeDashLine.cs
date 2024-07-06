@@ -18,22 +18,11 @@ public class EyeDashLine : BaseLineProjectile
     
     protected override Asset<Texture2D> LineTexture { get; } = TextureRegistry.InvertedGlowLine;
     
-    // Nullable to make setting a single time easier
-    private int? maxTimeLeft;
-    
     private Color GetColor()
     {
-        var fadeT = (float) Projectile.timeLeft / maxTimeLeft ?? 3600;
+        var fadeT = (float) Projectile.timeLeft / maxTimeLeft;
         var color = Color.Crimson;
         color *= EasingHelper.CubicOut(fadeT);
         return color;
-    }
-
-    public override void AI()
-    {
-        // Set the max time if it hasn't been set already
-        maxTimeLeft ??= Projectile.timeLeft;
-        
-        base.AI();
     }
 }

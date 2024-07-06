@@ -1,4 +1,5 @@
 ﻿using System;
+using Luminance.Common.Utilities;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
@@ -31,9 +32,23 @@ public class EoWBody : AcidicNPCOverride
 
     public override bool AcidAI(NPC npc)
     {
+        if (FollowingNPC.type == NPCID.EaterofWorldsBody)
+            Npc.realLife = (int) FollowingNPC.realLife;
+        else Npc.realLife = (int) Npc.ai[1];
+        
         EoWHead.CommonEowAI(npc);
-
-        WormUtils.BodyTailFollow(npc, FollowingNPC);
+        
+        try
+        {
+            WormUtils.BodyTailFollow(npc, FollowingNPC);
+        }
+        catch (Exception e)
+        {
+            Mod.Logger.ErrorFormat("Can't find following eater segment {0}, {1}, {2}", Npc.ai[0], Npc.ai[1], Main.npc[(int)Npc.ai[1]]);
+            NetSync(Npc);
+            return false;
+        }
+        
         if (!FollowingBoss) Npc.behindTiles = false;
 
         if (FollowingBoss)
