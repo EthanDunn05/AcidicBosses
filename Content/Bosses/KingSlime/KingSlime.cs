@@ -647,8 +647,7 @@ public class KingSlime : AcidicNPCOverride
                 var gemPos = new Vector2(npc.Center.X, npc.position.Y);
                 var rotation = gemPos.DirectionTo(Main.player[npc.target].Center).ToRotation();
 
-                var proj = NewCrownLaser(rotation);
-                proj.timeLeft = 60;
+                var proj = NewCrownLaser(rotation, 60);
                 break;
             case 180:
                 done = true;
@@ -676,8 +675,7 @@ public class KingSlime : AcidicNPCOverride
                     var i = (AiTimer / ((float) length / projCount));
                     var angle = dAngle * i + dAngle / 2f;
 
-                    var proj = NewCrownLaser(angle);
-                    proj.timeLeft = 60;
+                    var proj = NewCrownLaser(angle, 60);
                 }
 
                 break;
@@ -690,11 +688,11 @@ public class KingSlime : AcidicNPCOverride
         AiTimer++;
     }
 
-    private Projectile NewCrownLaser(float rotation)
+    private Projectile NewCrownLaser(float rotation, int lifetime)
     {
         var gemPos = new Vector2(Npc.Center.X, Npc.position.Y);
         return Projectile.NewProjectileDirect(Npc.GetSource_FromAI(), gemPos, Vector2.Zero,
-            ModContent.ProjectileType<KingSlimeLaserIndicator>(), 25, 10, ai0: rotation);
+            ModContent.ProjectileType<KingSlimeLaserIndicator>(), 25, 10, ai0: rotation, ai2: lifetime);
     }
 
     #endregion

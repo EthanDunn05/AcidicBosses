@@ -1,4 +1,4 @@
-displayName = Acidic Bosses
+displayName = Acidic Boss Reworks
 author = AcidAssassin
 version = 0.1
 modReferences = Luminance

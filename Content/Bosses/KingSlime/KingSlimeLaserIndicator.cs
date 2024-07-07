@@ -33,7 +33,6 @@ public class KingSlimeLaserIndicator : BaseLineProjectile
     {
         if (Main.netMode == NetmodeID.MultiplayerClient) return;
         var proj = Projectile.NewProjectileDirect(Projectile.GetSource_FromAI(), Projectile.position, Vector2.Zero, 
-            ModContent.ProjectileType<KingSlimeCrownLaser>(), laserDamage, 3, ai0: Offset);
-        proj.timeLeft = 120;
+            ModContent.ProjectileType<KingSlimeCrownLaser>(), laserDamage, 3, ai0: Offset, ai2: 120);
     }
 }
