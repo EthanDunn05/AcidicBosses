@@ -63,19 +63,19 @@ public abstract class BaseLineProjectile : ModProjectile
 
     public static Projectile Create<T>(IEntitySource spawnSource, Vector2 position, float rotation, int lifetime, int anchorTo = -1) where T : BaseLineProjectile
     {
-        return ProjHelper.NewProjectile(spawnSource, position, Vector2.Zero,
+        return ProjHelper.NewUnscaledProjectile(spawnSource, position, Vector2.Zero,
             ModContent.ProjectileType<T>(), 0, 0, ai0: rotation, ai1: anchorTo + 1, ai2: lifetime);
     }
     
     public static Projectile Create<T>(IEntitySource spawnSource, Vector2 position, Vector2 velocity, float rotation, int lifetime, int anchorTo = -1) where T : BaseLineProjectile
     {
-        return ProjHelper.NewProjectile(spawnSource, position, velocity,
+        return ProjHelper.NewUnscaledProjectile(spawnSource, position, velocity,
             ModContent.ProjectileType<T>(), 0, 0, ai0: rotation, ai1: anchorTo + 1, ai2: lifetime);
     }
     
     public static Projectile Create<T>(IEntitySource spawnSource, Vector2 position, Vector2 velocity, int damage, float knockback, float rotation, int lifetime, int anchorTo = -1) where T : BaseLineProjectile
     {
-        return ProjHelper.NewProjectile(spawnSource, position, velocity,
+        return ProjHelper.NewUnscaledProjectile(spawnSource, position, velocity,
             ModContent.ProjectileType<T>(), damage, knockback, ai0: rotation, ai1: anchorTo + 1, ai2: lifetime);
     }
 

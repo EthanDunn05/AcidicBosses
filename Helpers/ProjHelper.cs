@@ -9,7 +9,7 @@ namespace AcidicBosses.Helpers;
 
 public static class ProjHelper
 {
-    public static Projectile NewProjectile(IEntitySource source, float spawnX, float spawnY, float velocityX, float velocityY, int type, int damage, float knockback, int owner = -1, float ai0 = 0f, float ai1 = 0f, float ai2 = 0f)
+    public static Projectile NewUnscaledProjectile(IEntitySource source, float spawnX, float spawnY, float velocityX, float velocityY, int type, int damage, float knockback, int owner = -1, float ai0 = 0f, float ai1 = 0f, float ai2 = 0f)
     {
         // Blatantly stolen from luminance
         // The only difference between this and Luminance's implementation is that this doesn't default to the player
@@ -28,9 +28,9 @@ public static class ProjHelper
         return Main.projectile[index];
     }
     
-    public static Projectile NewProjectile(IEntitySource source, Vector2 center, Vector2 velocity, int type, int damage, float knockback, int owner = -1, float ai0 = 0f, float ai1 = 0f, float ai2 = 0f)
+    public static Projectile NewUnscaledProjectile(IEntitySource source, Vector2 center, Vector2 velocity, int type, int damage, float knockback, int owner = -1, float ai0 = 0f, float ai1 = 0f, float ai2 = 0f)
     {
-        return NewProjectile(source, center.X, center.Y, velocity.X, velocity.Y, type, damage, knockback, owner, ai0, ai1, ai2);
+        return NewUnscaledProjectile(source, center.X, center.Y, velocity.X, velocity.Y, type, damage, knockback, owner, ai0, ai1, ai2);
     }
     
     public static void DrawAfterimages(Projectile projectile, Texture2D texture, ref Color lightColor, int afterimageInterval = 1)

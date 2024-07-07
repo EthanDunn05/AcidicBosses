@@ -21,6 +21,14 @@ public class EoWServant : AcidicNPC
         set => NPC.ai[2] = value;
     }
 
+    private int BossId
+    {
+        get => (int) NPC.ai[3];
+        set => NPC.ai[3] = value;
+    }
+
+    private NPC Boss => Main.npc[BossId];
+
     public override void SetDefaults()
     {
         NPC.CloneDefaults(NPCID.EaterofWorldsHead);
@@ -46,8 +54,16 @@ public class EoWServant : AcidicNPC
 
     public override void AcidAI()
     {
+        // Sync damage to the boss because it gets scaled twice somehow
+        NPC.damage = Boss.damage;
+        
+        if (!Boss.active)
+        {
+            NPC.active = false;
+        }
+        
         EoWHead.CommonEowAI(NPC);
-        WormUtils.HeadDigAI(NPC, 10, 0.1f, null);
+        WormUtils.HeadDigAI(NPC, 15, 0.15f, null);
     }
 
     public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color lightColor)

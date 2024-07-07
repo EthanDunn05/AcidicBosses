@@ -629,7 +629,7 @@ public class KingSlime : AcidicNPCOverride
             >= 99 => NPCID.Pinky // 1%
         };
 
-        var summon = NPC.NewNPC(npc.GetSource_FromAI(), (int) npc.Center.X, (int) npc.Center.Y, type);
+        var summon = NPC.NewNPC(npc.GetSource_FromAI(), (int) npc.Center.X, (int) npc.position.Y, type);
 
         Main.npc[summon].velocity =
             Main.rand.NextVector2Unit(MathHelper.Pi + MathHelper.PiOver4, MathHelper.PiOver2) * 10;

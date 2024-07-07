@@ -594,7 +594,7 @@ public class SkeletronHead : AcidicNPCOverride
 
     private Projectile NewCursedSkull(Vector2 position, Vector2 velocity)
     {
-        return ProjHelper.NewProjectile(Npc.GetSource_FromAI(), position, velocity,
+        return ProjHelper.NewUnscaledProjectile(Npc.GetSource_FromAI(), position, velocity,
             ModContent.ProjectileType<CursedSkull>(), Npc.damage / 2, 3);
     }
 
@@ -605,7 +605,7 @@ public class SkeletronHead : AcidicNPCOverride
     
     private Projectile NewHomingSkull(Vector2 position, Vector2 velocity)
     {
-        return ProjHelper.NewProjectile(Npc.GetSource_FromAI(), position, velocity,
+        return ProjHelper.NewUnscaledProjectile(Npc.GetSource_FromAI(), position, velocity,
             ProjectileID.Skull, Npc.damage / 8, 3);
     }
 
@@ -617,13 +617,13 @@ public class SkeletronHead : AcidicNPCOverride
 
     private Projectile NewMuramasa(Vector2 position, Vector2 velocity)
     {
-        return ProjHelper.NewProjectile(Npc.GetSource_FromAI(), position, velocity,
+        return ProjHelper.NewUnscaledProjectile(Npc.GetSource_FromAI(), position, velocity,
             ModContent.ProjectileType<Muramasa>(), Npc.damage / 2, 3);
     }
     
     private Projectile NewShadowflame(Vector2 position, Vector2 velocity)
     {
-        return ProjHelper.NewProjectile(Npc.GetSource_FromAI(), position, velocity,
+        return ProjHelper.NewUnscaledProjectile(Npc.GetSource_FromAI(), position, velocity,
             ProjectileID.Shadowflames, Npc.damage / 4, 3);
     }
 

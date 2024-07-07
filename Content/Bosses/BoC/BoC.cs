@@ -503,7 +503,7 @@ public class BoC : AcidicNPCOverride
 
     private Projectile NewIchorShot(Vector2 position, Vector2 velocity)
     {
-        return ProjHelper.NewProjectile(Npc.GetSource_FromAI(), position, velocity,
+        return ProjHelper.NewUnscaledProjectile(Npc.GetSource_FromAI(), position, velocity,
             ModContent.ProjectileType<IchorShot>(),
             Npc.damage / 4, 3);
     }

@@ -716,8 +716,8 @@ public class EoC : AcidicNPCOverride
 
     private Projectile NewPhantomEoC(Vector2 position, Vector2 dashVelocity, int dashDelay = 0)
     {
-        return ProjHelper.NewProjectile(Npc.GetSource_FromAI(), position,
-            dashVelocity, ModContent.ProjectileType<PhantomEoC>(), Npc.damage / 2, 5, ai0: dashDelay);
+        return ProjHelper.NewUnscaledProjectile(Npc.GetSource_FromAI(), position,
+            dashVelocity, ModContent.ProjectileType<PhantomEoC>(), Npc.damage, 5, ai0: dashDelay);
     }
 
     #endregion

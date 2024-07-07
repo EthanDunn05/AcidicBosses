@@ -61,6 +61,8 @@ public class WoF : AcidicNPCOverride
         ]);
         AttackManager.Reset();
         WallDistance = 3000;
+        
+        damage = Npc.GetAttackDamage_ScaledByStrength(damage);
 
         Main.wofNPCIndex = Npc.whoAmI;
         Main.wofDrawAreaBottom = -1;
@@ -68,7 +70,7 @@ public class WoF : AcidicNPCOverride
         Npc.TargetClosest_WOF();
 
         Npc.position.X = Main.player[Npc.target].position.X;
-
+        
         SetWoFArea();
 
         if (Main.netMode == NetmodeID.MultiplayerClient) return;
@@ -585,7 +587,7 @@ public class WoF : AcidicNPCOverride
         var side = Main.rand.NextFromList(WoFPartPosition.Left, WoFPartPosition.Right);
         
         var direction = 0f;
-        if (side == WoFPartPosition.Left) direction = MathHelper.Pi;
+        if (side == WoFPartPosition.Right) direction = MathHelper.Pi;
 
         var wallHeight = 0f;
         if (side == WoFPartPosition.Right)
@@ -652,24 +654,23 @@ public class WoF : AcidicNPCOverride
     
     private Projectile NewFireball(Vector2 pos, Vector2 vel)
     {
-        var proj = ProjHelper.NewProjectile(Npc.GetSource_FromAI(), pos, vel, 
-            ProjectileID.CursedFlameHostile, damage / 4, 3);
+        var proj = ProjHelper.NewUnscaledProjectile(Npc.GetSource_FromAI(), pos, vel, 
+            ProjectileID.CursedFlameHostile, damage / 2, 3);
         proj.scale = 0.9f;
         proj.tileCollide = false;
         return proj;
     }
     
-    
     private Projectile NewLaser(Vector2 pos, Vector2 vel, float rotation, int lifetime, int anchor = -1)
     {
-        var proj = BaseLineProjectile.Create<WoFLaser>(Npc.GetSource_FromAI(), pos, vel, damage / 4, 3, rotation, lifetime, anchor);
+        var proj = BaseLineProjectile.Create<WoFLaser>(Npc.GetSource_FromAI(), pos, vel, damage / 2, 3, rotation, lifetime, anchor);
 
         return proj;
     }
 
     private Projectile NewDeathray(Vector2 pos, float rotation, int lifetime, int anchor = -1)
     {
-        return DeathrayBase.Create<WoFDeathray>(Npc.GetSource_FromAI(), pos, damage, 5, rotation, lifetime, anchor);
+        return DeathrayBase.Create<WoFDeathray>(Npc.GetSource_FromAI(), pos, (int) (damage * 1.5f), 5, rotation, lifetime, anchor);
     }
 
     private Projectile NewDeathrayIndicator(Vector2 pos, float rotation, int lifetime, int anchor = -1)

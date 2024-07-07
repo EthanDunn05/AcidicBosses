@@ -54,7 +54,7 @@ public abstract class DeathrayBase : ModProjectile
 
     public static Projectile Create<T>(IEntitySource spawnSource, Vector2 position, int damage, float knockback, float rotation, int lifetime, int anchorTo = 0) where T : DeathrayBase
     {
-        return ProjHelper.NewProjectile(spawnSource, position, Vector2.Zero,
+        return ProjHelper.NewUnscaledProjectile(spawnSource, position, Vector2.Zero,
             ModContent.ProjectileType<T>(), damage, knockback, ai0: rotation, ai1: anchorTo + 1, ai2: lifetime);
     }
 

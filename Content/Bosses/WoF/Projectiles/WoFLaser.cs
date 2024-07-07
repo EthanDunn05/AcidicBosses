@@ -18,7 +18,6 @@ public class WoFLaser : BaseLineProjectile
 
     protected override bool AnchorRotation => false;
 
-    private int laserDamage = 0;
     private Vector2 laserVel;
     
     private Color GetColor()
@@ -32,12 +31,6 @@ public class WoFLaser : BaseLineProjectile
     public override void AI()
     {
         base.AI();
-
-        if (Projectile.damage > 0)
-        {
-            laserDamage = Projectile.damage;
-            Projectile.damage = 0;
-        }
         
         if (Projectile.velocity != Vector2.Zero)
         {
@@ -49,8 +42,9 @@ public class WoFLaser : BaseLineProjectile
     public override void OnKill(int timeLeft)
     {
         if (Main.netMode == NetmodeID.MultiplayerClient) return;
+        // Use vanilla to keep scaling
         var proj = Projectile.NewProjectileDirect(Projectile.GetSource_FromAI(), Projectile.position, laserVel, ProjectileID.EyeLaser,
-            laserDamage, 3);
+            Projectile.damage, 3);
         proj.tileCollide = false;
     }
 }

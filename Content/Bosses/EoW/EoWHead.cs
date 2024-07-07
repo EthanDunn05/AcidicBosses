@@ -4,6 +4,7 @@ using AcidicBosses.Common;
 using AcidicBosses.Common.Effects;
 using AcidicBosses.Common.RenderManagers;
 using AcidicBosses.Core.StateManagement;
+using Luminance.Common.Utilities;
 using Luminance.Core.Graphics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -34,8 +35,8 @@ public class EoWHead : AcidicNPCOverride
 
     public override void SetDefaults(NPC entity)
     {
-        entity.lifeMax = 10000;
-        entity.life = 10000;
+        entity.lifeMax = 6000;
+        entity.life = 6000;
 
         entity.BossBar = ModContent.GetInstance<EoWBossBar>();
         entity.boss = true;
@@ -81,13 +82,13 @@ public class EoWHead : AcidicNPCOverride
     {
         CommonEowAI(Npc);
         
-        // Flee when no players are alive or it is day  
+        // Flee when no players are alive or outside of corruption 
         var target = Main.player[npc.target];
-        if (IsTargetGone(npc) && !isFleeing)
+        if ((IsTargetGone(npc) || !target.ZoneCorrupt) && !isFleeing)
         {
             npc.TargetClosest();
             target = Main.player[npc.target];
-            if (IsTargetGone(npc))
+            if (IsTargetGone(npc)|| !target.ZoneCorrupt)
             {
                 AttackManager.CountUp = true;
                 isFleeing = true;
@@ -109,7 +110,21 @@ public class EoWHead : AcidicNPCOverride
 
     private void FleeAI()
     {
-        // Put Flee Behavior here
+        Npc.TargetClosest();
+        if (!IsTargetGone(Npc) && Main.player[Npc.target].ZoneCorrupt)
+        {
+            AttackManager.CountUp = false;
+            isFleeing = false;
+            AttackManager.AiTimer = 30;
+            return;
+        }
+        
+        WormUtils.HeadDigAI(Npc, 30, 0.2f, new Vector2(Npc.position.X, Main.bottomWorld));
+
+        if (AttackManager.AiTimer >= 300)
+        {
+            Npc.active = false;
+        }
     }
     
     #endregion
@@ -337,8 +352,6 @@ public class EoWHead : AcidicNPCOverride
     private bool Attack_Summon()
     {
         NewServant(3);
-        NewServant(3);
-        NewServant(3);
         return true;
     }
     
@@ -356,7 +369,7 @@ public class EoWHead : AcidicNPCOverride
         var startVel = Main.rand.NextVector2Unit();
         const float speed = 5f;
         
-        var npc = NPC.NewNPCDirect(Npc.GetSource_FromAI(), Npc.Center, ModContent.NPCType<EoWServant>(), Npc.whoAmI, ai2: length);
+        var npc = NPC.NewNPCDirect(Npc.GetSource_FromAI(), Npc.Center, ModContent.NPCType<EoWServant>(), Npc.whoAmI, ai2: length, ai3: Npc.whoAmI);
         npc.velocity = startVel * speed;
 
         return npc;
