@@ -8,4 +8,9 @@ public static class ModLanguage
     {
         return Language.GetText("Mods.AcidicBosses." + key);
     }
+    
+    public static string FormatLocalized(string key)
+    {
+        return "Mods.AcidicBosses." + key;
+    }
 }

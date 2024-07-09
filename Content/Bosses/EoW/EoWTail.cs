@@ -1,4 +1,5 @@
 ﻿using System;
+using AcidicBosses.Common.Configs;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
@@ -11,6 +12,8 @@ namespace AcidicBosses.Content.Bosses.EoW;
 public class EoWTail : AcidicNPCOverride
 {
     protected override int OverriddenNpc => NPCID.EaterofWorldsTail;
+    
+    protected override bool BossEnabled => BossToggleConfig.Get().EnableEaterOfWorlds;
 
     public NPC HeadNPC => Main.npc[Npc.realLife];
     public NPC FollowingNPC => Main.npc[(int) Npc.ai[1]];
@@ -18,11 +21,13 @@ public class EoWTail : AcidicNPCOverride
     
     public override void SetDefaults(NPC entity)
     {
+        if (!ShouldOverride()) return;
         entity.BossBar = ModContent.GetInstance<NoBossBar>();
     }
     
     public override bool? DrawHealthBar(NPC npc, byte hbPosition, ref float scale, ref Vector2 position)
     {
+        if (!ShouldOverride()) return null;
         return false;
     }
 

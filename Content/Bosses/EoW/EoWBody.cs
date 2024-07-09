@@ -1,4 +1,5 @@
 ﻿using System;
+using AcidicBosses.Common.Configs;
 using Luminance.Common.Utilities;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -13,6 +14,8 @@ public class EoWBody : AcidicNPCOverride
 {
     protected override int OverriddenNpc => NPCID.EaterofWorldsBody;
 
+    protected override bool BossEnabled => BossToggleConfig.Get().EnableEaterOfWorlds;
+
     public NPC HeadNPC => Main.npc[Npc.realLife];
     public NPC FollowingNPC => Main.npc[(int) Npc.ai[1]];
     public NPC FollowerNPC => Main.npc[(int) Npc.ai[0]];
@@ -22,11 +25,13 @@ public class EoWBody : AcidicNPCOverride
     
     public override void SetDefaults(NPC entity)
     {
+        if (!ShouldOverride()) return;
         entity.BossBar = ModContent.GetInstance<NoBossBar>();
     }
     
     public override bool? DrawHealthBar(NPC npc, byte hbPosition, ref float scale, ref Vector2 position)
     {
+        if (!ShouldOverride()) return null;
         return false;
     }
 
