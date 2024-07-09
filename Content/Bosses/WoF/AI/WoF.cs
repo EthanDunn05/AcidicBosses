@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using AcidicBosses.Common.Configs;
 using AcidicBosses.Content.Bosses.WoF.Projectiles;
 using AcidicBosses.Content.ProjectileBases;
 using AcidicBosses.Core.StateManagement;
@@ -19,6 +20,8 @@ namespace AcidicBosses.Content.Bosses.WoF.AI;
 public class WoF : AcidicNPCOverride
 {
     protected override int OverriddenNpc => NPCID.WallofFlesh;
+    protected override bool BossEnabled => BossToggleConfig.Get().EnableWallOfFlesh;
+
     private int damage = 50;
 
     public float WallDistance
@@ -29,11 +32,13 @@ public class WoF : AcidicNPCOverride
 
     public override void SetStaticDefaults()
     {
+        if (!ShouldOverride()) return;
         NPCID.Sets.NeedsExpertScaling[NPCID.WallofFlesh] = true;
     }
 
     public override void SetDefaults(NPC entity)
     {
+        if (!ShouldOverride()) return;
         entity.damage = 0;
         entity.dontTakeDamage = true;
         entity.ShowNameOnHover = false;
@@ -41,6 +46,7 @@ public class WoF : AcidicNPCOverride
 
     public override void BossHeadSlot(NPC npc, ref int index)
     {
+        if (!ShouldOverride()) return;
         index = -1;
     }
 

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using AcidicBosses.Common.Configs;
 using AcidicBosses.Common.Effects;
 using AcidicBosses.Content.ProjectileBases;
 using AcidicBosses.Core.StateManagement;
@@ -22,7 +23,8 @@ public class SkeletronHead : AcidicNPCOverride
     // Set this to the boss to override
     protected override int OverriddenNpc => NPCID.SkeletronHead;
     
-
+    protected override bool BossEnabled => BossToggleConfig.Get().EnableSkeletron;
+    
     #region AI
     
     public enum HandState

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using AcidicBosses.Common;
+using AcidicBosses.Common.Configs;
 using AcidicBosses.Common.Effects;
 using AcidicBosses.Helpers;
 using Luminance.Common.Utilities;
@@ -21,6 +22,8 @@ namespace AcidicBosses.Content.Bosses.KingSlime;
 public class KingSlime : AcidicNPCOverride
 {
     protected override int OverriddenNpc => NPCID.KingSlime;
+
+    protected override bool BossEnabled => BossToggleConfig.Get().EnableKingSlime;
 
     #region Phases
     
@@ -822,17 +825,9 @@ public class KingSlime : AcidicNPCOverride
         isFleeing = bitReader.ReadBit();
     }
 
-    public override void HitEffect(NPC npc, NPC.HitInfo hit)
-    {
-        if (npc.life <= 0)
-        {
-            EffectsManager.BossRageKill();
-            EffectsManager.ShockwaveKill();
-        }
-    }
-
     public override bool? CanFallThroughPlatforms(NPC npc)
     {
+        if (!ShouldOverride()) return null;
         return (canFallThroughPlatform.Contains(CurrentAttack) && AiTimer > 0)
                && (Main.player[npc.target].Center.Y > npc.position.Y + npc.height);
     }

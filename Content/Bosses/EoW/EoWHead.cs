@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using AcidicBosses.Common;
+using AcidicBosses.Common.Configs;
 using AcidicBosses.Common.Effects;
 using AcidicBosses.Common.RenderManagers;
 using AcidicBosses.Core.StateManagement;
@@ -31,10 +32,13 @@ public class EoWHead : AcidicNPCOverride
     // Set this to the boss to override
     protected override int OverriddenNpc => NPCID.EaterofWorldsHead;
     
+    protected override bool BossEnabled => BossToggleConfig.Get().EnableEaterOfWorlds;
+    
     private EoWBossBar BossBar => (EoWBossBar) Npc.BossBar;
 
     public override void SetDefaults(NPC entity)
     {
+        if (!ShouldOverride()) return;
         entity.lifeMax = 6000;
         entity.life = 6000;
 
@@ -44,6 +48,7 @@ public class EoWHead : AcidicNPCOverride
     
     public override bool? DrawHealthBar(NPC npc, byte hbPosition, ref float scale, ref Vector2 position)
     {
+        if (!ShouldOverride()) return null;
         scale = 1.5f;
         return null;
     }
@@ -422,13 +427,10 @@ public class EoWHead : AcidicNPCOverride
         phaseTracker.Deserialize(binaryReader);
     }
 
-    public override void OnKill(NPC npc)
-    {
-        
-    }
-
     public override void ModifyNPCLoot(NPC npc, NPCLoot npcLoot)
     {
+        if (!ShouldOverride()) return;
+        
         // Drop Tissue Samples directly if the player isn't getting a treasure bag
         var notExpertRule = new LeadingConditionRule(new Conditions.NotExpert());
         notExpertRule.OnSuccess(ItemDropRule.Common(ItemID.ShadowScale, 1, 75, 125));

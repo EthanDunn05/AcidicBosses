@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework;
+﻿using AcidicBosses.Common.Configs;
+using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ID;
 
@@ -7,6 +8,8 @@ namespace AcidicBosses.Content.Bosses.WoF.AI;
 public class WoFEye : AcidicNPCOverride
 {
     protected override int OverriddenNpc => NPCID.WallofFleshEye;
+    protected override bool BossEnabled => BossToggleConfig.Get().EnableWallOfFlesh;
+
 
     private NPC WoF => Main.npc[Main.wofNPCIndex];
     

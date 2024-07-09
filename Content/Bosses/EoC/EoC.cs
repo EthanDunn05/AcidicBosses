@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using AcidicBosses.Common.Configs;
 using AcidicBosses.Common.Effects;
 using AcidicBosses.Content.ProjectileBases;
 using AcidicBosses.Core.StateManagement;
@@ -20,6 +21,8 @@ namespace AcidicBosses.Content.Bosses.EoC;
 public class EoC : AcidicNPCOverride
 {
     protected override int OverriddenNpc => NPCID.EyeofCthulhu;
+
+    protected override bool BossEnabled => BossToggleConfig.Get().EnableEyeOfCthulhu;
 
     #region AI
     
@@ -761,6 +764,8 @@ public class EoC : AcidicNPCOverride
     // Modified vanilla animating
     public override void FindFrame(NPC npc, int frameHeight)
     {
+        if (!ShouldOverride()) base.FindFrame(npc, frameHeight);
+        
         if (npc.frameCounter < 7.0)
         {
             npc.frame.Y = 0;
@@ -788,6 +793,7 @@ public class EoC : AcidicNPCOverride
 
     public override void BossHeadSlot(NPC npc, ref int index)
     {
+        if (!ShouldOverride()) return;
         index = mouthMode ? 1 : 0;
     }
 

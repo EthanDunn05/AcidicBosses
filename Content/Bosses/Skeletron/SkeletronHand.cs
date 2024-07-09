@@ -1,4 +1,5 @@
 ﻿using System;
+using AcidicBosses.Common.Configs;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
@@ -12,6 +13,8 @@ namespace AcidicBosses.Content.Bosses.Skeletron;
 public class SkeletronHand : AcidicNPCOverride
 {
     protected override int OverriddenNpc => NPCID.SkeletronHand;
+    
+    protected override bool BossEnabled => BossToggleConfig.Get().EnableSkeletron;
 
     // -1 for left, 1 for right
     private int ArmSide => (int) -Npc.ai[0];

@@ -61,3 +61,42 @@ InfoIcons: {
 	AcidicUnknownIcon: This world is in an unknown state. Enter it to fix this.
 	AcidicActiveIcon: "[c/CE32FF:Acidic Bosses] is Active"
 }
+
+Configs: {
+	RejectionReason.BossAlive: Cannot change boss AI while a boss exists.
+
+	BossToggleConfig: {
+		DisplayName: Boss Toggles
+		Headers.ToggleBosses: Toggle Bosses
+
+		EnableKingSlime: {
+			Label: Enable King Slime
+			Tooltip: Enable King Slime AI changes
+		}
+
+		EnableEyeOfCthulhu: {
+			Label: Enable Eye of Cthulhu
+			Tooltip: Enable Eye of Cthulhu AI changes
+		}
+
+		EnableEaterOfWorlds: {
+			Label: Enable Eater of Worlds
+			Tooltip: Enable Eater of Worlds AI changes
+		}
+
+		EnableBrainOfCthulhu: {
+			Label: Enable Brain of Cthulhu
+			Tooltip: Enable Brain of Cthulhu AI changes
+		}
+
+		EnableSkeletron: {
+			Label: Enable Skeletron
+			Tooltip: Enable Skeletron AI changes
+		}
+
+		EnableWallOfFlesh: {
+			Label: Enable Wall of Flesh
+			Tooltip: Enable Wall of Flesh AI changes
+		}
+	}
+}

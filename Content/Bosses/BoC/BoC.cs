@@ -2,6 +2,7 @@
 using System.IO;
 using System.Linq;
 using AcidicBosses.Common;
+using AcidicBosses.Common.Configs;
 using AcidicBosses.Common.Effects;
 using AcidicBosses.Core.StateManagement;
 using AcidicBosses.Helpers;
@@ -23,6 +24,8 @@ namespace AcidicBosses.Content.Bosses.BoC;
 public class BoC : AcidicNPCOverride
 {
     protected override int OverriddenNpc => NPCID.BrainofCthulhu;
+
+    protected override bool BossEnabled => BossToggleConfig.Get().EnableBrainOfCthulhu;
 
     private BoCBossBar BossBar => (BoCBossBar) Npc.BossBar;
 

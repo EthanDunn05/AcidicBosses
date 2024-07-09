@@ -31,6 +31,8 @@ public abstract class AcidicNPCOverride : GlobalNPC
     /// </summary>
     protected abstract int OverriddenNpc { get; }
     
+    protected abstract bool BossEnabled { get; }
+    
     /// <summary>
     /// The npc... Not much to say about this.
     /// </summary>
@@ -47,7 +49,7 @@ public abstract class AcidicNPCOverride : GlobalNPC
 
     public override bool AppliesToEntity(NPC entity, bool lateInstantiation)
     {
-        return entity.type == OverriddenNpc;
+        return entity.type == OverriddenNpc && BossEnabled;
     }
 
     /// <summary>
@@ -62,7 +64,7 @@ public abstract class AcidicNPCOverride : GlobalNPC
     // Manages internal stuff
     public sealed override bool PreAI(NPC npc)
     {
-        if (!AcidicActive) return true;
+        if (!ShouldOverride()) return true;
         
         // First frame setup
         if (isFirstFrame)
@@ -123,7 +125,7 @@ public abstract class AcidicNPCOverride : GlobalNPC
 
     public sealed override void SendExtraAI(NPC npc, BitWriter bitWriter, BinaryWriter binaryWriter)
     {
-        if (!AcidicActive) return;
+        if (!ShouldOverride()) return;
         
         for (var i = 0; i < 4; i++)
         {
@@ -148,7 +150,7 @@ public abstract class AcidicNPCOverride : GlobalNPC
 
     public sealed override void ReceiveExtraAI(NPC npc, BitReader bitReader, BinaryReader binaryReader)
     {
-        if (!AcidicActive) return;
+        if (!ShouldOverride()) return;
         
         for (var i = 0; i < 4; i++)
         {
@@ -179,7 +181,7 @@ public abstract class AcidicNPCOverride : GlobalNPC
     
     public override void HitEffect(NPC npc, NPC.HitInfo hit)
     {
-        if (!AcidicActive) return;
+        if (!ShouldOverride()) return;
         
         if (npc.life <= 0)
         {
@@ -198,7 +200,7 @@ public abstract class AcidicNPCOverride : GlobalNPC
 
     public sealed override bool PreDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
     {
-        if (!AcidicActive) return true;
+        if (!ShouldOverride()) return true;
         if (isFirstFrame) return true; // Use vanilla rendering if acidic stuff hasn't taken over yet
         return AcidicDraw(npc, spriteBatch, screenPos, drawColor);
     }
@@ -212,5 +214,10 @@ public abstract class AcidicNPCOverride : GlobalNPC
     {
         var player = Main.player[npc.target];
         return !player.active || player.dead;
+    }
+
+    protected bool ShouldOverride()
+    {
+        return AcidicActive && BossEnabled;
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using AcidicBosses.Common.Configs;
 using AcidicBosses.Content.Bosses.EoC;
 using AcidicBosses.Content.ProjectileBases;
 using Microsoft.Xna.Framework;
@@ -13,6 +14,8 @@ namespace AcidicBosses.Content.Bosses.BoC;
 public class CreeperOverride : AcidicNPCOverride
 {
     protected override int OverriddenNpc => NPCID.Creeper;
+    
+    protected override bool BossEnabled => BossToggleConfig.Get().EnableBrainOfCthulhu;
 
     public enum AttackType
     {
