@@ -1,5 +1,5 @@
 displayName = Acidic Boss Reworks
 author = AcidAssassin
-version = 0.1.0
+version = 0.1.1
 modReferences = Luminance
 buildIgnore = *.csproj, *.user, obj\*, bin\*, .vs\*, Old\*, lib\*
