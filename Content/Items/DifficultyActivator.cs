@@ -1,6 +1,9 @@
 ﻿using AcidicBosses.Core.Systems;
+using AcidicBosses.Helpers;
+using Luminance.Common.Utilities;
 using Microsoft.Xna.Framework;
 using Terraria;
+using Terraria.Audio;
 using Terraria.ID;
 using Terraria.ModLoader;
 using AcidicDifficultySystem = AcidicBosses.Core.Systems.DifficultySystem.AcidicDifficultySystem;
@@ -27,9 +30,39 @@ public class DifficultyActivator : ModItem
     {
         if (Main.netMode != NetmodeID.MultiplayerClient)
         {
-            Main.chatMonitor.NewText(AcidicDifficultySystem.AcidicActive.ToString());
+            if (Utilities.AnyBosses())
+            {
+                Main.chatMonitor.NewText(ModLanguage.GetText("Items.DifficultyActivator.RejectChange").Value);
+                return true;
+            }
+            
+            AcidicDifficultySystem.AcidicActive = !AcidicDifficultySystem.AcidicActive;
+            NetMessage.SendData(MessageID.WorldData);
+            Main.chatMonitor.NewText(AcidicDifficultySystem.AcidicActive
+                ? ModLanguage.GetText("Items.DifficultyActivator.Activate").Value
+                : ModLanguage.GetText("Items.DifficultyActivator.Deactivate").Value
+            );
         }
-    
+
+        if (Main.netMode != NetmodeID.Server)
+        {
+            if (Utilities.AnyBosses())
+            {
+                SoundEngine.PlaySound(SoundID.NPCHit16);
+                return true;
+            }
+            
+            SoundEngine.PlaySound(SoundID.Item4);
+        }
+
         return true;
+    }
+
+    public override void AddRecipes()
+    {
+        CreateRecipe()
+            .AddIngredient(ItemID.Amethyst)
+            .AddTile(TileID.WorkBenches)
+            .Register();
     }
 }

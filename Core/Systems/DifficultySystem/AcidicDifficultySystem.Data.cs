@@ -11,21 +11,22 @@ namespace AcidicBosses.Core.Systems.DifficultySystem;
 public partial class AcidicDifficultySystem : ModSystem
 {
     public static bool AcidicActive { get; set; }
-    private static bool loadedKey = false;
 
     public override void SaveWorldHeader(TagCompound tag)
     {
-        if (!loadedKey) return;
-        
         tag["AcidicActive"] = AcidicActive;
     }
 
     public override void SaveWorldData(TagCompound tag)
     {
-        if (selectionOption != AcidicEnabledID.None) AcidicActive = selectionOption == AcidicEnabledID.Enabled;
+        
+        if (!tag.ContainsKey("AcidicActive"))
+        {
+            if (selectionOption == AcidicEnabledID.None) selectionOption = AcidicEnabledID.Enabled;
+            AcidicActive = selectionOption == AcidicEnabledID.Enabled;
+        }
         
         tag["AcidicActive"] = AcidicActive;
-        loadedKey = true;
     }
 
     public override void LoadWorldData(TagCompound tag)
@@ -33,12 +34,10 @@ public partial class AcidicDifficultySystem : ModSystem
         if (tag.ContainsKey("AcidicActive"))
         {
             AcidicActive = tag.GetBool("AcidicActive");
-            loadedKey = true;
         }
         else
         {
             AcidicActive = false;
-            loadedKey = false;
         }
     }
 
@@ -50,6 +49,5 @@ public partial class AcidicDifficultySystem : ModSystem
     public override void NetReceive(BinaryReader reader)
     {
         AcidicActive = reader.ReadBoolean();
-        loadedKey = true;
     }
 }

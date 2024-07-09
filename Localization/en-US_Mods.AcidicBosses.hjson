@@ -34,8 +34,15 @@ NPCs: {
 
 Items: {
 	DifficultyActivator: {
-		Tooltip: ""
-		DisplayName: Difficulty Activator
+		Tooltip:
+			'''
+			Toggles whether bosses use the Acidic Bosses AI.
+			Left-Click while holding this item to use.
+			'''
+		DisplayName: Acidic Toggler
+		Activate: Activated Acidic Boss Reworks
+		Deactivate: Deactivated Acidic Boss Reworks
+		RejectChange: "[c/FF2619:Cannot Toggle Acidic boss AI changes while a boss is alive!]"
 	}
 }
 
@@ -59,7 +66,8 @@ UI: {
 
 InfoIcons: {
 	AcidicUnknownIcon: This world is in an unknown state. Enter it to fix this.
-	AcidicActiveIcon: "[c/CE32FF:Acidic Bosses] is Active"
+	AcidicActiveIcon: "[c/CE32FF:Acidic Bosses] are Active"
+	AcidicInactiveIcon: "[c/CE32FF:Acidic Bosses] are [c/FF2619:NOT] Active"
 }
 
 Configs: {

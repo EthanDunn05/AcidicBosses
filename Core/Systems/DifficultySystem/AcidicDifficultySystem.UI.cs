@@ -31,7 +31,6 @@ public partial class AcidicDifficultySystem : ModSystem
         On_WorldGen.CreateNewWorld += (orig, self) =>
         {
             AcidicActive = selectionOption == AcidicEnabledID.Enabled;
-            loadedKey = true;
 
             return orig(self);
         };
