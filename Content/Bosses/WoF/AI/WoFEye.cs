@@ -159,8 +159,8 @@ public class WoFEye : AcidicNPCOverride
     }
 
     #endregion
-    
-    protected override void LookTowards(Vector2 target, float power)
+
+    public override void LookTowards(Vector2 target, float power)
     {
         var offset = 0f;
         if (Npc.direction < 0) offset = MathHelper.Pi;

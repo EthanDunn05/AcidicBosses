@@ -106,5 +106,10 @@ Configs: {
 			Label: Enable Wall of Flesh
 			Tooltip: Enable Wall of Flesh AI changes
 		}
+
+		EnableTwins: {
+			Label: Enable Twins
+			Tooltip: ""
+		}
 	}
 }

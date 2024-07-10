@@ -817,7 +817,7 @@ public class EoC : AcidicNPCOverride
         mouthMode = bitReader.ReadBit();
     }
 
-    protected override void LookTowards(Vector2 target, float power)
+    public override void LookTowards(Vector2 target, float power)
     {
         Npc.rotation = Npc.rotation.AngleLerp(Npc.AngleTo(target) - MathHelper.PiOver2, power);
     }

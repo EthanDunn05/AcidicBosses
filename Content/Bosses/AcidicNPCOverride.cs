@@ -24,7 +24,7 @@ public abstract class AcidicNPCOverride : GlobalNPC
     /// <summary>
     /// Common data and management used in all bosses.
     /// </summary>
-    protected AttackManager AttackManager { get; } = new();
+    public AttackManager AttackManager { get; } = new();
     
     /// <summary>
     /// The NPCID of the npc to override
@@ -36,12 +36,14 @@ public abstract class AcidicNPCOverride : GlobalNPC
     /// <summary>
     /// The npc... Not much to say about this.
     /// </summary>
-    protected NPC Npc { get; private set; }
+    public NPC Npc { get; private set; }
     
     /// <summary>
     /// 4 extra floats for synced AI stuff.
     /// </summary>
-    protected float[] ExtraAI = new float[4];
+    public float[] ExtraAI = new float[4];
+
+    public Player TargetPlayer => Main.player[Npc.target];
 
     private bool isFirstFrame = true;
 
@@ -205,18 +207,18 @@ public abstract class AcidicNPCOverride : GlobalNPC
         return AcidicDraw(npc, spriteBatch, screenPos, drawColor);
     }
 
-    protected virtual void LookTowards(Vector2 target, float power)
+    public virtual void LookTowards(Vector2 target, float power)
     {
         Npc.rotation = Npc.rotation.AngleLerp(Npc.AngleTo(target), power);
     }
 
-    protected static bool IsTargetGone(NPC npc)
+    public static bool IsTargetGone(NPC npc)
     {
         var player = Main.player[npc.target];
         return !player.active || player.dead;
     }
 
-    protected bool ShouldOverride()
+    public bool ShouldOverride()
     {
         return AcidicActive && BossEnabled;
     }
