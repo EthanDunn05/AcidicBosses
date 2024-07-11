@@ -39,7 +39,7 @@ public class Retinazer : AcidicNPCOverride
 
     public override bool AcidAI(NPC npc)
     {
-        return false;
+        return true;
     }
     
     #endregion
