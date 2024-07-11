@@ -12,6 +12,7 @@ using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
 using Terraria;
 using Terraria.GameContent;
+using Terraria.Graphics.Light;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -141,10 +142,17 @@ public class TwinsController : AcidicNPC
         
         
         var renderSettings = new PrimitiveSettings(
-            _ => connectionTex.Width, 
-            _ => Color.White
+            _ => connectionTex.Width / 2f,
+            p =>
+            {
+                var index = (int) (p * connectionSegments.Count);
+                if (index == connectionSegments.Count) index--;
+                return Lighting.GetColor(connectionSegments[index].Position.ToTileCoordinates());
+            },
+            Shader: ShaderManager.GetShader("AcidicBosses.Rope")
         );
         renderSettings.Shader.SetTexture(connectionTexAsset, 1, SamplerState.PointClamp);
+        renderSettings.Shader.TrySetParameter("segments", connectionSegments.Count);
     
         PrimitiveRenderer.RenderTrail(connectionSegments.Select(s => s.Position), renderSettings, connectionSegments.Count * 2);
         // for (var i = 0; i < connectionSegments.Count; i++)
