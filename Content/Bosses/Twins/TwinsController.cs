@@ -44,9 +44,9 @@ public class TwinsController : AcidicNPC
         ConserveEnergy = true
     };
     
-    private Texture2D connectionTex = TextureAssets.Chain12.Value; // Note the sprite is oriented vertically
-    private Asset<Texture2D> connectionTexAsset = TextureAssets.Chain12; // Note the sprite is oriented vertically
-    private int connectionLength = 300;
+    private Texture2D connectionTex = TextureAssets.Chain12.Value; // The sprite is oriented vertically
+    private Asset<Texture2D> connectionTexAsset = TextureAssets.Chain12;
+    private int connectionLength = 500;
 
     public override void SetDefaults()
     {
@@ -62,24 +62,18 @@ public class TwinsController : AcidicNPC
 
     #region AI
 
-    private AttackManager spazAttackManager = new();
-    private AttackManager retAttackManager = new();
+    private AttackManager attackManager = new();
 
-    private PhaseTracker spazPhaseTracker;
-    private PhaseTracker retPhaseTracker;
+    private PhaseTracker phaseTracker;
 
     public override void OnFirstFrame()
     {
         NPC.TargetClosest();
-
         NPC.position = Main.player[NPC.target].position;
 
-        var target = Main.player[NPC.target];
-        var offset = new Vector2(200, 0);
-        var height = new Vector2(0, -250);
-
-        // Retinazer.Npc.Center = target.Center + offset + height;
-        // Spazmatism.Npc.Center = target.Center - offset + height;
+        phaseTracker = new PhaseTracker([
+            PhaseUntransformed
+        ]);
 
         if (Main.netMode != NetmodeID.Server)
         {
@@ -96,45 +90,68 @@ public class TwinsController : AcidicNPC
 
     public override void AcidAI()
     {
-        spazAttackManager.PreAttackAi();
-        retAttackManager.PreAttackAi();
+        attackManager.PreAttackAi();
 
         NPC.TargetClosest();
         var target = Main.player[NPC.target];
         NPC.Center = target.Center;
-        var offset = new Vector2(200, 0);
-        var height = new Vector2(0, -250);
-
-        Spazmatism.Mass = 10f;
-        Retinazer.Mass = 1f;
-    
-        SimulateTether();    
         
-        spazAttackManager.PostAttackAi();
-        spazAttackManager.PostAttackAi();
+        phaseTracker.RunPhaseAI();
+        
+        attackManager.PostAttackAi();
     }
 
     /// <summary>
     /// Simulates the two eyes being connected together by a rope
     /// </summary>
-    private void SimulateTether()
+    private void SimulateTether(float retMass, float spazMass)
     {
         var distance = Retinazer.Npc.Center.Distance(Spazmatism.Npc.Center);
         if (distance >= connectionLength)
         {
             // Each eye contributes half of their velocity to the other because momentum
-            var totalMass = Retinazer.Mass + Spazmatism.Mass;
+            var totalMass = retMass + spazMass;
             var origRetVel = Retinazer.Npc.velocity;
             var origSpazVel = Spazmatism.Npc.velocity;
             Retinazer.Npc.velocity = 
-                ((origRetVel * Retinazer.Mass) +
-                 Retinazer.Npc.Center.DirectionTo(Spazmatism.Npc.Center) * (origSpazVel.Length() * Spazmatism.Mass)) / totalMass;
+                ((origRetVel * retMass) +
+                 Retinazer.Npc.Center.DirectionTo(Spazmatism.Npc.Center) * (origSpazVel.Length() * spazMass)) / totalMass;
             Spazmatism.Npc.velocity =
-                (origSpazVel * Spazmatism.Mass +
-                 Spazmatism.Npc.Center.DirectionTo(Retinazer.Npc.Center) * (origRetVel.Length() * Retinazer.Mass)) / totalMass;
+                (origSpazVel * spazMass +
+                 Spazmatism.Npc.Center.DirectionTo(Retinazer.Npc.Center) * (origRetVel.Length() * retMass)) / totalMass;
         }
     }
 
+    #endregion
+    
+    #region Phases
+
+    private PhaseState PhaseUntransformed => new PhaseState(Phase_Untransformed);
+    
+    private void Phase_Untransformed()
+    {
+        Attack_Hover(20f, 0.1f);
+    }
+    
+    #endregion
+    
+    #region Attacks
+    
+
+    private void Attack_Hover(float speed, float accel)
+    {
+        var target = Main.player[NPC.target];
+        
+        var spazOffset = new Vector2(-200, 0);
+        if (Spazmatism.Npc.Center.X > target.Center.X) spazOffset = new Vector2(200, 0);
+        FlyTo(Spazmatism.Npc, target.Center + spazOffset, speed, accel);
+        Spazmatism.LookTowards(target.Center, 0.05f);
+        
+        var retOffset = new Vector2(0, -250);
+        FlyTo(Retinazer.Npc, target.Center + retOffset, speed, accel);
+        Retinazer.LookTowards(target.Center, 0.05f);
+    }
+    
     #endregion
 
     private static void FlyTo(NPC npc, Vector2 target, float speed, float acceleration)
@@ -144,14 +161,14 @@ public class TwinsController : AcidicNPC
 
     public override void SendAcidAI(BinaryWriter binaryWriter)
     {
-        spazAttackManager.Serialize(binaryWriter);
-        retAttackManager.Serialize(binaryWriter);
+        attackManager.Serialize(binaryWriter);
+        phaseTracker.Serialize(binaryWriter);
     }
 
     public override void ReceiveAcidAI(BinaryReader binaryReader)
     {
-        spazAttackManager.Deserialize(binaryReader);
-        retAttackManager.Deserialize(binaryReader);
+        attackManager.Deserialize(binaryReader);
+        phaseTracker.Deserialize(binaryReader);
     }
 
     public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)

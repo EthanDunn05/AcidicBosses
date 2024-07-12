@@ -18,8 +18,6 @@ public class Spazmatism : AcidicNPCOverride
     public bool UseAfterimages = false;
     public bool MechForm = false;
 
-    public float Mass = 1f;
-
     #region AI
     
     private int Controller
@@ -121,14 +119,12 @@ public class Spazmatism : AcidicNPCOverride
     {
         bitWriter.WriteBit(UseAfterimages);
         bitWriter.WriteBit(MechForm);
-        binaryWriter.Write(Mass);
     }
 
     public override void ReceiveAcidAI(BitReader bitReader, BinaryReader binaryReader)
     {
         UseAfterimages = bitReader.ReadBit();
         MechForm = bitReader.ReadBit();
-        Mass = binaryReader.ReadSingle();
     }
     
     public override void LookTowards(Vector2 target, float power)
