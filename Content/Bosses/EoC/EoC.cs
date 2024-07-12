@@ -635,6 +635,7 @@ public class EoC : AcidicNPCOverride
         ref var dashes = ref Npc.localAI[0];
         ref var originX = ref Npc.localAI[1];
         ref var originY = ref Npc.localAI[2];
+        ref var startAngle = ref Npc.localAI[3];
 
         Attack_Hover(10f, 0.05f, 400f);
         var isDone = dashes > dashesPerSpin * spins;
@@ -650,10 +651,12 @@ public class EoC : AcidicNPCOverride
             var origin = Main.player[Npc.target].Center;
             originX = origin.X;
             originY = origin.Y;
+
+            startAngle = Main.player[Npc.target].velocity.ToRotation() + MathHelper.PiOver2;
         }
 
         var targetPos = new Vector2(originX, originY);
-        var rot = dashes * (MathHelper.Pi / dashesPerSpin);
+        var rot = (dashes * (MathHelper.Pi / dashesPerSpin)) + startAngle;
         var offsetFromPlayer = new Vector2(1000, 0).RotatedBy(rot);
         var pos = targetPos + offsetFromPlayer;
         var pos2 = targetPos - offsetFromPlayer;
