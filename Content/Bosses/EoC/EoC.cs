@@ -106,7 +106,7 @@ public class EoC : AcidicNPCOverride
     private void EnterPhaseOne()
     {
         var hover = new AttackState(() => Attack_Hover(180, 7.5f, 0.05f, 250f), 0);
-        var dash = new AttackState(() => Attack_DashAtPlayer(30, 7.5f, false) == DashState.Done, 45);
+        var dash = new AttackState(() => Attack_DashAtPlayer(30, 7.5f, false, 250) == DashState.Done, 45);
         var summon = new AttackState(() => Attack_SummonMinions(3), 15);
 
         AttackManager.SetAttackPattern([
@@ -144,7 +144,7 @@ public class EoC : AcidicNPCOverride
     {
         var hover = new AttackState(() => Attack_Hover(120, 10f, 0.15f, 250f), 0);
         var telegraphedDash = new AttackState(() => Attack_TelegraphedDash(45, 15f), 15);
-        var dash = new AttackState(() => Attack_DashAtPlayer(45, 15f, true) == DashState.Done, 15);
+        var dash = new AttackState(() => Attack_DashAtPlayer(45, 15f, true, 250) == DashState.Done, 15);
         var teleport = new AttackState(Attack_TeleportBehind, 15);
         
         AttackManager.SetAttackPattern([
@@ -391,16 +391,14 @@ public class EoC : AcidicNPCOverride
         Done
     }
 
-    private DashState Attack_DashAtPlayer(int dashLength, float speed, bool enraged)
+    private DashState Attack_DashAtPlayer(int dashLength, float speed, bool enraged, float distance)
     {
-        const float minDistForDash = 300;
-        
         AttackManager.CountUp = true;
         var target = Main.player[Npc.target];
 
         // Don't dash while too close to the player
         // Back away until it's far enough
-        if (Npc.Distance(target.Center + target.velocity * dashTrackTime * 0.5f) < minDistForDash && AttackManager.AiTimer < dashTrackTime)
+        if (Npc.Distance(target.Center + target.velocity * dashTrackTime * 0.5f) < distance && AttackManager.AiTimer < dashTrackTime)
         {
             AttackManager.AiTimer = -1;
             Npc.SimpleFlyMovement(-Npc.DirectionTo(target.Center) * 10f, 0.5f);
@@ -439,7 +437,7 @@ public class EoC : AcidicNPCOverride
         AttackManager.CountUp = true;
 
         // Normal dash movement
-        var dashState = Attack_DashAtPlayer(dashLength, speed, true);
+        var dashState = Attack_DashAtPlayer(dashLength, speed, true, 300);
 
         if (dashState == DashState.Repositioning) return false;
 
@@ -460,14 +458,14 @@ public class EoC : AcidicNPCOverride
         AttackManager.CountUp = true;
 
         // Dash Normally for self
-        var dashState = Attack_DashAtPlayer(dashLength, speed, true);
+        var dashState = Attack_DashAtPlayer(dashLength, speed, true, 500);
 
         if (dashState == DashState.Repositioning) return false;
 
         if (dashState == DashState.Done) AttackManager.CountUp = false;
         if (Main.netMode == NetmodeID.MultiplayerClient) return dashState == DashState.Done;
 
-        const float dashOffset = MathHelper.Pi / 6f;
+        const float dashOffset = MathHelper.Pi / 5f;
 
         // Triple Telegraphs
         for (var i = 0; i < 3; i++)
