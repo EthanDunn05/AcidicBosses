@@ -106,7 +106,7 @@ public class EoC : AcidicNPCOverride
     private void EnterPhaseOne()
     {
         var hover = new AttackState(() => Attack_Hover(180, 7.5f, 0.05f, 250f), 0);
-        var dash = new AttackState(() => Attack_DashAtPlayer(30, 7.5f, false), 45);
+        var dash = new AttackState(() => Attack_DashAtPlayer(30, 7.5f, false, 250) == DashState.Done, 45);
         var summon = new AttackState(() => Attack_SummonMinions(3), 15);
 
         AttackManager.SetAttackPattern([
@@ -144,7 +144,7 @@ public class EoC : AcidicNPCOverride
     {
         var hover = new AttackState(() => Attack_Hover(120, 10f, 0.15f, 250f), 0);
         var telegraphedDash = new AttackState(() => Attack_TelegraphedDash(45, 15f), 15);
-        var dash = new AttackState(() => Attack_DashAtPlayer(45, 15f, true), 15);
+        var dash = new AttackState(() => Attack_DashAtPlayer(45, 15f, true, 250) == DashState.Done, 15);
         var teleport = new AttackState(Attack_TeleportBehind, 15);
         
         AttackManager.SetAttackPattern([
@@ -383,17 +383,37 @@ public class EoC : AcidicNPCOverride
     private static int dashTrackTime = 15;
     private static int dashAtTime = 30;
 
-    private bool Attack_DashAtPlayer(int dashLength, float speed, bool enraged)
+    enum DashState
+    {
+        Repositioning,
+        Tracking,
+        Dashing,
+        Done
+    }
+
+    private DashState Attack_DashAtPlayer(int dashLength, float speed, bool enraged, float distance)
     {
         AttackManager.CountUp = true;
-        var target = Main.player[Npc.target].Center;
+        var target = Main.player[Npc.target];
+
+        // Don't dash while too close to the player
+        // Back away until it's far enough
+        if (Npc.Distance(target.Center + target.velocity * dashTrackTime * 0.5f) < distance && AttackManager.AiTimer < dashTrackTime)
+        {
+            AttackManager.AiTimer = -1;
+            Npc.SimpleFlyMovement(-Npc.DirectionTo(target.Center) * 10f, 0.5f);
+            LookTowards(target.Center, 0.25f);
+            return DashState.Repositioning;
+        }
 
         if (AttackManager.AiTimer < dashTrackTime)
         {
             Npc.SimpleFlyMovement(Vector2.Zero, 0.75f);
-            LookTowards(target, 0.25f);
+            LookTowards(target.Center, 0.25f);
+            return DashState.Tracking;
         }
-        else if (AttackManager.AiTimer == dashAtTime)
+
+        if (AttackManager.AiTimer == dashAtTime)
         {
             Npc.velocity = (Npc.rotation + MathHelper.PiOver2).ToRotationVector2() * speed;
             if (enraged)
@@ -406,10 +426,10 @@ public class EoC : AcidicNPCOverride
         {
             AttackManager.CountUp = false;
             useAfterimages = false;
-            return true;
+            return DashState.Done;
         }
 
-        return false;
+        return DashState.Dashing;
     }
 
     private bool Attack_TelegraphedDash(int dashLength, float speed)
@@ -417,10 +437,12 @@ public class EoC : AcidicNPCOverride
         AttackManager.CountUp = true;
 
         // Normal dash movement
-        var isDone = Attack_DashAtPlayer(dashLength, speed, true);
+        var dashState = Attack_DashAtPlayer(dashLength, speed, true, 300);
 
-        if (isDone) AttackManager.CountUp = false;
-        if (Main.netMode == NetmodeID.MultiplayerClient) return isDone;
+        if (dashState == DashState.Repositioning) return false;
+
+        if (dashState == DashState.Done) AttackManager.CountUp = false;
+        if (Main.netMode == NetmodeID.MultiplayerClient) return dashState == DashState.Done;
 
         // Create Telegraph
         if (AttackManager.AiTimer == 0)
@@ -428,7 +450,7 @@ public class EoC : AcidicNPCOverride
             var line = NewDashLine(Npc.Center, MathHelper.PiOver2, dashAtTime);
         }
 
-        return isDone;
+        return dashState == DashState.Done;
     }
 
     private bool Attack_TripleDash(int dashLength, float speed)
@@ -436,12 +458,14 @@ public class EoC : AcidicNPCOverride
         AttackManager.CountUp = true;
 
         // Dash Normally for self
-        var isDone = Attack_DashAtPlayer(dashLength, speed, true);
+        var dashState = Attack_DashAtPlayer(dashLength, speed, true, 500);
 
-        if (isDone) AttackManager.CountUp = false;
-        if (Main.netMode == NetmodeID.MultiplayerClient) return isDone;
+        if (dashState == DashState.Repositioning) return false;
 
-        const float dashOffset = MathHelper.Pi / 6f;
+        if (dashState == DashState.Done) AttackManager.CountUp = false;
+        if (Main.netMode == NetmodeID.MultiplayerClient) return dashState == DashState.Done;
+
+        const float dashOffset = MathHelper.Pi / 5f;
 
         // Triple Telegraphs
         for (var i = 0; i < 3; i++)
@@ -458,7 +482,7 @@ public class EoC : AcidicNPCOverride
         }
 
         // The phantom eye stuff is owned by server
-        if (Main.netMode == NetmodeID.MultiplayerClient) return isDone;
+        if (Main.netMode == NetmodeID.MultiplayerClient) return dashState == DashState.Done;
 
         // Phantom Dashes
         if (AttackManager.AiTimer == dashAtTime)
@@ -474,7 +498,7 @@ public class EoC : AcidicNPCOverride
             eye2.timeLeft = dashLength;
         }
 
-        return isDone;
+        return dashState == DashState.Done;
     }
 
     private bool Attack_PhantomCrossDash()
@@ -611,6 +635,7 @@ public class EoC : AcidicNPCOverride
         ref var dashes = ref Npc.localAI[0];
         ref var originX = ref Npc.localAI[1];
         ref var originY = ref Npc.localAI[2];
+        ref var startAngle = ref Npc.localAI[3];
 
         Attack_Hover(10f, 0.05f, 400f);
         var isDone = dashes > dashesPerSpin * spins;
@@ -626,10 +651,12 @@ public class EoC : AcidicNPCOverride
             var origin = Main.player[Npc.target].Center;
             originX = origin.X;
             originY = origin.Y;
+
+            startAngle = Main.player[Npc.target].velocity.ToRotation() + MathHelper.PiOver2;
         }
 
         var targetPos = new Vector2(originX, originY);
-        var rot = dashes * (MathHelper.Pi / dashesPerSpin);
+        var rot = (dashes * (MathHelper.Pi / dashesPerSpin)) + startAngle;
         var offsetFromPlayer = new Vector2(1000, 0).RotatedBy(rot);
         var pos = targetPos + offsetFromPlayer;
         var pos2 = targetPos - offsetFromPlayer;
@@ -688,7 +715,15 @@ public class EoC : AcidicNPCOverride
     private bool Attack_TeleportBehind()
     {
         var target = Main.player[Npc.target].Center;
+        var targetVel = Main.player[Npc.target].velocity;
         var destination = target - (Npc.Center - target); // Opposite side of player
+
+        // Set a limit to how close the eye can be after teleporting
+        if (destination.Distance(target + targetVel * 15) <= 250)
+        {
+            destination = -target.DirectionTo(Npc.Center) * 250;
+            destination += target;
+        }
         Teleport(destination);
 
         return true;
