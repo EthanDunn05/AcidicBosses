@@ -44,6 +44,8 @@ public class WoF : AcidicNPCOverride
     public override bool ModifyCollisionData(NPC npc, Rectangle victimHitbox, ref int immunityCooldownSlot,
         ref MultipliableFloat damageMultiplier, ref Rectangle npcHitbox)
     {
+        if (!ShouldOverride()) return true;
+        
         damageMultiplier *= 0f;
         npcHitbox = new Rectangle();
         return false;
