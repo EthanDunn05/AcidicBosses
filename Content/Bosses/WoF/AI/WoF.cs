@@ -22,8 +22,6 @@ public class WoF : AcidicNPCOverride
     protected override int OverriddenNpc => NPCID.WallofFlesh;
     protected override bool BossEnabled => BossToggleConfig.Get().EnableWallOfFlesh;
 
-    private int damage = 50;
-
     public float WallDistance
     {
         get => Npc.ai[3];
@@ -39,9 +37,18 @@ public class WoF : AcidicNPCOverride
     public override void SetDefaults(NPC entity)
     {
         if (!ShouldOverride()) return;
-        entity.damage = 0;
         entity.dontTakeDamage = true;
         entity.ShowNameOnHover = false;
+    }
+
+    public override bool ModifyCollisionData(NPC npc, Rectangle victimHitbox, ref int immunityCooldownSlot,
+        ref MultipliableFloat damageMultiplier, ref Rectangle npcHitbox)
+    {
+        if (!ShouldOverride()) return true;
+        
+        damageMultiplier *= 0f;
+        npcHitbox = new Rectangle();
+        return false;
     }
 
     public override void BossHeadSlot(NPC npc, ref int index)
@@ -67,8 +74,6 @@ public class WoF : AcidicNPCOverride
         ]);
         AttackManager.Reset();
         WallDistance = 3000;
-        
-        damage = Npc.GetAttackDamage_ScaledByStrength(damage);
 
         Main.wofNPCIndex = Npc.whoAmI;
         Main.wofDrawAreaBottom = -1;
@@ -661,7 +666,7 @@ public class WoF : AcidicNPCOverride
     private Projectile NewFireball(Vector2 pos, Vector2 vel)
     {
         var proj = ProjHelper.NewUnscaledProjectile(Npc.GetSource_FromAI(), pos, vel, 
-            ProjectileID.CursedFlameHostile, damage / 2, 3);
+            ProjectileID.CursedFlameHostile, Npc.damage / 2, 3);
         proj.scale = 0.9f;
         proj.tileCollide = false;
         return proj;
@@ -669,14 +674,14 @@ public class WoF : AcidicNPCOverride
     
     private Projectile NewLaser(Vector2 pos, Vector2 vel, float rotation, int lifetime, int anchor = -1)
     {
-        var proj = BaseLineProjectile.Create<WoFLaser>(Npc.GetSource_FromAI(), pos, vel, damage / 2, 3, rotation, lifetime, anchor);
+        var proj = BaseLineProjectile.Create<WoFLaser>(Npc.GetSource_FromAI(), pos, vel, Npc.damage / 2, 3, rotation, lifetime, anchor);
 
         return proj;
     }
 
     private Projectile NewDeathray(Vector2 pos, float rotation, int lifetime, int anchor = -1)
     {
-        return DeathrayBase.Create<WoFDeathray>(Npc.GetSource_FromAI(), pos, (int) (damage * 1.5f), 5, rotation, lifetime, anchor);
+        return DeathrayBase.Create<WoFDeathray>(Npc.GetSource_FromAI(), pos, (int) (Npc.damage * 1.5f), 5, rotation, lifetime, anchor);
     }
 
     private Projectile NewDeathrayIndicator(Vector2 pos, float rotation, int lifetime, int anchor = -1)

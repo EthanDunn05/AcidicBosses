@@ -1,6 +1,6 @@
 displayName = Acidic Boss Reworks
 author = AcidAssassin
-version = 0.1.1a
+version = 0.1.2
 modReferences = Luminance
 includeSource = true
 homepage = https://github.com/EthanDunn05/AcidicBosses

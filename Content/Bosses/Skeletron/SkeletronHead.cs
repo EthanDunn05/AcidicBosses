@@ -288,7 +288,7 @@ public class SkeletronHead : AcidicNPCOverride
     {
         var target = Main.player[Npc.target];
         var goal = target.Center;
-        goal.Y -= 400;
+        goal.Y -= 250;
 
         Npc.SimpleFlyMovement(Npc.DirectionTo(goal) * 10f, 0.5f);
 
@@ -303,7 +303,7 @@ public class SkeletronHead : AcidicNPCOverride
     {
         var target = Main.player[Npc.target];
         var goal = target.Center;
-        goal.Y -= 400;
+        goal.Y -= 250;
 
         // Aggressive lerp
         Npc.velocity = Vector2.Lerp(Npc.velocity, Vector2.Zero, 0.075f);

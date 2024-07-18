@@ -583,7 +583,17 @@ public class KingSlime : AcidicNPCOverride
         {
             case >= 0 and < 60: // Indicate While Tracking
                 teleportDestination = Main.player[npc.target].position;
+               
                 teleportDestination.Y -= 256;
+
+                // Check if player is under a block
+                var ground = Utilities.FindGroundVertical(teleportDestination.ToTileCoordinates()).ToWorldCoordinates();
+                if (ground.Y < Main.player[npc.target].position.Y)
+                {
+                    // Teleport on top of the player otherwise
+                    teleportDestination.Y = Main.player[npc.target].position.Y;
+                }
+                
                 IndicationDust();
                 break;
             case >= 60 and < 90: // Keep indicating while shrinking
