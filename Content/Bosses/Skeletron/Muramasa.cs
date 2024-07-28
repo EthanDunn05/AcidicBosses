@@ -1,5 +1,6 @@
 ﻿using AcidicBosses.Common.Textures;
 using AcidicBosses.Helpers;
+using Luminance.Common.Utilities;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
@@ -46,7 +47,7 @@ public class Muramasa : ModProjectile
             oldVel = Projectile.velocity;
             Projectile.velocity = Vector2.Zero;
             setOldVel = true;
-            Projectile.damage = (int) (Projectile.damage * 0.25f);
+            Projectile.damage = 0;
         }
 
         if (aiTime == 0)

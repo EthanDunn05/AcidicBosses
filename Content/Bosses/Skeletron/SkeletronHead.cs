@@ -231,14 +231,14 @@ public class SkeletronHead : AcidicNPCOverride
 
         if (Main.netMode == NetmodeID.MultiplayerClient) return;
         
-        if (AttackManager.AiTimer % 20 == 0)
+        if (AttackManager.AiTimer % 30 == 0)
         {
             Attack_Muramasa(20, 400);
         }
         
-        if (AttackManager.AiTimer % 60 == 0)
+        if (AttackManager.AiTimer % 90 == 0)
         {
-            Attack_ShadowflameBurst(8);
+            Attack_WaterboltBurst(4);
         }
     }
 
@@ -251,13 +251,11 @@ public class SkeletronHead : AcidicNPCOverride
         var spin = new AttackState(() => Attack_Spin(10f, true), 60);
         var risingSkulls = new AttackState(() => Attack_RisingSkulls( 20f, 125f, true), 90);
         var muramasaBarrage = new AttackState(Attack_MuramasaBarrage, 60);
-        var shadowflameBurst = new AttackState(() => Attack_ShadowflameBurst(10), 30);
         
         AttackManager.SetAttackPattern([
             spin,
             muramasaBarrage,
             alternatingSlaps,
-            shadowflameBurst,
             risingSkulls
         ]);
     }
@@ -327,7 +325,7 @@ public class SkeletronHead : AcidicNPCOverride
         return isDone;
     }
 
-    private bool Attack_AlternatingSlaps(bool spawnShadowflameBurst)
+    private bool Attack_AlternatingSlaps(bool burst)
     {
         AttackManager.CountUp = true;
         CurrentHandState = HandState.AlternatingSlaps;
@@ -335,10 +333,7 @@ public class SkeletronHead : AcidicNPCOverride
 
         Attack_HoverAbove();
 
-        if (spawnShadowflameBurst)
-        {
-            if (AttackManager.AiTimer == 150) Attack_ShadowflameBurst(6);
-        }
+        if (AttackManager.AiTimer == 150 && burst) Attack_WaterboltBurst(8);
 
         if (isDone)
         {
@@ -447,14 +442,14 @@ public class SkeletronHead : AcidicNPCOverride
             centerY = center.Y;
             center.Y += distanceBelowPlayer;
 
-            var centerSkull = NewCursedSkullLine(center, -MathHelper.PiOver2, indicatorLength);
+            var centerSkull = NewCursedSkullLine(center, -MathHelper.PiOver2, indicatorLength * 2);
 
             // Left
             for (var i = 1; i <= skullsToEachSide; i++)
             {
                 var pos = center;
                 pos.X -= spacing * i;
-                var skull = NewCursedSkullLine(pos, -MathHelper.PiOver2, indicatorLength);
+                var skull = NewCursedSkullLine(pos, -MathHelper.PiOver2, indicatorLength * 2);
             }
 
             // Right
@@ -462,7 +457,7 @@ public class SkeletronHead : AcidicNPCOverride
             {
                 var pos = center;
                 pos.X += spacing * i;
-                var skull = NewCursedSkullLine(pos, -MathHelper.PiOver2, indicatorLength);
+                var skull = NewCursedSkullLine(pos, -MathHelper.PiOver2, indicatorLength * 2);
             }
         }
 
@@ -566,18 +561,18 @@ public class SkeletronHead : AcidicNPCOverride
         return true;
     }
 
-    private bool Attack_ShadowflameBurst(int bolts)
+    private bool Attack_WaterboltBurst(int bolts)
     {
         if (Main.netMode == NetmodeID.MultiplayerClient) return true;
-        const float speed = 3f;
+        const float speed = 4f;
         
         var step = MathHelper.TwoPi / bolts;
+        var startAngle = Main.rand.NextVector2Unit().ToRotation();
         for (var i = 0; i < bolts; i++)
         {
-            var angle = i * step;
+            var angle = i * step + startAngle;
             var vel = angle.ToRotationVector2() * speed;
-
-            NewShadowflame(Npc.Center, vel);
+            NewWaterbolt(Npc.Center, vel);
         }
 
         return true;
@@ -601,27 +596,27 @@ public class SkeletronHead : AcidicNPCOverride
     private Projectile NewHomingSkull(Vector2 position, Vector2 velocity)
     {
         return ProjHelper.NewUnscaledProjectile(Npc.GetSource_FromAI(), position, velocity,
-            ProjectileID.Skull, Npc.damage / 8, 3);
+            ProjectileID.Skull, Npc.damage / 2, 3);
     }
 
     private Projectile NewMuramasaLine(Vector2 position, float rotation)
     {
-        var proj = BaseLineProjectile.Create<MurasamaLine>(Npc.GetSource_FromAI(), position, rotation, 60);
+        var proj = BaseLineProjectile.Create<MurasamaLine>(Npc.GetSource_FromAI(), position, rotation, 120);
         return proj;
     }
 
     private Projectile NewMuramasa(Vector2 position, Vector2 velocity)
     {
         return ProjHelper.NewUnscaledProjectile(Npc.GetSource_FromAI(), position, velocity,
-            ModContent.ProjectileType<Muramasa>(), Npc.damage / 2, 3);
-    }
-    
-    private Projectile NewShadowflame(Vector2 position, Vector2 velocity)
-    {
-        return ProjHelper.NewUnscaledProjectile(Npc.GetSource_FromAI(), position, velocity,
-            ProjectileID.Shadowflames, Npc.damage / 4, 3);
+            ModContent.ProjectileType<Muramasa>(), Npc.damage, 3);
     }
 
+    private Projectile NewWaterbolt(Vector2 position, Vector2 velocity)
+    {
+        return ProjHelper.NewUnscaledProjectile(Npc.GetSource_FromAI(), position, velocity,
+            ModContent.ProjectileType<EvilWaterbolt>(), Npc.damage, 3);
+    }
+    
     private NPC NewHand(Vector2 position, int side)
     {
         var npc = NPC.NewNPCDirect(Npc.GetSource_FromAI(), position, NPCID.SkeletronHand);
