@@ -22,7 +22,7 @@ partial class AcidicBosses : Mod
     {
         if (Main.netMode != NetmodeID.Server)
         {
-            EffectsRegistry.LoadShaders();
+            
         }
     }
 

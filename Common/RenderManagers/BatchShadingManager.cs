@@ -17,9 +17,9 @@ public class BatchShadingManager : ModSystem
 {
     public delegate void ShadedDrawAction(SpriteBatch spritebatch);
 
-    private static readonly Dictionary<MiscShaderData, List<ShadedDrawAction>> NpcsToDrawBehind = new();
-    private static readonly Dictionary<MiscShaderData, List<ShadedDrawAction>> NpcsToDrawAbove = new();
-    private static readonly Dictionary<MiscShaderData, List<ShadedDrawAction>> ProjsToDraw = new();
+    private static readonly Dictionary<ManagedShader, List<ShadedDrawAction>> NpcsToDrawBehind = new();
+    private static readonly Dictionary<ManagedShader, List<ShadedDrawAction>> NpcsToDrawAbove = new();
+    private static readonly Dictionary<ManagedShader, List<ShadedDrawAction>> ProjsToDraw = new();
     
     public override void OnModLoad()
     {
@@ -33,7 +33,7 @@ public class BatchShadingManager : ModSystem
         On_Main.DrawProjectiles -= DrawShadedProjectiles;
     }
 
-    public static void DrawNpc(NPC npc, MiscShaderData shader, ShadedDrawAction drawAction)
+    public static void DrawNpc(NPC npc, ManagedShader shader, ShadedDrawAction drawAction)
     {
         switch (npc.behindTiles)
         {
@@ -54,7 +54,7 @@ public class BatchShadingManager : ModSystem
         }
     }
     
-    public static void DrawProjectile(MiscShaderData shader, ShadedDrawAction drawAction)
+    public static void DrawProjectile(ManagedShader shader, ShadedDrawAction drawAction)
     {
         if (!ProjsToDraw.ContainsKey(shader)) ProjsToDraw.Add(shader, []);
         
@@ -76,7 +76,7 @@ public class BatchShadingManager : ModSystem
         orig(self);
     }
 
-    private void DrawBatches(Dictionary<MiscShaderData, List<ShadedDrawAction>> batches)
+    private void DrawBatches(Dictionary<ManagedShader, List<ShadedDrawAction>> batches)
     {
         foreach (var batch in batches)
         {

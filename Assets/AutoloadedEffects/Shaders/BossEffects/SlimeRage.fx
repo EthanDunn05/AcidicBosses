@@ -1,18 +1,6 @@
-sampler uImage0 : register(s0);
-sampler uImage1 : register(s1);
-float3 uColor;
-float3 uSecondaryColor;
-float uOpacity : register(C0);
-float uSaturation;
-float uRotation;
+sampler slimeTex : register(s0);
+sampler noiseTex : register(s1);
 float uTime;
-float4 uSourceRect;
-float2 uWorldPosition;
-float uDirection;
-float3 uLightSource;
-float2 uImageSize0;
-float2 uImageSize1;
-float4 uShaderSpecificData;
 
 float intensity = 0.05;
 float scale = 0.025;
@@ -22,7 +10,7 @@ float4 SampleNoise(float2 coords)
 {
     coords.x += uTime * speed;
     coords.y += uTime * speed;
-    float4 noise = tex2D(uImage1, coords * scale);
+    float4 noise = tex2D(noiseTex, coords * scale);
 
     return noise;
 }
@@ -54,7 +42,7 @@ float4 PixelShaderFunction(float2 coords : TEXCOORD0) : COLOR0
 
     coords.y = (coords.y / 6.0 + frame / 6.0);
 
-    float4 color = tex2D(uImage0, coords);
+    float4 color = tex2D(slimeTex, coords);
     color.r /= 0.5;
     color.bg *= float2(1.0, 1.0) * 0.3;
 
@@ -63,7 +51,7 @@ float4 PixelShaderFunction(float2 coords : TEXCOORD0) : COLOR0
 
 technique Technique1
 {
-    pass SlimeRagePass
+    pass AutoloadPass
     {
         PixelShader = compile ps_2_0 PixelShaderFunction();
     }

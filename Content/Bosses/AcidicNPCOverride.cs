@@ -182,14 +182,6 @@ public abstract class AcidicNPCOverride : GlobalNPC
     public override void HitEffect(NPC npc, NPC.HitInfo hit)
     {
         if (!ShouldOverride()) return;
-        
-        if (npc.life <= 0)
-        {
-            // Kill Shaders
-            EffectsManager.BossRageKill();
-            EffectsManager.ShockwaveKill();
-            EffectsManager.AberrationKill();
-        }
     }
 
     // Wrapper for PreDraw

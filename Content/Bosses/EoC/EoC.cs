@@ -92,8 +92,6 @@ public class EoC : AcidicNPCOverride
         else
         {
             Npc.active = false;
-            EffectsManager.BossRageKill();
-            EffectsManager.ShockwaveKill();
         }
     }
     
@@ -321,13 +319,13 @@ public class EoC : AcidicNPCOverride
 
             mouthMode = true;
             Npc.damage = 80; // Way more damage now that the mouth is out
-            EffectsManager.ShockwaveActive(Npc.Center, 0.075f, 0.15f, Color.Transparent);
+            
         }
         // Shockwave Update
-        else if (AttackManager.AiTimer is > 90 and < 180)
+        else if (AttackManager.AiTimer is >= 90 and < 180)
         {
             var shockT = (AttackManager.AiTimer - 90f) / 60f;
-            EffectsManager.ShockwaveProgress(shockT);
+            EffectsManager.ShockwaveActivate(Npc.Center, 0.075f, 0.15f, Color.Transparent, shockT);
             LookTowards(Main.player[Npc.target].Center, 0.2f);
         }
         // End and cleanup
@@ -335,7 +333,6 @@ public class EoC : AcidicNPCOverride
         {
             phaseTracker.NextPhase();
             AttackManager.Reset();
-            EffectsManager.ShockwaveKill();
             return;
         }
     }

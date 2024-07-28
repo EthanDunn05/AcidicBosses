@@ -204,20 +204,13 @@ public class SkeletronHead : AcidicNPCOverride
             SoundEngine.PlaySound(SoundID.Roar);
             Npc.velocity = Vector2.Zero;
             
-            EffectsManager.ShockwaveActive(Npc.Center, 0.15f, 0.25f, Color.Red);
-
             CurrentHandState = HandState.LockHead;
         }
 
         if (AttackManager.AiTimer < 30)
         {
             var shockT = AttackManager.AiTimer / 30f;
-            EffectsManager.ShockwaveProgress(shockT);
-        }
-        
-        if (AttackManager.AiTimer == 30)
-        {
-            EffectsManager.ShockwaveKill();
+            EffectsManager.ShockwaveActivate(Npc.Center, 0.15f, 0.25f, Color.Red, shockT);
         }
 
         // Spin
