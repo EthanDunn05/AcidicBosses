@@ -43,6 +43,8 @@ public abstract class AcidicNPCOverride : GlobalNPC
     /// </summary>
     protected float[] ExtraAI = new float[4];
 
+    protected float[] ExtraLocalAI = new float[4];
+
     private bool isFirstFrame = true;
 
     private static bool AcidicActive => AcidicDifficultySystem.AcidicActive;

@@ -4,6 +4,7 @@ using AcidicBosses.Common.Effects;
 using AcidicBosses.Content.ProjectileBases;
 using AcidicBosses.Core.StateManagement;
 using AcidicBosses.Helpers;
+using Luminance.Common.Utilities;
 using Luminance.Core.Graphics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -236,7 +237,7 @@ public class EoC : AcidicNPCOverride
         };
         var phantomCrossDash = new AttackState(Attack_PhantomCrossDash, 5);
         var phantomPlusDash = new AttackState(Attack_PhantomPlusDash, 5);
-        var gasterSpin = new AttackState(() => Attack_GasterSpinDash(7, 1), 30);
+        var gasterSpin = new AttackState(() => Attack_GasterSpinDash(8, 1), 30);
         var summon = new AttackState(() => Attack_SummonMinions(5), 0);
         var teleport = new AttackState(Attack_TeleportBehind, 5);
         
@@ -293,8 +294,20 @@ public class EoC : AcidicNPCOverride
 
             // Spin :)
             var spinT = AttackManager.AiTimer / 90f;
-            var spinOffset = spinCount * MathHelper.TwoPi * EasingHelper.QuadInOut(spinT);
-            Npc.rotation = MathHelper.WrapAngle(Npc.localAI[0] + spinOffset);
+            var angularAccel = MathHelper.Pi * 0.125f;
+            if (spinT < 0.25f)
+            {
+                angularAccel *= EasingHelper.QuadIn(spinT * 4f);
+            }
+
+            if (spinT >= 0.5f)
+            {
+                angularAccel *= 1 - EasingHelper.QuadOut((spinT - 0.5f) * 2f);
+            }
+        
+            Npc.rotation += angularAccel;
+            Npc.rotation = MathHelper.WrapAngle(Npc.rotation);
+
         }
         // Transform to mouth and start shockwave
         else if (AttackManager.AiTimer == 90)
@@ -345,7 +358,7 @@ public class EoC : AcidicNPCOverride
         AttackManager.Reset();
 
         // Faster Dashes
-        dashAtTime = 20;
+        dashAtTime = 25;
         dashTrackTime = 10;
     }
 
@@ -506,8 +519,9 @@ public class EoC : AcidicNPCOverride
 
         const int dashLength = 45;
         const float dashSpeed = 40f;
+        var indicateTime = (int) (dashAtTime);
 
-        var isDone = AttackManager.AiTimer >= dashLength + dashAtTime;
+        var isDone = AttackManager.AiTimer >= dashLength + indicateTime;
 
         if (isDone) AttackManager.CountUp = false;
 
@@ -533,7 +547,7 @@ public class EoC : AcidicNPCOverride
                 TeleportationStyleID.RodOfDiscord);
         }
 
-        if (AttackManager.AiTimer == dashAtTime)
+        if (AttackManager.AiTimer == indicateTime)
         {
             SoundEngine.PlaySound(SoundID.ForceRoarPitched);
         }
@@ -544,18 +558,18 @@ public class EoC : AcidicNPCOverride
         if (AttackManager.AiTimer == 0)
         {
             // Spawn Right
-            var rightEye = NewPhantomEoC(pos0, vel0, dashAtTime);
-            rightEye.timeLeft = dashAtTime + dashLength;
-            var rightLine = NewDashLine(pos0, vel0.ToRotation(), dashAtTime, false);
-            var rightEye1 = NewPhantomEoC(pos2, vel2, dashAtTime);
-            rightEye1.timeLeft = dashAtTime + dashLength;
+            var rightEye = NewPhantomEoC(pos0, vel0, indicateTime);
+            rightEye.timeLeft = indicateTime + dashLength;
+            var rightLine = NewDashLine(pos0, vel0.ToRotation(), indicateTime, false);
+            var rightEye1 = NewPhantomEoC(pos2, vel2, indicateTime);
+            rightEye1.timeLeft = indicateTime + dashLength;
 
             // Spawn Left
-            var leftEye = NewPhantomEoC(pos1, vel1, dashAtTime);
-            leftEye.timeLeft = dashAtTime + dashLength;
-            var leftLine = NewDashLine(pos1, vel1.ToRotation(), dashAtTime, false);
-            var leftEye1 = NewPhantomEoC(pos3, vel3, dashAtTime);
-            leftEye1.timeLeft = dashAtTime + dashLength;
+            var leftEye = NewPhantomEoC(pos1, vel1, indicateTime);
+            leftEye.timeLeft = indicateTime + dashLength;
+            var leftLine = NewDashLine(pos1, vel1.ToRotation(), indicateTime, false);
+            var leftEye1 = NewPhantomEoC(pos3, vel3, indicateTime);
+            leftEye1.timeLeft = indicateTime + dashLength;
         }
 
         return isDone;
@@ -567,9 +581,10 @@ public class EoC : AcidicNPCOverride
 
         const int dashLength = 45;
         const float dashSpeed = 40f;
+        var indicateTime = (int) (dashAtTime);
 
         Attack_Hover(10f, 0.05f, 400f);
-        var isDone = AttackManager.AiTimer >= dashLength + dashAtTime;
+        var isDone = AttackManager.AiTimer >= dashLength + indicateTime;
 
         if (isDone) AttackManager.CountUp = false;
 
@@ -594,7 +609,7 @@ public class EoC : AcidicNPCOverride
                 TeleportationStyleID.RodOfDiscord);
         }
 
-        if (AttackManager.AiTimer == dashAtTime)
+        if (AttackManager.AiTimer == indicateTime)
         {
             SoundEngine.PlaySound(SoundID.ForceRoarPitched);
         }
@@ -605,18 +620,18 @@ public class EoC : AcidicNPCOverride
         if (AttackManager.AiTimer == 0)
         {
             // Spawn Right
-            var rightEye = NewPhantomEoC(pos0, vel0, dashAtTime);
-            rightEye.timeLeft = dashAtTime + dashLength;
-            var rightLine = NewDashLine(pos0, vel0.ToRotation(), dashAtTime, false);
-            var rightEye1 = NewPhantomEoC(pos2, vel2, dashAtTime);
-            rightEye1.timeLeft = dashAtTime + dashLength;
+            var rightEye = NewPhantomEoC(pos0, vel0, indicateTime);
+            rightEye.timeLeft = indicateTime + dashLength;
+            var rightLine = NewDashLine(pos0, vel0.ToRotation(), indicateTime, false);
+            var rightEye1 = NewPhantomEoC(pos2, vel2, indicateTime);
+            rightEye1.timeLeft = indicateTime + dashLength;
 
             // Spawn Left
-            var leftEye = NewPhantomEoC(pos1, vel1, dashAtTime);
-            leftEye.timeLeft = dashAtTime + dashLength;
-            var leftLine = NewDashLine(pos1, vel1.ToRotation(), dashAtTime, false);
-            var leftEye1 = NewPhantomEoC(pos3, vel3, dashAtTime);
-            leftEye1.timeLeft = dashAtTime + dashLength;
+            var leftEye = NewPhantomEoC(pos1, vel1, indicateTime);
+            leftEye.timeLeft = indicateTime + dashLength;
+            var leftLine = NewDashLine(pos1, vel1.ToRotation(), indicateTime, false);
+            var leftEye1 = NewPhantomEoC(pos3, vel3, indicateTime);
+            leftEye1.timeLeft = indicateTime + dashLength;
         }
 
         return isDone;
@@ -633,6 +648,7 @@ public class EoC : AcidicNPCOverride
         ref var originX = ref Npc.localAI[1];
         ref var originY = ref Npc.localAI[2];
         ref var startAngle = ref Npc.localAI[3];
+        ref var spinDirection = ref ExtraLocalAI[0];
 
         Attack_Hover(10f, 0.05f, 400f);
         var isDone = dashes > dashesPerSpin * spins;
@@ -650,10 +666,11 @@ public class EoC : AcidicNPCOverride
             originY = origin.Y;
 
             startAngle = Main.player[Npc.target].velocity.ToRotation() + MathHelper.PiOver2;
+            spinDirection = -1 * Main.player[Npc.target].velocity.X.NonZeroSign() * Main.player[Npc.target].velocity.Y.NonZeroSign();
         }
 
         var targetPos = new Vector2(originX, originY);
-        var rot = (dashes * (MathHelper.Pi / dashesPerSpin)) + startAngle;
+        var rot = (dashes * (MathHelper.Pi / dashesPerSpin) * spinDirection) + startAngle;
         var offsetFromPlayer = new Vector2(1000, 0).RotatedBy(rot);
         var pos = targetPos + offsetFromPlayer;
         var pos2 = targetPos - offsetFromPlayer;
@@ -692,12 +709,22 @@ public class EoC : AcidicNPCOverride
         const int spawnDelay = 15;
 
         // Speen 
-        if (AttackManager.AiTimer == 0) Npc.localAI[0] = Npc.rotation;
         Npc.velocity = Vector2.Zero;
         var spinTime = spawnDelay * minionCount;
         var spinT = (float) AttackManager.AiTimer / (spinTime);
-        var dAngle = MathHelper.TwoPi * 2 * EasingHelper.QuadInOut(spinT);
-        Npc.rotation = MathHelper.WrapAngle(Npc.localAI[0] + dAngle);
+        var angularAccel = MathHelper.Pi * 0.1f;
+        if (spinT < 0.25f)
+        {
+            angularAccel *= EasingHelper.QuadIn(spinT * 4f);
+        }
+
+        if (spinT >= 0.5f)
+        {
+            angularAccel *= 1 - EasingHelper.QuadOut((spinT - 0.5f) * 2f);
+        }
+        
+        Npc.rotation += angularAccel;
+        Npc.rotation = MathHelper.WrapAngle(Npc.rotation);
 
         if (AttackManager.AiTimer >= spinTime)
         {
