@@ -1,5 +1,5 @@
 ﻿sampler screen : register(s0);
-float tintColor;
+float3 tintColor;
 float amount;
 float width;
 float progress;

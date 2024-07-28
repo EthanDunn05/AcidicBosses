@@ -1,6 +1,6 @@
 sampler slimeTex : register(s0);
 sampler noiseTex : register(s1);
-float uTime;
+float globalTime;
 
 float intensity = 0.05;
 float scale = 0.025;
@@ -8,8 +8,8 @@ float speed = 1;
 
 float4 SampleNoise(float2 coords)
 {
-    coords.x += uTime * speed;
-    coords.y += uTime * speed;
+    coords.x += globalTime * speed;
+    coords.y += globalTime * speed;
     float4 noise = tex2D(noiseTex, coords * scale);
 
     return noise;

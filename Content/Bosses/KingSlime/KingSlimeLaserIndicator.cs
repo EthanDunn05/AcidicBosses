@@ -32,7 +32,8 @@ public class KingSlimeLaserIndicator : BaseLineProjectile
     public override void OnKill(int timeLeft)
     {
         if (Main.netMode == NetmodeID.MultiplayerClient) return;
-        var proj = Projectile.NewProjectileDirect(Projectile.GetSource_FromAI(), Projectile.position, Vector2.Zero, 
-            ModContent.ProjectileType<KingSlimeCrownLaser>(), laserDamage, 3, ai0: Offset, ai2: 120);
+
+        var proj = Projectile.NewProjectileDirect(Projectile.GetSource_FromAI(), 
+            Projectile.position, Vector2.Zero, ModContent.ProjectileType<KingSlimeCrownLaser>(), laserDamage, 3, ai0: Offset, ai2: 120);
     }
 }

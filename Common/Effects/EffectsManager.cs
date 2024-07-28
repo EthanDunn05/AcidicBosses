@@ -59,7 +59,7 @@ public static class EffectsManager
     /// </summary>
     public static void UndergroundOutlineApply(Asset<Texture2D> texture, Color outlineColor, Color lightColor)
     {
-        EffectsRegistry.UndergroundOutline.SetTexture(texture, 0, SamplerState.PointClamp);
+        EffectsRegistry.UndergroundOutline.SetTexture(texture, 0);
         EffectsRegistry.UndergroundOutline.TrySetParameter("outlineColor", outlineColor);
         EffectsRegistry.UndergroundOutline.TrySetParameter("lightColor", lightColor);
         EffectsRegistry.UndergroundOutline.Apply();
@@ -71,14 +71,14 @@ public static class EffectsManager
     /// </summary>
     public static void SlimeRageApply(Asset<Texture2D> texture)
     {
-        EffectsRegistry.SlimeRage.SetTexture(texture, 0, SamplerState.PointClamp);
-        EffectsRegistry.SlimeRage.SetTexture(TextureRegistry.RgbPerlin, 1, SamplerState.PointClamp);
+        EffectsRegistry.SlimeRage.SetTexture(texture, 0);
+        EffectsRegistry.SlimeRage.SetTexture(TextureRegistry.RgbPerlin, 1);
         EffectsRegistry.SlimeRage.Apply();
     }
     
     public static void ShieldApply(Asset<Texture2D> texture, Color lightColor, float alpha, int frames = 1)
     {
-        EffectsRegistry.Shield.SetTexture(texture, 0, SamplerState.PointClamp);
+        EffectsRegistry.Shield.SetTexture(texture, 0);
         EffectsRegistry.Shield.TrySetParameter("lighting", lightColor);
         EffectsRegistry.Shield.TrySetParameter("opacity", alpha);
         EffectsRegistry.Shield.TrySetParameter("texFrames", frames);

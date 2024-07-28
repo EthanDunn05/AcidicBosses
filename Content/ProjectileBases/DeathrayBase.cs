@@ -31,12 +31,14 @@ public abstract class DeathrayBase : ModProjectile
 
     protected virtual bool AnchorPosition => true;
     protected virtual bool AnchorRotation => true;
+    protected virtual bool StartAtEnd => false;
 
     private bool doneFirstFrame = false;
 
     private bool readyToDraw = false;
     
     protected int maxTimeLeft = 0;
+    protected float widthScale = 1f;
 
     public override void SetStaticDefaults()
     {
@@ -138,25 +140,29 @@ public abstract class DeathrayBase : ModProjectile
         var rotation = Projectile.rotation.ToRotationVector2();
         var r = Projectile.rotation - MathHelper.PiOver2;
 
+        var scale = new Vector2(widthScale, 1f);
+
         var frames = Main.projFrames[Type];
         var headRect = DrTexture.Frame(frames, 3, Projectile.frame, 0);
         var bodyRect = DrTexture.Frame(frames, 3, Projectile.frame, 1);
         var tailRect = DrTexture.Frame(frames, 3, Projectile.frame, 2);
 
         var step = bodyRect.Height;
+        var origin = headRect.Center();
+        if (StartAtEnd) origin = new Vector2(headRect.Width / 2f, 0f);
 
         // Draw the head
-        Main.spriteBatch.Draw(DrTexture.Value, Projectile.position - Main.screenPosition, headRect, Color, r, headRect.Center(), 1f, SpriteEffects.None, 0f);
+        Main.spriteBatch.Draw(DrTexture.Value, Projectile.position - Main.screenPosition, headRect, Color, r, origin, scale, SpriteEffects.None, 0f);
         
         // Body
         for (var i = 1; i <= Distance / step - 1; i++)
         {
             var position = Projectile.position + rotation * i * step;
-            Main.spriteBatch.Draw(DrTexture.Value, position - Main.screenPosition, bodyRect, Color, r, headRect.Center(), 1f, SpriteEffects.None, 0f);
+            Main.spriteBatch.Draw(DrTexture.Value, position - Main.screenPosition, bodyRect, Color, r, origin, scale, SpriteEffects.None, 0f);
         }
         
         // Tail
-        Main.spriteBatch.Draw(DrTexture.Value, (Projectile.position + rotation * Distance) - Main.screenPosition, tailRect, Color, r, tailRect.Center(), 1f, SpriteEffects.None, 0f);
+        Main.spriteBatch.Draw(DrTexture.Value, (Projectile.position + rotation * Distance) - Main.screenPosition, tailRect, Color, r, origin, scale, SpriteEffects.None, 0f);
 
         return false;
     }
