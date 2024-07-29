@@ -63,10 +63,10 @@ public class EoWBody : AcidicNPCOverride
                 case EoWHead.BodyInstructions.Nothing:
                     break;
                 case EoWHead.BodyInstructions.SpitSlow:
-                    SpitAI(300, 120);
+                    SpitAI(120, 30);
                     break;
                 case EoWHead.BodyInstructions.SpitFast:
-                    SpitAI(120, 60);
+                    SpitAI(45, 30);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(Instruction));

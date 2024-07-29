@@ -59,7 +59,7 @@ public static class EffectsManager
     /// </summary>
     public static void UndergroundOutlineApply(Asset<Texture2D> texture, Color outlineColor, Color lightColor)
     {
-        EffectsRegistry.UndergroundOutline.SetTexture(texture, 0);
+        EffectsRegistry.UndergroundOutline.SetTexture(texture, 0, SamplerState.PointClamp);
         EffectsRegistry.UndergroundOutline.TrySetParameter("outlineColor", outlineColor);
         EffectsRegistry.UndergroundOutline.TrySetParameter("lightColor", lightColor);
         EffectsRegistry.UndergroundOutline.Apply();

@@ -17,12 +17,16 @@ float4 PixelShaderFunction(float2 coords : TEXCOORD0) : COLOR0
 
     float light = max(max(lightColor.r, lightColor.g), lightColor.b);
     
-    //float outline = max(max(px_up, px_down), max(px_left, px_right)) - color.a;
-    float outline = (1 - px_up * px_down * px_left * px_right) * color.a * (1 - light);
+    // float outline = max(max(px_up, px_down), max(px_left, px_right)) - color.a;
+    float outline = (1 - px_up * px_down * px_left * px_right) * color.a;
 
-    float4 outline_color = float4(outlineColor, 1 - light);
+    float4 outline_color = float4(outlineColor, color.a);
 
     color.rgb *= lightColor;
+    outline_color.rgb *= 0.75 - lightColor;
+    if (light > 0.75) {
+        outline = 0;
+    }
 
     return lerp(color, outline_color, outline);
 }
