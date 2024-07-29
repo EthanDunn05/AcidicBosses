@@ -45,6 +45,8 @@ public abstract class AcidicNPCOverride : GlobalNPC
 
     public Player TargetPlayer => Main.player[Npc.target];
 
+    protected float[] ExtraLocalAI = new float[4];
+
     private bool isFirstFrame = true;
 
     private static bool AcidicActive => AcidicDifficultySystem.AcidicActive;
@@ -184,14 +186,6 @@ public abstract class AcidicNPCOverride : GlobalNPC
     public override void HitEffect(NPC npc, NPC.HitInfo hit)
     {
         if (!ShouldOverride()) return;
-        
-        if (npc.life <= 0)
-        {
-            // Kill Shaders
-            EffectsManager.BossRageKill();
-            EffectsManager.ShockwaveKill();
-            EffectsManager.AberrationKill();
-        }
     }
 
     // Wrapper for PreDraw

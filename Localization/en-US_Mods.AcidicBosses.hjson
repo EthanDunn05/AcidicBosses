@@ -17,6 +17,8 @@ Projectiles: {
 	WoFMoveIndicator.DisplayName: WoF Move Indicator
 	WoFLaser.DisplayName: Laser
 	KingSlimeLaserIndicator.DisplayName: King Slime Laser Indicator
+	ShadowflameLine.DisplayName: Shadowflame Line
+	EvilWaterbolt.DisplayName: Waterbolt
 }
 
 Buffs: {

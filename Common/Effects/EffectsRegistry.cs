@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using Luminance.Core.Graphics;
+using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
 using Terraria;
 using Terraria.Graphics.Effects;
@@ -19,83 +20,20 @@ namespace AcidicBosses.Common.Effects;
 /// </summary>
 public static class EffectsRegistry
 {
-    // The name of each shader. Must match filename
-    public struct Names
+    public static ManagedScreenFilter Shockwave => ScreenShader("Shockwave");
+    public static ManagedScreenFilter BossRage => ScreenShader("BossRage");
+    public static ManagedScreenFilter ChromaticAberration => ScreenShader("ChromaticAbberation");
+    public static ManagedShader UndergroundOutline => Shader("UndergroundOutline");
+    public static ManagedShader SlimeRage => Shader("SlimeRage");
+    public static ManagedShader Shield => Shader("Shield");
+
+    private static ManagedShader Shader(string name)
     {
-        public const string Shockwave = "Shockwave";
-        public const string BossRage = "BossRage";
-        public const string ChromaticAberration = "ChromaticAbberation"; // Yes this is misspelled
-        public const string KsCrownLaser = "KsCrownLaser";
-        public const string BasicTexture = "BasicTexture";
-        public const string UndergroundOutline = "UndergroundOutline";
-        public const string SlimeRage = "SlimeRage";
-        public const string Shield = "Shield";
+        return ShaderManager.GetShader($"AcidicBosses.{name}");
     }
 
-    // Screen shaders
-    public static Filter Shockwave => Filters.Scene[Names.Shockwave];
-    public static Filter BossRage => Filters.Scene[Names.BossRage];
-    public static Filter ChromaticAberration => Filters.Scene[Names.ChromaticAberration];
-    
-    // Misc Shaders
-    public static MiscShaderData KsCrownLaser => GameShaders.Misc[Names.KsCrownLaser];
-    public static MiscShaderData BasicTexture => GameShaders.Misc[Names.BasicTexture];
-    public static MiscShaderData UndergroundOutline => GameShaders.Misc[Names.UndergroundOutline];
-    public static MiscShaderData SlimeRage => GameShaders.Misc[Names.SlimeRage];
-    public static MiscShaderData Shield => GameShaders.Misc[Names.Shield];
-    
-    // Load Shaders
-
-    /// <summary>
-    /// Loads all shaders from into assets
-    /// </summary>
-    /// <param name="assets">The game's asset repository</param>
-    public static void LoadShaders()
+    private static ManagedScreenFilter ScreenShader(string name)
     {
-        LoadScreenShader(Names.Shockwave, EffectPriority.High);
-        LoadScreenShader(Names.BossRage, EffectPriority.VeryHigh);
-        LoadScreenShader(Names.ChromaticAberration, EffectPriority.High);
-        
-        LoadPrimShader(Names.BasicTexture, "TrailPass");
-        
-        LoadBossShader(Names.UndergroundOutline, "UndergroundOutlinePass");
-        LoadBossShader(Names.SlimeRage, "SlimeRagePass");
-        LoadBossShader(Names.Shield, "ShieldPass");
-    }
-    
-    // Loads a shader from the file
-    private static Asset<Effect> LoadEffect(string name)
-    {
-        var asset = ModContent.Request<Effect>("AcidicBosses/Assets/Effects/" + name, AssetRequestMode.ImmediateLoad);
-        return asset;
-    }
-
-    // Loads a shader from the PrimitiveShaders folder
-    private static void LoadPrimShader(string name, string pass)
-    {
-        var effect = LoadEffect($"PrimitiveShaders/{name}");
-        GameShaders.Misc[name] = new MiscShaderData(effect, pass);
-    }
-
-    // Loads a shader from the BossEffects folder
-    private static void LoadBossShader(string name, string pass)
-    {
-        var effect = LoadEffect($"BossEffects/{name}");
-        GameShaders.Misc[name] = new MiscShaderData(effect, pass);
-    }
-
-    // Loads a shader from the base folder
-    private static void LoadMiscShader(string name, string pass)
-    {
-        var effect = LoadEffect($"{name}");
-        GameShaders.Misc[name] = new MiscShaderData(effect, pass);
-    }
-
-    // Loads a screen shader from the base folder
-    private static void LoadScreenShader(string name, EffectPriority priority)
-    {
-        var effect = LoadEffect($"ScreenShaders/{name}");
-        Filters.Scene[name] = new Filter(new ScreenShaderData(effect, name), priority);
-        Filters.Scene[name].Load();
+        return ShaderManager.GetFilter($"AcidicBosses.{name}");
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using Luminance.Common.Easings;
 
 namespace AcidicBosses.Helpers;
 
@@ -32,4 +33,30 @@ public static class EasingHelper
             : x < 0.5
                 ? MathF.Pow(2, 20 * x - 10) / 2
                 : (2 - MathF.Pow(2, -20 * x + 10)) / 2;
+
+    public static float BackIn(float x)
+    {
+        var c1 = 1.70158f;
+        var c3 = c1 + 1;
+        
+        return c3 * x * x * x - c1 * x * x;
+    }
+    
+    public static float BackOut(float x)
+    {
+        var c1 = 1.70158f;
+        var c3 = c1 + 1;
+
+        return 1 + c3 * MathF.Pow(x - 1, 3) + c1 * MathF.Pow(x - 1, 2);
+    }
+    
+    public static float BackInOut(float x)
+    {
+        var c1 = 1.70158f;
+        var c2 = c1 * 1.525f;
+
+        return x < 0.5
+            ? (MathF.Pow(2 * x, 2) * ((c2 + 1) * 2 * x - c2)) / 2
+            : (MathF.Pow(2 * x - 2, 2) * ((c2 + 1) * (x * 2 - 2) + c2) + 2) / 2;
+    }
 }
