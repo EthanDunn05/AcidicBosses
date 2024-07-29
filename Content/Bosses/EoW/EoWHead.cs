@@ -29,6 +29,12 @@ public class EoWHead : AcidicNPCOverride
         SpitFast
     }
     
+    public enum ServantInstructions
+    {
+        Nothing,
+        Spit
+    }
+    
     // Set this to the boss to override
     protected override int OverriddenNpc => NPCID.EaterofWorldsHead;
     
@@ -59,6 +65,12 @@ public class EoWHead : AcidicNPCOverride
     {
         get => (BodyInstructions) Npc.ai[2];
         set => Npc.ai[2] = (float) value;
+    }
+    
+    public ServantInstructions ServantInstruction
+    {
+        get => (ServantInstructions) Npc.ai[3];
+        set => Npc.ai[3] = (float) value;
     }
 
     private PhaseTracker phaseTracker;
@@ -192,7 +204,7 @@ public class EoWHead : AcidicNPCOverride
             AttackManager.Reset();
         }
         
-        WormUtils.HeadDigAI(Npc, 20, 0.1f, null);
+        WormUtils.HeadDigAI(Npc, 20, 0.2f, null);
         
         if (AttackManager.AiTimer > 0) return;
 
@@ -256,7 +268,7 @@ public class EoWHead : AcidicNPCOverride
             AttackManager.Reset();
         }
         
-        WormUtils.HeadDigAI(Npc, 20, 0.1f, null);
+        WormUtils.HeadDigAI(Npc, 20, 0.2f, null);
         
         if (AttackManager.AiTimer > 0) return;
 
@@ -331,7 +343,7 @@ public class EoWHead : AcidicNPCOverride
     {
         BossBar.MaxWorms = 0;
         BodyInstruction = BodyInstructions.SpitFast;
-        WormUtils.HeadDigAI(Npc, 30, 0.15f, null);
+        WormUtils.HeadDigAI(Npc, 30, 0.25f, null);
         
         if (AttackManager.AiTimer > 0) return;
 

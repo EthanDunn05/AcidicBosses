@@ -24,18 +24,11 @@ public class WoFDeathray : DeathrayBase
     public override void FirstFrame()
     {
         base.FirstFrame();
-        EffectsManager.AberrationActivate(AberrationStrength);
     }
 
     protected override void AiEffects()
     {
-        EffectsManager.AberrationProgress(MathHelper.Lerp(0f, AberrationStrength, Projectile.timeLeft / (float) maxTimeLeft));
-    }
-
-    public override void OnKill(int timeLeft)
-    {
-        EffectsManager.AberrationKill();
-        base.OnKill(timeLeft);
+        EffectsManager.AberrationActivate(MathHelper.Lerp(0f, AberrationStrength, Projectile.timeLeft / (float) maxTimeLeft));
     }
 
     protected override void SpawnDust(Vector2 position)

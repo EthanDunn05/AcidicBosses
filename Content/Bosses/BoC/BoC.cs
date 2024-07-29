@@ -108,8 +108,6 @@ public class BoC : AcidicNPCOverride
         else
         {
             Npc.active = false;
-            EffectsManager.BossRageKill();
-            EffectsManager.ShockwaveKill();
         }
     }
     
@@ -283,7 +281,7 @@ public class BoC : AcidicNPCOverride
         if (AttackManager.AiTimer == 0)
         {
             SoundEngine.PlaySound(SoundID.Roar, Npc.Center);
-            EffectsManager.ShockwaveActive(Npc.Center, 0.075f, 0.15f, Color.Transparent);
+            
             var punch = new PunchCameraModifier(Npc.Center, Main.rand.NextVector2Unit(), 10f, 12f, 60, 1000f, FullName);
             Main.instance.CameraModifiers.Add(punch);
             showPhantoms = true;
@@ -291,16 +289,14 @@ public class BoC : AcidicNPCOverride
             Npc.velocity = Vector2.Zero;
         }
         // Shockwave
-        else if (AttackManager.AiTimer < 120)
+        if (AttackManager.AiTimer < 120)
         {
             var shockT = AttackManager.AiTimer / 120f;
-            EffectsManager.ShockwaveProgress(shockT);
+            EffectsManager.ShockwaveActivate(Npc.Center, 0.075f, 0.15f, Color.Transparent, shockT);
             ConfusePlayers();
         }
         else
         {
-            EffectsManager.ShockwaveKill();
-            
             AttackManager.Reset();
             phaseTracker.NextPhase();
         }

@@ -241,8 +241,6 @@ public class KingSlime : AcidicNPCOverride
                 break;
             default:
                 npc.active = false;
-                EffectsManager.BossRageKill();
-                EffectsManager.ShockwaveKill();
                 break;
         }
 
@@ -495,16 +493,7 @@ public class KingSlime : AcidicNPCOverride
             case >= 0 and < 30:
                 var roarT = AiTimer / 29f;
                 SoundEngine.PlaySound(SoundID.Roar, npc.Center);
-
-                // Effects
-                if (AiTimer == 0)
-                {
-                    EffectsManager.ShockwaveActive(npc.Center, 0.15f, 0.25f, Color.Red);
-                }
-
-                EffectsManager.ShockwaveProgress(roarT);
-                if (AiTimer == 29) EffectsManager.ShockwaveKill();
-
+                EffectsManager.ShockwaveActivate(npc.Center, 0.15f, 0.25f, Color.Red, roarT);
                 break;
             case >= 30 and < 90:
                 var shrinkT = (AiTimer - 30f) / (90f - 30f);

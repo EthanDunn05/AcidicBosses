@@ -19,30 +19,15 @@ public static class EffectsManager
 {
     // Shockwave //
     
-    public static bool ShockwaveActive(Vector2 source, float intensity, float width, Color tintColor)
+    public static bool ShockwaveActivate(Vector2 source, float intensity, float width, Color tintColor, float progress)
     {
-        if (Main.netMode == NetmodeID.Server || EffectsRegistry.Shockwave.IsActive()) return false;
-        
-        Filters.Scene.Activate(EffectsRegistry.Names.Shockwave, source).GetShader()
-            .UseColor(tintColor)
-            .UseIntensity(intensity)
-            .UseOpacity(width)
-            .UseTargetPosition(source);
-        return true;
-    }
-
-    public static bool ShockwaveProgress(float progress)
-    {
-        if (Main.netMode == NetmodeID.Server || !EffectsRegistry.Shockwave.IsActive()) return false;
-        EffectsRegistry.Shockwave.GetShader()
-            .UseProgress(progress);
-        return true;
-    }
-
-    public static bool ShockwaveKill()
-    {
-        if (Main.netMode == NetmodeID.Server || !EffectsRegistry.Shockwave.IsActive()) return false;
-        EffectsRegistry.Shockwave.Deactivate();
+        if (Main.netMode == NetmodeID.Server || EffectsRegistry.Shockwave.IsActive) return false; 
+        EffectsRegistry.Shockwave.TrySetParameter("tintColor", tintColor);
+        EffectsRegistry.Shockwave.TrySetParameter("amount", intensity);
+        EffectsRegistry.Shockwave.TrySetParameter("width", width);
+        EffectsRegistry.Shockwave.TrySetParameter("targetPos", source);
+        EffectsRegistry.Shockwave.TrySetParameter("progress", progress);
+        EffectsRegistry.Shockwave.Activate();
         return true;
     }
     
@@ -50,16 +35,9 @@ public static class EffectsManager
 
     public static bool BossRageActivate(Color tintColor)
     {
-        if (Main.netMode == NetmodeID.Server || EffectsRegistry.BossRage.IsActive()) return false;
-        Filters.Scene.Activate(EffectsRegistry.Names.BossRage).GetShader()
-            .UseColor(tintColor);
-        return true;
-    }
-    
-    public static bool BossRageKill()
-    {
-        if (Main.netMode == NetmodeID.Server || !EffectsRegistry.BossRage.IsActive()) return false;
-        EffectsRegistry.BossRage.Deactivate();
+        if (Main.netMode == NetmodeID.Server || EffectsRegistry.BossRage.IsActive) return false;
+        EffectsRegistry.BossRage.TrySetParameter("tint", tintColor);
+        EffectsRegistry.BossRage.Activate();
         return true;
     }
     
@@ -67,25 +45,10 @@ public static class EffectsManager
 
     public static bool AberrationActivate(float offset)
     {
-        if (Main.netMode == NetmodeID.Server || EffectsRegistry.ChromaticAberration.IsActive()) return false;
+        if (Main.netMode == NetmodeID.Server || EffectsRegistry.ChromaticAberration.IsActive) return false;
 
-        Filters.Scene.Activate(EffectsRegistry.Names.ChromaticAberration).GetShader()
-            .UseIntensity(offset);
-        return true;
-    }
-    
-    public static bool AberrationProgress(float offset)
-    {
-        if (Main.netMode == NetmodeID.Server || !EffectsRegistry.ChromaticAberration.IsActive()) return false;
-        EffectsRegistry.ChromaticAberration.GetShader()
-            .UseIntensity(offset);
-        return true;
-    }
-
-    public static bool AberrationKill()
-    {
-        if (Main.netMode == NetmodeID.Server || !EffectsRegistry.ChromaticAberration.IsActive()) return false;
-        EffectsRegistry.ChromaticAberration.Deactivate();
+        EffectsRegistry.ChromaticAberration.TrySetParameter("offset", offset);
+        EffectsRegistry.ChromaticAberration.Activate();
         return true;
     }
     
@@ -96,9 +59,9 @@ public static class EffectsManager
     /// </summary>
     public static void UndergroundOutlineApply(Asset<Texture2D> texture, Color outlineColor, Color lightColor)
     {
-        EffectsRegistry.UndergroundOutline.UseImage0(texture);
-        EffectsRegistry.UndergroundOutline.UseColor(outlineColor);
-        EffectsRegistry.UndergroundOutline.UseSecondaryColor(lightColor);
+        EffectsRegistry.UndergroundOutline.SetTexture(texture, 0, SamplerState.PointClamp);
+        EffectsRegistry.UndergroundOutline.TrySetParameter("outlineColor", outlineColor);
+        EffectsRegistry.UndergroundOutline.TrySetParameter("lightColor", lightColor);
         EffectsRegistry.UndergroundOutline.Apply();
     }
     
@@ -108,17 +71,17 @@ public static class EffectsManager
     /// </summary>
     public static void SlimeRageApply(Asset<Texture2D> texture)
     {
-        EffectsRegistry.SlimeRage.UseImage0(texture);
-        EffectsRegistry.SlimeRage.UseImage1(TextureRegistry.RgbPerlin);
+        EffectsRegistry.SlimeRage.SetTexture(texture, 0);
+        EffectsRegistry.SlimeRage.SetTexture(TextureRegistry.RgbPerlin, 1);
         EffectsRegistry.SlimeRage.Apply();
     }
     
     public static void ShieldApply(Asset<Texture2D> texture, Color lightColor, float alpha, int frames = 1)
     {
-        EffectsRegistry.Shield.UseImage0(texture);
-        EffectsRegistry.Shield.UseSecondaryColor(lightColor);
-        EffectsRegistry.Shield.UseOpacity(alpha);
-        EffectsRegistry.Shield.Shader.Parameters["uFrames"].SetValue(frames);
+        EffectsRegistry.Shield.SetTexture(texture, 0);
+        EffectsRegistry.Shield.TrySetParameter("lighting", lightColor);
+        EffectsRegistry.Shield.TrySetParameter("opacity", alpha);
+        EffectsRegistry.Shield.TrySetParameter("texFrames", frames);
         EffectsRegistry.Shield.Apply();
     }
 }
