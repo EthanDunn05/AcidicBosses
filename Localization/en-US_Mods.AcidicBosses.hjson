@@ -19,6 +19,7 @@ Projectiles: {
 	KingSlimeLaserIndicator.DisplayName: King Slime Laser Indicator
 	ShadowflameLine.DisplayName: Shadowflame Line
 	EvilWaterbolt.DisplayName: Waterbolt
+	TwinsDashLine.DisplayName: Twins Dash Line
 }
 
 Buffs: {
