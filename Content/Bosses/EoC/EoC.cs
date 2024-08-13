@@ -4,6 +4,7 @@ using AcidicBosses.Common.Effects;
 using AcidicBosses.Content.ProjectileBases;
 using AcidicBosses.Core.StateManagement;
 using AcidicBosses.Helpers;
+using AcidicBosses.Helpers.NpcHelpers;
 using Luminance.Common.Utilities;
 using Luminance.Core.Graphics;
 using Microsoft.Xna.Framework;
@@ -393,53 +394,35 @@ public class EoC : AcidicNPCOverride
     private static int dashTrackTime = 15;
     private static int dashAtTime = 30;
 
-    enum DashState
-    {
-        Repositioning,
-        Tracking,
-        Dashing,
-        Done
-    }
-
     private DashState Attack_DashAtPlayer(int dashLength, float speed, bool enraged, float distance)
     {
-        AttackManager.CountUp = true;
+        var options = new DashOptions
+        {
+            MinimumDistance = distance,
+            DashSpeed = speed,
+            DashLength = dashLength,
+            TrackTime = dashTrackTime,
+            DashAtTime = dashAtTime,
+            LookOffset = MathHelper.PiOver2
+        };
+        
         var target = Main.player[Npc.target];
+        var dashState = DashHelper.Dash(Npc, AttackManager, target.Center, options);
 
-        // Don't dash while too close to the player
-        // Back away until it's far enough
-        if (Npc.Distance(target.Center + target.velocity * dashTrackTime * 0.5f) < distance && AttackManager.AiTimer < dashTrackTime)
+        if (enraged)
         {
-            AttackManager.AiTimer = -1;
-            Npc.SimpleFlyMovement(-Npc.DirectionTo(target.Center) * 10f, 0.5f);
-            LookTowards(target.Center, 0.25f);
-            return DashState.Repositioning;
-        }
-
-        if (AttackManager.AiTimer < dashTrackTime)
-        {
-            Npc.SimpleFlyMovement(Vector2.Zero, 0.75f);
-            LookTowards(target.Center, 0.25f);
-            return DashState.Tracking;
-        }
-
-        if (AttackManager.AiTimer == dashAtTime)
-        {
-            Npc.velocity = (Npc.rotation + MathHelper.PiOver2).ToRotationVector2() * speed;
-            if (enraged)
+            if (dashState == DashState.StartingDash)
             {
                 SoundEngine.PlaySound(SoundID.ForceRoarPitched, Npc.Center);
                 useAfterimages = true;
             }
-        }
-        else if (AttackManager.AiTimer >= dashAtTime + dashLength)
-        {
-            AttackManager.CountUp = false;
-            useAfterimages = false;
-            return DashState.Done;
+            if (dashState == DashState.Done)
+            {
+                useAfterimages = false;
+            }
         }
 
-        return DashState.Dashing;
+        return dashState;
     }
 
     private bool Attack_TelegraphedDash(int dashLength, float speed)

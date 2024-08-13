@@ -3,15 +3,16 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using AcidicBosses.Common.Textures;
-using AcidicBosses.Content.Bosses.EoC;
 using AcidicBosses.Content.Bosses.Twins.Projectiles;
 using AcidicBosses.Content.ProjectileBases;
 using AcidicBosses.Core.StateManagement;
+using AcidicBosses.Helpers.NpcHelpers;
 using Luminance.Common.VerletIntergration;
 using Luminance.Core.Graphics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
+using ReLogic.Graphics;
 using Terraria;
 using Terraria.Audio;
 using Terraria.GameContent;
@@ -145,7 +146,7 @@ public class TwinsController : AcidicNPC
     {
         var hover = new AttackState(() => Attack_Hover(120, 20, 0.25f), 30);
         var doubleDash = new AttackState(() => Attack_DoubleDash(15, 30, 15, 30), 60);
-        
+
         attackManager.SetAttackPattern([
             hover,
             doubleDash
@@ -171,6 +172,24 @@ public class TwinsController : AcidicNPC
     
     #region Attacks
     
+    private void Attack_Hover(Twin twin, float speed, float accel)
+    {
+        var target = Main.player[NPC.target];
+        if (twin == Spazmatism)
+        {
+            var spazOffset = new Vector2(-200, 0);
+            if (Spazmatism.Npc.Center.X > target.Center.X) spazOffset = new Vector2(200, 0);
+            FlyTo(Spazmatism.Npc, target.Center + spazOffset, speed, accel);
+            Spazmatism.LookTowards(target.Center, 0.05f);
+        }
+        else
+        {
+            var retOffset = new Vector2(0, -250);
+            if (Retinazer.Npc.Center.Y > target.Center.Y) retOffset = new Vector2(0, 250);
+            FlyTo(Retinazer.Npc, target.Center + retOffset, speed, accel);
+            Retinazer.LookTowards(target.Center, 0.05f);
+        }
+    }
 
     private void Attack_Hover(float speed, float accel)
     {
@@ -214,120 +233,122 @@ public class TwinsController : AcidicNPC
                 throw new Exception($"{leadTwin.Npc.type} is somehow not a twin");
         }
     }
-    
-    enum DashState
-    {
-        Repositioning,
-        Tracking,
-        Dashing,
-        Done
-    }
 
     private DashState Attack_Dash(Twin twin, int dashLength, float speed, int trackTime, int dashAtTime, bool enraged, float distance)
     {
-        attackManager.CountUp = true;
+        var options = new DashOptions
+        {
+            MinimumDistance = distance,
+            DashSpeed = speed,
+            DashLength = dashLength,
+            LookOffset = MathHelper.PiOver2,
+            TrackTime = trackTime,
+            DashAtTime = dashAtTime
+        };
+        
         var npc = twin.Npc;
         var target = Main.player[NPC.target];
+
+        var dashState = DashHelper.Dash(npc, twin.AttackManager, target.Center, options);
+
+        if (twin.AttackManager.AiTimer == 0)
+        {
+            NewDashLine(twin, npc.Center, MathHelper.PiOver2, dashAtTime);
+        }
         
-        // Don't dash while too close to the player
-        // Back away until it's far enough
-        if (npc.Distance(target.Center + target.velocity * trackTime * 0.5f) < distance && attackManager.AiTimer < trackTime)
+        if (enraged)
         {
-            attackManager.AiTimer = -1;
-            npc.SimpleFlyMovement(-npc.DirectionTo(target.Center) * 10f, 0.5f);
-            twin.LookTowards(target.Center, 0.25f);
-            return DashState.Repositioning;
-        }
-
-        if (attackManager.AiTimer < trackTime)
-        {
-            npc.SimpleFlyMovement(Vector2.Zero, 0.75f);
-            twin.LookTowards(target.Center, 0.25f);
-            return DashState.Tracking;
-        }
-
-        if (attackManager.AiTimer == dashAtTime)
-        {
-            npc.velocity = (npc.rotation + MathHelper.PiOver2).ToRotationVector2() * speed;
-            if (enraged)
+            if (dashState == DashState.StartingDash)
             {
                 SoundEngine.PlaySound(SoundID.ForceRoarPitched, npc.Center);
                 twin.UseAfterimages = true;
             }
+            if (dashState == DashState.Done)
+            {
+                twin.UseAfterimages = false;
+            }
         }
-        else if (attackManager.AiTimer >= dashAtTime + dashLength)
-        {
-            attackManager.CountUp = false;
-            twin.UseAfterimages = false;
-            return DashState.Done;
-        }
-        
-        return DashState.Dashing;
+
+        return dashState;
     }
     
     private DashState Attack_TrackingDash(Twin twin, int dashLength, float speed, int trackTime, int dashAtTime, bool enraged, float distance)
     {
-        attackManager.CountUp = true;
+        var options = new DashOptions
+        {
+            MinimumDistance = distance,
+            DashSpeed = speed,
+            DashLength = dashLength,
+            LookOffset = MathHelper.PiOver2,
+            TrackTime = trackTime,
+            DashAtTime = dashAtTime
+        };
+        
         var npc = twin.Npc;
         var target = Main.player[NPC.target];
         
-        // Don't dash while too close to the player
-        // Back away until it's far enough
-        if (npc.Distance(target.Center + target.velocity * trackTime * 0.5f) < distance && attackManager.AiTimer < trackTime)
-        {
-            attackManager.AiTimer = -1;
-            npc.SimpleFlyMovement(-npc.DirectionTo(target.Center) * 10f, 0.5f);
-            twin.LookTowards(target.Center, 0.25f);
-            return DashState.Repositioning;
-        }
+        var trackedPos = target.Center;
+        trackedPos += target.velocity * trackTime; // Lead player pos
+        var travelTime = npc.Distance(trackedPos) / speed;
+        trackedPos += target.velocity * travelTime; // Account for travel time
 
-        if (attackManager.AiTimer < trackTime)
+        var dashState = DashHelper.Dash(npc, twin.AttackManager, trackedPos, options);
+        
+        if (twin.AttackManager.AiTimer == 0)
         {
-            npc.SimpleFlyMovement(Vector2.Zero, 0.75f);
-            twin.LookTowards(target.Center + target.velocity * dashAtTime, 0.1f);
-            return DashState.Tracking;
+            NewDashLine(twin, npc.Center, MathHelper.PiOver2, dashAtTime);
         }
-
-        if (attackManager.AiTimer == dashAtTime)
+        
+        if (enraged)
         {
-            npc.velocity = (npc.rotation + MathHelper.PiOver2).ToRotationVector2() * speed;
-            if (enraged)
+            if (dashState == DashState.StartingDash)
             {
                 SoundEngine.PlaySound(SoundID.ForceRoarPitched, npc.Center);
                 twin.UseAfterimages = true;
             }
-        }
-        else if (attackManager.AiTimer >= dashAtTime + dashLength)
-        {
-            attackManager.CountUp = false;
-            twin.UseAfterimages = false;
-            return DashState.Done;
+            if (dashState == DashState.Done)
+            {
+                twin.UseAfterimages = false;
+            }
         }
         
-        return DashState.Dashing;
+        return dashState;
     }
     
     private bool Attack_DoubleDash(int dashLength, float speed, int trackTime, int dashAtTime)
     {
         attackManager.CountUp = true;
 
-        // Spaz has a normal dash while Ret tracks the player and dashes later
-        var spazDashState = Attack_Dash(Spazmatism, dashLength, speed, trackTime, dashAtTime, true, 300);
-        var retDashState = Attack_TrackingDash(Retinazer, dashLength, speed, trackTime * 2, (int) (dashAtTime * 2f), true, 300);
-
-        if (spazDashState == DashState.Repositioning || retDashState == DashState.Repositioning) return false;
-
-        if (spazDashState == DashState.Done && retDashState == DashState.Done) attackManager.CountUp = false;
-        if (Main.netMode == NetmodeID.MultiplayerClient) return spazDashState == DashState.Done && retDashState == DashState.Done;
-
-        // Create Telegraph
+        ref var spazDone = ref NPC.localAI[0];
+        ref var retDone = ref NPC.localAI[1];
         if (attackManager.AiTimer == 0)
         {
-            NewDashLine(Spazmatism, Spazmatism.Npc.Center, MathHelper.PiOver2, dashAtTime);
-            NewDashLine(Retinazer, Retinazer.Npc.Center, MathHelper.PiOver2, (int) (dashAtTime * 2f));
+            Spazmatism.AttackManager.AiTimer = 0;
+            Retinazer.AttackManager.AiTimer = 0;
+            spazDone = 0;
+            retDone = 0;
+        }
+        
+        // Spaz has a normal dash while Ret tracks the player and dashes later
+        if (spazDone == 0)
+        {
+            var spazDashState = Attack_Dash(Spazmatism, dashLength, speed, trackTime, dashAtTime, true, 300);
+            if (spazDashState == DashState.Done) spazDone = 1;
         }
 
-        return spazDashState == DashState.Done && retDashState == DashState.Done;
+        if (retDone == 0)
+        {
+            var retDashState = Attack_TrackingDash(Retinazer, dashLength, speed, trackTime * 2, (int) (dashAtTime * 2f), true, 300);
+            if (retDashState == DashState.Done) retDone = 1;
+        }
+        
+        if (spazDone != 0) Attack_Hover(Spazmatism, 20, 0.25f);
+        if (retDone != 0) Attack_Hover(Retinazer, 20, 0.25f);
+        
+        if (spazDone != 0 && retDone != 0) attackManager.CountUp = false;
+        if (Main.netMode == NetmodeID.MultiplayerClient) return spazDone != 0 && retDone != 0;
+
+        return spazDone != 0 && retDone != 0;
     }
     
     private Projectile NewDashLine(Twin twin, Vector2 position, float offset, int lifetime, bool anchorToBoss = true)
@@ -335,7 +356,6 @@ public class TwinsController : AcidicNPC
         var ai1 = anchorToBoss ? twin.Npc.whoAmI : -1;
         return BaseLineProjectile.Create<TwinsDashLine>(NPC.GetSource_FromAI(), position, offset, lifetime, ai1);
     }
-
     
     #endregion
 
@@ -378,6 +398,8 @@ public class TwinsController : AcidicNPC
         renderSettings.Shader.TrySetParameter("segments", connectionSegments.Count);
     
         PrimitiveRenderer.RenderTrail(connectionSegments.Select(s => s.Position), renderSettings);
+        
+        spriteBatch.DrawString(FontAssets.MouseText.Value, attackManager.AiTimer.ToString(), NPC.position - Main.screenPosition + new Vector2(50, 50), Color.White);
 
         return false;
     }

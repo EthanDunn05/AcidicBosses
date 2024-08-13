@@ -5,6 +5,7 @@ using AcidicBosses.Common.Configs;
 using AcidicBosses.Common.Effects;
 using AcidicBosses.Common.RenderManagers;
 using AcidicBosses.Core.StateManagement;
+using AcidicBosses.Helpers.NpcHelpers;
 using Luminance.Common.Utilities;
 using Luminance.Core.Graphics;
 using Microsoft.Xna.Framework;

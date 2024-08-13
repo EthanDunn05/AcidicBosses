@@ -1,12 +1,11 @@
 ﻿using System;
-using Luminance.Common.Utilities;
 using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.ID;
 
-namespace AcidicBosses.Content.Bosses;
+namespace AcidicBosses.Helpers.NpcHelpers;
 
 /// <summary>
 /// Heavily based off of <see cref="https://github.com/tModLoader/tModLoader/blob/1.4.4/ExampleMod/Content/NPCs/Worm.cs">Worm.cs</see>
