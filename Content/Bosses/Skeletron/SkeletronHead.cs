@@ -3,6 +3,7 @@ using System.IO;
 using AcidicBosses.Common.Configs;
 using AcidicBosses.Common.Effects;
 using AcidicBosses.Content.ProjectileBases;
+using AcidicBosses.Content.Projectiles;
 using AcidicBosses.Core.StateManagement;
 using AcidicBosses.Helpers;
 using Luminance.Core.Graphics;
@@ -25,6 +26,12 @@ public class SkeletronHead : AcidicNPCOverride
     
     protected override bool BossEnabled => BossToggleConfig.Get().EnableSkeletron;
     
+    public override void SetStaticDefaults()
+    {
+        base.SetStaticDefaults();
+        NPCID.Sets.TrailingMode[NPCID.SkeletronHead] = 3;
+    }
+    
     #region AI
     
     public enum HandState
@@ -44,6 +51,8 @@ public class SkeletronHead : AcidicNPCOverride
     }
 
     private PhaseTracker phaseTracker;
+
+    private bool useAfterimages = false;
 
     private bool isFleeing = false;
 
@@ -351,6 +360,7 @@ public class SkeletronHead : AcidicNPCOverride
 
         AttackManager.CountUp = true;
         CurrentHandState = HandState.NoInteractLockHead;
+        useAfterimages = true;
         
         if (AttackManager.AiTimer >= length)
         {
@@ -384,6 +394,28 @@ public class SkeletronHead : AcidicNPCOverride
     // Allow a bit of buffer time where skeletron does no damage in case the player is above it
     private bool Attack_SpinRecovery(int length, int recoverTime)
     {
+        if (AttackManager.AiTimer == length)
+        {
+            var target = Main.player[Npc.target];
+            var goal = target.Center;
+            goal.Y -= 250;
+            var awayDir = Npc.DirectionTo(goal);
+            var distanceToGoal = Npc.Distance(goal);
+            
+            if (Main.netMode != NetmodeID.MultiplayerClient)
+            {
+                for (var i = 0; i <= 5; i++)
+                {
+                    var pos = Npc.Center + awayDir * distanceToGoal / 5f * i;
+                    NewAfterimage(pos, Npc.rotation, 60);
+                }
+            }
+            
+            Npc.Center = goal;
+            Npc.velocity = awayDir * 20f;
+            SoundEngine.PlaySound(SoundID.Item8, Npc.Center);
+        }
+        
         Attack_LockAbove();
         
         if (AttackManager.AiTimer < length + recoverTime)
@@ -394,6 +426,7 @@ public class SkeletronHead : AcidicNPCOverride
 
         Npc.damage = Npc.defDamage;
         AttackManager.CountUp = false;
+        useAfterimages = false;
         return true;
     }
 
@@ -617,6 +650,12 @@ public class SkeletronHead : AcidicNPCOverride
             ModContent.ProjectileType<EvilWaterbolt>(), Npc.damage, 3);
     }
     
+    private Projectile NewAfterimage(Vector2 position, float rotation, int lifetime)
+    {
+        return NpcAfterimageProjectile.Create(Npc.GetSource_FromAI(), position, rotation, NPCID.SkeletronHead,
+            SpriteEffects.None, lifetime);
+    }
+    
     private NPC NewHand(Vector2 position, int side)
     {
         var npc = NPC.NewNPCDirect(Npc.GetSource_FromAI(), position, NPCID.SkeletronHand);
@@ -636,6 +675,18 @@ public class SkeletronHead : AcidicNPCOverride
         var texture = TextureAssets.Npc[npc.type].Value;
         var origin = npc.frame.Size() * 0.5f;
         lightColor *= npc.Opacity;
+        
+        if (useAfterimages)
+            for (var i = 1; i < npc.oldPos.Length; i++)
+            {
+                // All of this is heavily simplified from decompiled vanilla
+                var fade = 0.5f * (10 - i) / 20f;
+                var afterImageColor = Color.Multiply(lightColor, fade);
+
+                var pos = npc.oldPos[i] + new Vector2(npc.width, npc.height) / 2f - Main.screenPosition;
+                spriteBatch.Draw(texture, pos, npc.frame, afterImageColor, npc.oldRot[i], origin, npc.scale,
+                    SpriteEffects.None, 0f);
+            }
 
         spriteBatch.Draw(
             texture, drawPos,
@@ -651,10 +702,12 @@ public class SkeletronHead : AcidicNPCOverride
     public override void SendAcidAI(BitWriter bitWriter, BinaryWriter binaryWriter)
     {
         phaseTracker.Serialize(binaryWriter);
+        bitWriter.WriteBit(useAfterimages);
     }
 
     public override void ReceiveAcidAI(BitReader bitReader, BinaryReader binaryReader)
     {
         phaseTracker.Deserialize(binaryReader);
+        useAfterimages = bitReader.ReadBit();
     }
 }

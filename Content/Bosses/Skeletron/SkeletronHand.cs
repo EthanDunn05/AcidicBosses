@@ -1,5 +1,6 @@
 ﻿using System;
 using AcidicBosses.Common.Configs;
+using AcidicBosses.Content.Projectiles;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;

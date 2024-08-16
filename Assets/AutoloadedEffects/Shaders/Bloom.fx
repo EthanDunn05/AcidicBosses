@@ -11,7 +11,7 @@ float weights[8] = { 0.1974, 0.1747, 0.1210, 0.0656, 0.0278, 0.0092, 0.0024, 0.0
 // Frag's color with a blur applied
 float4 GaussianBlur(float2 coords : TEXCOORD0) : COLOR0 
 {
-    float2 fragSize = 2.0 / textureSize0;
+    float2 fragSize = 1.0 / textureSize0;
     float4 result = tex2D(screen, coords) * weights[0];
 
     // Horizontal Pass

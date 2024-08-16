@@ -70,19 +70,14 @@ public class Muramasa : ModProjectile
             Projectile.damage = Projectile.originalDamage;
         }
 
-        aiTime++;
-    }
+        Lighting.AddLight(Projectile.Center, Color.Blue.ToVector3());
 
-    // Glow
-    public override Color? GetAlpha(Color lightColor)
-    {
-        return new Color(255, 255, 255, 255);
+        aiTime++;
     }
 
     public override bool PreDraw(ref Color lightColor)
     {
         var texture = ModContent.Request<Texture2D>(Texture).Value;
-        lightColor = (Color) GetAlpha(lightColor);
         ProjHelper.DrawAfterimages(Projectile, texture, ref lightColor, 2);
         ProjHelper.Draw(Projectile, texture, ref lightColor);
 
