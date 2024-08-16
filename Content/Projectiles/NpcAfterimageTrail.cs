@@ -16,17 +16,19 @@ using Terraria.ModLoader;
 
 namespace AcidicBosses.Content.Projectiles;
 
-public class NpcAfterimageProjectile : ModProjectile
+public class NpcAfterimageTrail : ModProjectile
 {
     public override string Texture => TextureRegistry.InvisPath;
-
-    
 
     private Vector2? startoffset;
 
     private bool doneFirstFrame = false;
 
     protected int maxTimeLeft = 0;
+
+    private Rectangle frame;
+    private Vector2 endPos;
+    private float rotation;
 
     public override void SetDefaults()
     {
@@ -36,10 +38,11 @@ public class NpcAfterimageProjectile : ModProjectile
         Projectile.hide = true;
     }
 
-    public static Projectile Create(IEntitySource spawnSource, Vector2 position, float rotation, int npcMimic, SpriteEffects effects, int lifetime)
+    // The position is the start and the npc's position is the end
+    public static Projectile Create(IEntitySource spawnSource, Vector2 startPos, Vector2 endPos, int creatorId, int lifetime)
     {
-        return ProjHelper.NewUnscaledProjectile(spawnSource, position, rotation.ToRotationVector2(),
-            ModContent.ProjectileType<NpcAfterimageProjectile>(), 0, 0, ai0: npcMimic, ai1: (float) effects, ai2: lifetime);
+        return ProjHelper.NewUnscaledProjectile(spawnSource, startPos, endPos,
+            ModContent.ProjectileType<NpcAfterimageTrail>(), 0, 0, ai0: creatorId, ai2: lifetime);
     }
 
 
@@ -57,8 +60,13 @@ public class NpcAfterimageProjectile : ModProjectile
     {
         Projectile.timeLeft = (int) Projectile.ai[2];
         maxTimeLeft = (int) Projectile.ai[2];
-        Projectile.rotation = Projectile.velocity.ToRotation();
+        endPos = Projectile.velocity;
         Projectile.velocity = Vector2.Zero;
+        
+        var creator = Main.npc[(int) Projectile.ai[0]];
+        frame = creator.frame;
+        rotation = creator.rotation;
+
     }
 
     public override void DrawBehind(int index, List<int> behindNPCsAndTiles, List<int> behindNPCs,
@@ -70,23 +78,33 @@ public class NpcAfterimageProjectile : ModProjectile
 
     public override bool PreDraw(ref Color lightColor)
     {
-        var effects = (SpriteEffects) Projectile.ai[1];
-        var npcMimic = (int)Projectile.ai[0];
+        var creator = Main.npc[(int) Projectile.ai[0]];
 
         // Draw it :)
         var progress = 1f - Utils.GetLerpValue(maxTimeLeft, 0, Projectile.timeLeft, true);
-        var alpha = Color.Multiply(lightColor, EasingHelper.QuadIn(progress) * 0.5f);
         
-        var drawPos = Projectile.Center - Main.screenPosition;
-        var texture = TextureAssets.Npc[npcMimic].Value;
-        var frame = texture.Frame(1, Main.npcFrameCount[npcMimic]);
-        var origin = frame.Center.ToVector2();
+        var startPos = Projectile.Center - Main.screenPosition;
+        var texture = TextureAssets.Npc[creator.type].Value;
+        var origin = frame.Size() / 2f;
         
-        Main.spriteBatch.Draw(
-            texture, drawPos,
-            frame, alpha,
-            Projectile.rotation, origin, Projectile.scale,
-            effects, 0f);
+        var effects = SpriteEffects.None;
+        if (creator.spriteDirection < 1) effects = SpriteEffects.FlipHorizontally;
+
+        const float images = 10;
+        for (var i = 0; i <= images; i++)
+        {
+            var fade = EasingHelper.QuadIn(progress) * 0.5f * (images - i) / images;
+            var pos = Vector2.Lerp(startPos, endPos - Main.screenPosition, i / images);
+
+            var light = Lighting.GetColor((pos + Main.screenPosition).ToTileCoordinates());
+            var afterImageColor = Color.Multiply(light, fade);
+            
+            Main.spriteBatch.Draw(
+                texture, pos,
+                frame, afterImageColor,
+                rotation, origin, Projectile.scale,
+                effects, 0f);
+        }
         
         return false;
     }

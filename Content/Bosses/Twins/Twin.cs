@@ -8,6 +8,8 @@ using Terraria.ModLoader.IO;
 
 namespace AcidicBosses.Content.Bosses.Twins;
 
+// The Shared functionality between the twins.
+// They have so much in common that having this be a parent class is useful.
 public abstract class Twin : AcidicNPCOverride
 {
     public bool UseAfterimages = false;

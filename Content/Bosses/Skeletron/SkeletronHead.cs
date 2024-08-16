@@ -396,6 +396,7 @@ public class SkeletronHead : AcidicNPCOverride
     {
         if (AttackManager.AiTimer == length)
         {
+            var startPos = Npc.Center;
             var target = Main.player[Npc.target];
             var goal = target.Center;
             goal.Y -= 250;
@@ -404,15 +405,13 @@ public class SkeletronHead : AcidicNPCOverride
             
             if (Main.netMode != NetmodeID.MultiplayerClient)
             {
-                for (var i = 0; i <= 5; i++)
-                {
-                    var pos = Npc.Center + awayDir * distanceToGoal / 5f * i;
-                    NewAfterimage(pos, Npc.rotation, 60);
-                }
+                NewAfterimage(startPos, goal, 60);
             }
             
             Npc.Center = goal;
             Npc.velocity = awayDir * 20f;
+            
+            
             SoundEngine.PlaySound(SoundID.Item8, Npc.Center);
         }
         
@@ -650,10 +649,9 @@ public class SkeletronHead : AcidicNPCOverride
             ModContent.ProjectileType<EvilWaterbolt>(), Npc.damage, 3);
     }
     
-    private Projectile NewAfterimage(Vector2 position, float rotation, int lifetime)
+    private Projectile NewAfterimage(Vector2 startPos, Vector2 endPos, int lifetime)
     {
-        return NpcAfterimageProjectile.Create(Npc.GetSource_FromAI(), position, rotation, NPCID.SkeletronHead,
-            SpriteEffects.None, lifetime);
+        return NpcAfterimageTrail.Create(Npc.GetSource_FromAI(), startPos, endPos, Npc.whoAmI, lifetime);
     }
     
     private NPC NewHand(Vector2 position, int side)

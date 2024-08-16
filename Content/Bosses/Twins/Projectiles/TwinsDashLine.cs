@@ -20,7 +20,7 @@ public class TwinsDashLine : BaseLineProjectile
     private Color GetColor()
     {
         var fadeT = (float) Projectile.timeLeft / maxTimeLeft;
-        var color = Color.Crimson;
+        var color = Color.Red;
         if (Main.npc[AnchorTo].type == NPCID.Spazmatism) color = Color.Lime;
         
         color *= EasingHelper.CubicOut(fadeT);
