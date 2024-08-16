@@ -368,6 +368,10 @@ public class BoC : AcidicNPCOverride
         const float spread = MathF.PI / 6f;
         const float speed = 5f;
 
+        SoundEngine.PlaySound(SoundID.Item21, Npc.Center);
+
+        if (Main.netMode == NetmodeID.MultiplayerClient) return true;
+        
         for (var i = -1; i <= 1; i++)
         {
             var angleOffset = spread * i;
@@ -396,9 +400,18 @@ public class BoC : AcidicNPCOverride
             var distance = MathF.Min(Npc.Distance(target), 750); // Don't teleport too far
             distance = MathF.Max(distance, 250); // Nor too close
             
-            var pos = Main.rand.NextVector2Unit() * distance;
-            offsetX = pos.X;
-            offsetY = pos.Y;
+            // Safely teleport
+            var tile = Vector2.Zero;
+            for (var i = 0; i < 50; i++)
+            {
+                var pos = Main.rand.NextVector2Unit() * distance;
+                
+                if (Npc.AI_AttemptToFindTeleportSpot(ref tile, pos.ToTileCoordinates().X, pos.ToTileCoordinates().Y))
+                    break;
+            }
+            
+            offsetX = tile.ToWorldCoordinates().X;
+            offsetY = tile.ToWorldCoordinates().Y;
             NetSync(Npc);
         }
 
@@ -464,7 +477,7 @@ public class BoC : AcidicNPCOverride
             {
                 // Refresh if confusion has less than a second left
                 var buffSlot = player.buffType.First(b => b == BuffID.Confused);
-                if(player.buffTime[buffSlot] < 60) player.AddBuff(BuffID.Confused, 120);
+                if(player.buffTime[buffSlot] < 60) player.AddBuff(BuffID.Confused, 2);
             }
         }
     }
@@ -569,6 +582,16 @@ public class BoC : AcidicNPCOverride
         }
 
         if (npc.frame.Y > frameHeight * 3) npc.frame.Y = 0;
+    }
+
+    public override void BossHeadSlot(NPC npc, ref int index)
+    {
+        if (showPhantoms)
+        {
+            index = -1;
+            return;
+        }
+        base.BossHeadSlot(npc, ref index);
     }
 
     #endregion
