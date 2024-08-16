@@ -712,7 +712,7 @@ public class KingSlime : AcidicNPCOverride
         if (CurrentPhase is PhaseState.Desperation or PhaseState.Transition2)
         {
             spriteBatch.EnterShader();
-            EffectsManager.SlimeRageApply(TextureAssets.Npc[npc.type]);
+            EffectsManager.SlimeRageApply(TextureAssets.Npc[npc.type], lightColor);
         }
         
         DrawSlime(npc, spriteBatch, screenPos, lightColor);

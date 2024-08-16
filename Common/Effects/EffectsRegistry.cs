@@ -26,6 +26,7 @@ public static class EffectsRegistry
     public static ManagedShader UndergroundOutline => Shader("UndergroundOutline");
     public static ManagedShader SlimeRage => Shader("SlimeRage");
     public static ManagedShader Shield => Shader("Shield");
+    public static ManagedShader Bloom => Shader("Bloom");
 
     private static ManagedShader Shader(string name)
     {

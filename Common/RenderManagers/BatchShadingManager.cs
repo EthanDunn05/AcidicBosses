@@ -85,7 +85,6 @@ public class BatchShadingManager : ModSystem
             {
                 drawAction.Invoke(Main.spriteBatch);
             }
-
             Main.spriteBatch.ExitShader();
         }
         
