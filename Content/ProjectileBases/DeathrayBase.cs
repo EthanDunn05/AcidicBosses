@@ -31,6 +31,7 @@ public abstract class DeathrayBase : ModProjectile
 
     protected virtual bool AnchorPosition => true;
     protected virtual bool AnchorRotation => true;
+    protected virtual bool RotateAroundCenter => false;
     protected virtual bool StartAtEnd => false;
 
     private bool doneFirstFrame = false;

@@ -41,6 +41,7 @@ public abstract class BaseLineProjectile : ModProjectile
 
     protected virtual bool AnchorPosition => true;
     protected virtual bool AnchorRotation => true;
+    protected virtual bool RotateAroundCenter => false;
 
     private bool doneFirstFrame = false;
     private bool readyToDraw = false;

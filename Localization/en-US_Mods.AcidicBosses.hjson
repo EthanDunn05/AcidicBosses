@@ -20,6 +20,12 @@ Projectiles: {
 	ShadowflameLine.DisplayName: Shadowflame Line
 	EvilWaterbolt.DisplayName: Waterbolt
 	TwinsDashLine.DisplayName: Twins Dash Line
+	SpazFlamethrower.DisplayName: Spaz Flamethrower
+	NpcAfterimageProjectile.DisplayName: Npc Afterimage Projectile
+	NpcAfterimageTrail.DisplayName: Npc Afterimage Trail
+	RetDeathray.DisplayName: Ret Deathray
+	RetDeathrayIndicator.DisplayName: Ret Deathray Indicator
+	TestProj.DisplayName: Test Proj
 }
 
 Buffs: {
