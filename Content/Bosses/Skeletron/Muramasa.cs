@@ -1,4 +1,5 @@
 ﻿using AcidicBosses.Common.Textures;
+using AcidicBosses.Content.Particles;
 using AcidicBosses.Helpers;
 using Luminance.Common.Utilities;
 using Microsoft.Xna.Framework;
@@ -27,7 +28,7 @@ public class Muramasa : ModProjectile
 
     public override void SetDefaults()
     {
-        Projectile.scale = 1.5f;
+        Projectile.scale = 0f;
         Projectile.width = (int) (60 * 1.5);
         Projectile.height = (int) (60 * 1.5);
         Projectile.alpha = 255;
@@ -53,6 +54,9 @@ public class Muramasa : ModProjectile
         if (aiTime == 0)
         {
             SoundEngine.PlaySound(SoundID.Item1);
+            var puff = new BigPuffParticle(Projectile.Center, Vector2.Zero, 0f, Color.White, 30);
+            puff.Opacity = 0.5f;
+            puff.Spawn();
         }
 
         // Spin
@@ -62,6 +66,7 @@ public class Muramasa : ModProjectile
             var rotT = EasingHelper.QuadOut(aiTime / rotationTime);
             var offset = MathHelper.TwoPi * rotT;
             Projectile.rotation = MathHelper.WrapAngle(baseRot + offset);
+            Projectile.scale = MathHelper.Lerp(0f, 1.5f, rotT);
         }
         else
         {

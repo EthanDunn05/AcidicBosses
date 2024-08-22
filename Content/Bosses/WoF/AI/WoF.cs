@@ -4,6 +4,7 @@ using System.Linq;
 using AcidicBosses.Common.Configs;
 using AcidicBosses.Content.Bosses.BoC;
 using AcidicBosses.Content.Bosses.WoF.Projectiles;
+using AcidicBosses.Content.Particles;
 using AcidicBosses.Content.ProjectileBases;
 using AcidicBosses.Core.StateManagement;
 using AcidicBosses.Helpers;
@@ -336,6 +337,28 @@ public class WoF : AcidicNPCOverride
         var partPos = deathrayOrder.Get();
         var raySpawnPos = PartPosToWorldPos(partPos);
 
+        if (AttackManager.AiTimer == 0 && TryFindPartAtPos(out var part2, partPos))
+        {
+            var pos = raySpawnPos;
+            if ((partPos & WoFPartPosition.Left) != 0) pos.X += part2.width;
+                    
+            var energy = new GatherEnergyParticle(pos, Npc.velocity, 0f, Color.White, telegraphTime);
+            energy.Scale *= 2f;
+            energy.IgnoreLighting = true;
+            energy.Spawn();
+        }
+
+        if (AttackManager.AiTimer == telegraphTime && TryFindPartAtPos(out var part1, partPos))
+        {
+            var pos = raySpawnPos;
+            if ((partPos & WoFPartPosition.Left) != 0) pos.X += part1.width;
+                    
+            var ring = new BurstParticle(pos, Npc.velocity, 0f, Color.White, 30);
+            ring.Scale *= 2f;
+            ring.IgnoreLighting = true;
+            ring.Spawn();
+        }
+
         if (Main.netMode != NetmodeID.MultiplayerClient)
         {
             ref var targetRot = ref Npc.localAI[0];
@@ -430,13 +453,20 @@ public class WoF : AcidicNPCOverride
 
     private bool Attack_FireballBurst(int projectiles, float spread, float angle, float speed, WoFPartPosition pos)
     {
-        if (Main.netMode == NetmodeID.MultiplayerClient) return true;
-
         var position = PartPosToWorldPos(pos);
-        var targetPos = Main.player[Npc.target].Center;
-        
         if ((pos & WoFPartPosition.Left) != 0) position.X += 100;
-
+        var rot = (pos & WoFPartPosition.Left) != 0 ? MathHelper.PiOver2 : -MathHelper.PiOver2;
+        
+        if (TryFindPartAtPos(out var part, pos))
+        {
+            var smoke = new FireSmokeParticle(position, Npc.velocity, rot, Color.Gray, 30);
+            smoke.Opacity = 0.5f;
+            smoke.Scale *= 2f;
+            smoke.Spawn();
+        }
+        
+        if (Main.netMode == NetmodeID.MultiplayerClient) return true;
+        
         for (int i = 0; i < projectiles; i++)
         {
             var offset = ((float) i / projectiles - 0.5f) * 2 * spread;
@@ -451,10 +481,17 @@ public class WoF : AcidicNPCOverride
     
     private bool Attack_IchorBurst(int projectiles, float spread, float angle, float speed, WoFPartPosition pos)
     {
-        if (Main.netMode == NetmodeID.MultiplayerClient) return true;
-
         var position = PartPosToWorldPos(pos);
-        var targetPos = Main.player[Npc.target].Center;
+        var rot = (pos & WoFPartPosition.Left) != 0 ? MathHelper.PiOver2 : -MathHelper.PiOver2;
+        if (TryFindPartAtPos(out var part, pos))
+        {
+            var smoke = new FireSmokeParticle(position + new Vector2(100, 200), Npc.velocity, rot, Color.Gray, 30);
+            smoke.Opacity = 0.5f;
+            smoke.Scale *= 2f;
+            smoke.Spawn();
+        }
+        
+        if (Main.netMode == NetmodeID.MultiplayerClient) return true;
         
         if ((pos & WoFPartPosition.Left) != 0) position.X += 100;
 

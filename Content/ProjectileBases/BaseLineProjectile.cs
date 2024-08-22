@@ -4,6 +4,7 @@ using System.IO;
 using AcidicBosses.Common;
 using AcidicBosses.Common.Textures;
 using AcidicBosses.Helpers;
+using Luminance.Common.Utilities;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
@@ -26,8 +27,6 @@ public abstract class BaseLineProjectile : ModProjectile
     private Vector2? startoffset;
 
     public int AnchorTo => (int) Projectile.ai[1] - 1;
-
-    protected virtual MiscShaderData? Shader { get; }
 
     protected abstract float Length { get; set; }
 
@@ -142,15 +141,11 @@ public abstract class BaseLineProjectile : ModProjectile
         var origin = new Vector2(rect.Width / 2f, 0);
         var scale = new Vector2(Width * 2, Length) / rect.Size();
         
-        if (Shader != null) Main.spriteBatch.EnterShader(effect: Shader.Shader);
-
         Main.EntitySpriteDraw(
             LineTexture.Value, pos, rect, Color, 
             Projectile.rotation - MathHelper.PiOver2, origin, scale,
             SpriteEffects.None
         );
-        
-        if (Shader != null) Main.spriteBatch.ExitShader();
 
         return false;
     }

@@ -93,7 +93,7 @@ public class NpcAfterimageTrail : ModProjectile
         const float images = 10;
         for (var i = 0; i <= images; i++)
         {
-            var fade = EasingHelper.QuadIn(progress) * 0.5f * (images - i) / images;
+            var fade = EasingHelper.QuadIn(progress) * 0.5f * (i) / images;
             var pos = Vector2.Lerp(startPos, endPos - Main.screenPosition, i / images);
 
             var light = Lighting.GetColor((pos + Main.screenPosition).ToTileCoordinates());

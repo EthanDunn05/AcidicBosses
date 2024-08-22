@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using AcidicBosses.Common.Configs;
 using AcidicBosses.Common.Effects;
+using AcidicBosses.Content.Particles;
 using AcidicBosses.Content.ProjectileBases;
 using AcidicBosses.Core.StateManagement;
 using AcidicBosses.Helpers;
@@ -413,6 +414,10 @@ public class EoC : AcidicNPCOverride
         {
             if (dashState == DashState.StartingDash)
             {
+                var ring = new SmokeRingParticle(Npc.Center, Vector2.Zero, Npc.rotation, Color.Gray, 30);
+                ring.Scale *= 2f;
+                ring.Spawn();
+                
                 SoundEngine.PlaySound(SoundID.ForceRoarPitched, Npc.Center);
                 useAfterimages = true;
             }

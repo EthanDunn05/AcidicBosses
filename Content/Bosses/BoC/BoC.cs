@@ -4,6 +4,7 @@ using System.Linq;
 using AcidicBosses.Common;
 using AcidicBosses.Common.Configs;
 using AcidicBosses.Common.Effects;
+using AcidicBosses.Content.Particles;
 using AcidicBosses.Core.StateManagement;
 using AcidicBosses.Helpers;
 using Luminance.Common.Utilities;
@@ -156,6 +157,8 @@ public class BoC : AcidicNPCOverride
 
     private void EnterPhaseAngerOne()
     {
+        ScreenShakeSystem.StartShake(2f);
+        
         var teleport = new AttackState(() => Attack_Teleport(1.5f), 120);
         var tripleIchor = new AttackState(Attack_TripleIchorShot, 120);
         
@@ -393,6 +396,16 @@ public class BoC : AcidicNPCOverride
         AttackManager.CountUp = true;
         var isDone = false;
 
+        // FX
+        if (AttackManager.AiTimer == 0)
+        {
+            var smoke = new BigSmokeDisperseParticle(Npc.Center, Vector2.Zero, 0f, Color.Gray, 120);
+            smoke.Opacity = 0.25f;
+            smoke.FrameInterval = 4;
+            smoke.Scale *= 2f;
+            smoke.Spawn();
+        }
+
         if (AttackManager.AiTimer == 0 && Main.netMode != NetmodeID.MultiplayerClient)
         {
             var target = Main.player[Npc.target].Center;
@@ -404,14 +417,14 @@ public class BoC : AcidicNPCOverride
             var tile = Vector2.Zero;
             for (var i = 0; i < 50; i++)
             {
-                var pos = Main.rand.NextVector2Unit() * distance;
+                var pos = Main.rand.NextVector2Unit() * distance + target;
                 
                 if (Npc.AI_AttemptToFindTeleportSpot(ref tile, pos.ToTileCoordinates().X, pos.ToTileCoordinates().Y))
                     break;
             }
             
-            offsetX = tile.ToWorldCoordinates().X;
-            offsetY = tile.ToWorldCoordinates().Y;
+            offsetX = tile.ToWorldCoordinates().X - target.X;
+            offsetY = tile.ToWorldCoordinates().Y - target.Y;
             NetSync(Npc);
         }
 
@@ -554,7 +567,7 @@ public class BoC : AcidicNPCOverride
                 if (i is 0 or 1) phantomPos.Y = Main.player[Main.myPlayer].Center.Y + offsetY;
                 else phantomPos.Y = Main.player[Main.myPlayer].Center.Y - offsetY;
                 
-                var phantomColor = Lighting.GetColor(phantomPos.ToTileCoordinates()) * 0.5f;
+                var phantomColor = Lighting.GetColor(phantomPos.ToTileCoordinates()) * 0.5f * npc.Opacity;
                 
                 spriteBatch.Draw(
                     brainTexture, phantomPos - Main.screenPosition, 

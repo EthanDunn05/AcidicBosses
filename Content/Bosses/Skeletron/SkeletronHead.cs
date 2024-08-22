@@ -2,10 +2,12 @@
 using System.IO;
 using AcidicBosses.Common.Configs;
 using AcidicBosses.Common.Effects;
+using AcidicBosses.Content.Particles;
 using AcidicBosses.Content.ProjectileBases;
 using AcidicBosses.Content.Projectiles;
 using AcidicBosses.Core.StateManagement;
 using AcidicBosses.Helpers;
+using Luminance.Common.Utilities;
 using Luminance.Core.Graphics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -410,8 +412,8 @@ public class SkeletronHead : AcidicNPCOverride
             
             Npc.Center = goal;
             Npc.velocity = awayDir * 20f;
-            
-            
+
+            new BigSmokeDisperseParticle(startPos, -awayDir * 10f, awayDir.ToRotation() - MathHelper.PiOver2, Color.Gray, 30).Spawn();
             SoundEngine.PlaySound(SoundID.Item8, Npc.Center);
         }
         
@@ -434,7 +436,6 @@ public class SkeletronHead : AcidicNPCOverride
         const int length = 120;
         const int indicatorLength = 30;
 
-        const float distanceBelowPlayer = 1000f;
         const int skullsToEachSide = 12;
 
         ref var centerX = ref Npc.localAI[0];
@@ -455,67 +456,68 @@ public class SkeletronHead : AcidicNPCOverride
 
         if (AttackManager.AiTimer == 0)
         {
-            SoundEngine.PlaySound(SoundID.ForceRoarPitched, Npc.Center);
-            CurrentHandState = HandState.LockHead;
-        }
-
-        if (AttackManager.AiTimer == indicatorLength && shouldSlap)
-        {
-            CurrentHandState = HandState.Slap;
-        }
-
-        if (Main.netMode == NetmodeID.MultiplayerClient) return isDone;
-
-        // Start Indicating
-        if (AttackManager.AiTimer == 0)
-        {
             var center = Main.player[Npc.target].Center;
             centerX = center.X;
             centerY = center.Y;
-            center.Y += distanceBelowPlayer;
+            
+            SoundEngine.PlaySound(SoundID.ForceRoarPitched, Npc.Center);
+            CurrentHandState = HandState.LockHead;
+            
+            if (Main.netMode == NetmodeID.MultiplayerClient) return isDone;
 
-            var centerSkull = NewCursedSkullLine(center, -MathHelper.PiOver2, indicatorLength * 2);
-
-            // Left
+            var pos = center;
+            pos.Y = Utilities.FindGroundVertical(pos.ToTileCoordinates()).ToWorldCoordinates().Y;
+            NewCursedSkullLine(pos, -MathHelper.PiOver2, indicatorLength * 2);
+            
             for (var i = 1; i <= skullsToEachSide; i++)
             {
-                var pos = center;
-                pos.X -= spacing * i;
-                var skull = NewCursedSkullLine(pos, -MathHelper.PiOver2, indicatorLength * 2);
-            }
+                var leftPos = center;
+                var rightPos = center;
+                
+                leftPos.X -= spacing * i;
+                rightPos.X += spacing * i;
 
-            // Right
-            for (var i = 1; i <= skullsToEachSide; i++)
-            {
-                var pos = center;
-                pos.X += spacing * i;
-                var skull = NewCursedSkullLine(pos, -MathHelper.PiOver2, indicatorLength * 2);
+                leftPos.Y = Utilities.FindGroundVertical(leftPos.ToTileCoordinates()).ToWorldCoordinates().Y;
+                rightPos.Y = Utilities.FindGroundVertical(rightPos.ToTileCoordinates()).ToWorldCoordinates().Y;
+                
+                NewCursedSkullLine(leftPos, -MathHelper.PiOver2, indicatorLength * 2);
+                NewCursedSkullLine(rightPos, -MathHelper.PiOver2, indicatorLength * 2);
             }
         }
 
-        // Spawn Skulls
         if (AttackManager.AiTimer == indicatorLength)
         {
             var center = new Vector2(centerX, centerY);
-            center.Y += distanceBelowPlayer;
 
-            var centerSkull = NewCursedSkull(center, Vector2.UnitY * -speed);
-
-            // Left
-            for (var i = 1; i <= skullsToEachSide; i++)
+            if (Main.netMode != NetmodeID.MultiplayerClient)
             {
                 var pos = center;
-                pos.X -= spacing * i;
-                var skull = NewCursedSkull(pos, Vector2.UnitY * -speed);
+                pos.Y = Utilities.FindGroundVertical(pos.ToTileCoordinates()).ToWorldCoordinates().Y;
+            
+                NewCursedSkull(pos, Vector2.UnitY * -speed);
             }
-
-            // Right
+            
             for (var i = 1; i <= skullsToEachSide; i++)
             {
-                var pos = center;
-                pos.X += spacing * i;
-                var skull = NewCursedSkull(pos, Vector2.UnitY * -speed);
+                var leftPos = center;
+                var rightPos = center;
+                
+                leftPos.X -= spacing * i;
+                rightPos.X += spacing * i;
+
+                leftPos.Y = Utilities.FindGroundVertical(leftPos.ToTileCoordinates()).ToWorldCoordinates().Y;
+                rightPos.Y = Utilities.FindGroundVertical(rightPos.ToTileCoordinates()).ToWorldCoordinates().Y;
+
+                new FireSmokeParticle(leftPos, Vector2.Zero, 0f, Color.Gray, 30).Spawn();
+                new FireSmokeParticle(rightPos, Vector2.Zero, 0f, Color.Gray, 30).Spawn();
+
+                if (Main.netMode == NetmodeID.MultiplayerClient) continue;
+                
+                NewCursedSkull(leftPos, Vector2.UnitY * -speed);
+                NewCursedSkull(rightPos, Vector2.UnitY * -speed);
             }
+            
+            if (shouldSlap) CurrentHandState = HandState.Slap;
         }
 
         return isDone;
@@ -595,6 +597,10 @@ public class SkeletronHead : AcidicNPCOverride
 
     private bool Attack_WaterboltBurst(int bolts)
     {
+        var burst = new RingBurstParticle(Npc.Center, Vector2.Zero, 0f, Color.Blue, 30);
+        burst.Scale *= 2f;
+        burst.Spawn();
+        
         if (Main.netMode == NetmodeID.MultiplayerClient) return true;
         const float speed = 4f;
         
