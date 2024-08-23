@@ -46,8 +46,10 @@ float4 PixelShaderFunction(float2 coords : TEXCOORD0) : COLOR0
     float4 color = tex2D(slimeTex, coords);
     color.r /= 0.5;
     color.bg *= float2(1.0, 1.0) * 0.3;
+    color.rgb *= lightColor.rgb;
+    color.a = tex2D(slimeTex, coords).a * 0.75;
 
-    return color * lightColor;
+    return color;
 }
 
 technique Technique1

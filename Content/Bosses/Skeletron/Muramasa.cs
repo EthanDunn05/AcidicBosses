@@ -63,7 +63,7 @@ public class Muramasa : ModProjectile
         if (aiTime < rotationTime)
         {
             var baseRot = oldVel.ToRotation() + MathHelper.PiOver4;
-            var rotT = EasingHelper.QuadOut(aiTime / rotationTime);
+            var rotT = EasingHelper.BackOut(aiTime / rotationTime);
             var offset = MathHelper.TwoPi * rotT;
             Projectile.rotation = MathHelper.WrapAngle(baseRot + offset);
             Projectile.scale = MathHelper.Lerp(0f, 1.5f, rotT);

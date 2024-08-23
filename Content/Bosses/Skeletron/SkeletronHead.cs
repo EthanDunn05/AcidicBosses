@@ -657,7 +657,7 @@ public class SkeletronHead : AcidicNPCOverride
     
     private Projectile NewAfterimage(Vector2 startPos, Vector2 endPos, int lifetime)
     {
-        return NpcAfterimageTrail.Create(Npc.GetSource_FromAI(), startPos, endPos, Npc.whoAmI, lifetime);
+        return NpcAfterimageTrail.Create(Npc.GetSource_FromAI(), startPos, endPos, Npc.whoAmI);
     }
     
     private NPC NewHand(Vector2 position, int side)

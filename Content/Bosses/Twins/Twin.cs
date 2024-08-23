@@ -31,7 +31,7 @@ public abstract class Twin : AcidicNPCOverride
         var eyeOrigin = eyeTexture.Size() / new Vector2(1f, Main.npcFrameCount[npc.type]) * 0.5f;
         
         // Afterimages
-        if (UseAfterimages)
+        // if (UseAfterimages)
             for (var i = 1; i < npc.oldPos.Length; i++)
             {
                 // All of this is heavily simplified from decompiled vanilla

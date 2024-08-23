@@ -29,6 +29,8 @@ public class NpcAfterimageTrail : ModProjectile
     private Rectangle frame;
     private Vector2 endPos;
     private float rotation;
+    
+    private const int Images = 20;
 
     public override void SetDefaults()
     {
@@ -39,10 +41,10 @@ public class NpcAfterimageTrail : ModProjectile
     }
 
     // The position is the start and the npc's position is the end
-    public static Projectile Create(IEntitySource spawnSource, Vector2 startPos, Vector2 endPos, int creatorId, int lifetime)
+    public static Projectile Create(IEntitySource spawnSource, Vector2 startPos, Vector2 endPos, int creatorId)
     {
         return ProjHelper.NewUnscaledProjectile(spawnSource, startPos, endPos,
-            ModContent.ProjectileType<NpcAfterimageTrail>(), 0, 0, ai0: creatorId, ai2: lifetime);
+            ModContent.ProjectileType<NpcAfterimageTrail>(), 0, 0, ai0: creatorId);
     }
 
 
@@ -58,8 +60,8 @@ public class NpcAfterimageTrail : ModProjectile
 
     public virtual void FirstFrame()
     {
-        Projectile.timeLeft = (int) Projectile.ai[2];
-        maxTimeLeft = (int) Projectile.ai[2];
+        Projectile.timeLeft = (int) Images;
+        maxTimeLeft = (int) Images;
         endPos = Projectile.velocity;
         Projectile.velocity = Vector2.Zero;
         
@@ -89,12 +91,11 @@ public class NpcAfterimageTrail : ModProjectile
         
         var effects = SpriteEffects.None;
         if (creator.spriteDirection < 1) effects = SpriteEffects.FlipHorizontally;
-
-        const float images = 10;
-        for (var i = 0; i <= images; i++)
+        
+        for (var i = 0; i <= Images; i++)
         {
-            var fade = EasingHelper.QuadIn(progress) * 0.5f * (i) / images;
-            var pos = Vector2.Lerp(startPos, endPos - Main.screenPosition, i / images);
+            var fade = EasingHelper.QuadIn(progress) * 0.5f * (i) / Images;
+            var pos = Vector2.Lerp(startPos, endPos - Main.screenPosition, EasingHelper.QuadIn((float) i / Images));
 
             var light = Lighting.GetColor((pos + Main.screenPosition).ToTileCoordinates());
             var afterImageColor = Color.Multiply(light, fade);

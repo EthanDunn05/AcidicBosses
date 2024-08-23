@@ -172,6 +172,7 @@ public class KingSlime : AcidicNPCOverride
         // Land
         if (!isGrounded && npc.velocity.Y == 0)
         {
+            // Smoke puffs
             var puff = new WideGroundPuffParticle(npc.Bottom, Vector2.Zero, 0f, Color.White, 30);
             puff.Scale *= npc.scale * 1.5f;
             puff.Opacity = 0.25f;
@@ -182,8 +183,17 @@ public class KingSlime : AcidicNPCOverride
             puff2.Opacity = 0.25f;
             puff2.Spawn();
 
-            ScreenShakeSystem.StartShakeAtPoint(npc.Bottom, 0.25f);
-            SoundEngine.PlaySound(SoundID.NPCHit16, npc.Bottom);
+            // Dust from tiles landed on
+            var xTile = npc.position.ToTileCoordinates().X;
+            var yTile = npc.Bottom.ToTileCoordinates().Y;
+            for (var x = xTile; x < npc.width / 16f + xTile; x++)
+            {
+                var ground = new Point(x, yTile);
+                WorldGen.KillTile(ground.X, ground.Y, true, true);
+            }
+
+            ScreenShakeSystem.StartShakeAtPoint(npc.Bottom, npc.scale * 1.5f);
+            SoundEngine.PlaySound(SoundID.Item89, npc.Bottom);
 
             isGrounded = true;
             npc.velocity.X = 0;

@@ -3,6 +3,7 @@ using AcidicBosses.Common.Configs;
 using AcidicBosses.Common.Effects;
 using AcidicBosses.Content.Particles;
 using AcidicBosses.Content.ProjectileBases;
+using AcidicBosses.Content.Projectiles;
 using AcidicBosses.Core.StateManagement;
 using AcidicBosses.Helpers;
 using AcidicBosses.Helpers.NpcHelpers;
@@ -736,16 +737,27 @@ public class EoC : AcidicNPCOverride
             destination = -target.DirectionTo(Npc.Center) * 250;
             destination += target;
         }
-        Teleport(destination);
+        Teleport(destination, 20f);
 
         return true;
     }
 
-    private void Teleport(Vector2 destination)
+    private void Teleport(Vector2 destination, float recoil)
     {
-        Npc.Teleport(destination, TeleportationStyleID.RodOfDiscord);
-        Npc.velocity = Vector2.Zero;
-        Npc.rotation += MathHelper.Pi;
+        var awayDir = Npc.DirectionTo(destination);
+        var startPos = Npc.Center;
+
+        Npc.rotation = awayDir.ToRotation() - MathHelper.PiOver2;
+        
+        if (Main.netMode != NetmodeID.MultiplayerClient)
+        {
+            NpcAfterimageTrail.Create(Npc.GetSource_FromAI(), Npc.Center, destination, Npc.whoAmI);
+        }
+        
+        Npc.Center = destination;
+        Npc.velocity = awayDir * recoil;
+        
+        SoundEngine.PlaySound(SoundID.DD2_JavelinThrowersAttack, Npc.Center);
     }
 
     private void NewMinion()

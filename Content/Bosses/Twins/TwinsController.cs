@@ -8,7 +8,9 @@ using AcidicBosses.Content.Particles;
 using AcidicBosses.Content.ProjectileBases;
 using AcidicBosses.Content.Projectiles;
 using AcidicBosses.Core.StateManagement;
+using AcidicBosses.Helpers;
 using AcidicBosses.Helpers.NpcHelpers;
+using Luminance.Common.Utilities;
 using Luminance.Common.VerletIntergration;
 using Luminance.Core.Graphics;
 using Microsoft.Xna.Framework;
@@ -20,6 +22,7 @@ using Terraria.Audio;
 using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
+using Animation = AcidicBosses.Core.Animation.Animation;
 using Vector2 = Microsoft.Xna.Framework.Vector2;
 
 namespace AcidicBosses.Content.Bosses.Twins;
@@ -42,6 +45,8 @@ public class TwinsController : AcidicNPC
 
     private Retinazer Retinazer => Main.npc[retId].GetGlobalNPC<Retinazer>();
     private Spazmatism Spazmatism => Main.npc[spazId].GetGlobalNPC<Spazmatism>();
+
+    private float AverageLifePercent => (Spazmatism.Npc.GetLifePercent() + Retinazer.Npc.GetLifePercent()) / 2f;
 
     // Only exists on client
     private List<VerletSegment> connectionSegments = [];
@@ -79,6 +84,7 @@ public class TwinsController : AcidicNPC
 
         phaseTracker = new PhaseTracker([
             PhaseUntransformed,
+            PhaseTranformation,
             PhaseTransformed1
         ]);
 
@@ -153,12 +159,13 @@ public class TwinsController : AcidicNPC
     #region Phases
 
     private PhaseState PhaseUntransformed => new PhaseState(Phase_Untransformed, EnterPhaseUntransformed);
+    private PhaseState PhaseTranformation => new(Phase_Transformation, EnterPhaseTransformation);
     private PhaseState PhaseTransformed1 => new PhaseState(Phase_Transformed1, EnterPhaseTransformed1);
     
     private void EnterPhaseUntransformed()
     {
-        var hover = new AttackState(() => Attack_Hover(45, 20, 0.25f), 30);
-        var doubleDash = new AttackState(() => Attack_DoubleDash(15, 30, 15, 30), 60);
+        var hover = new AttackState(() => Attack_Hover(90, 20, 0.25f), 30);
+        var doubleDash = new AttackState(() => Attack_DoubleDash(10, 30, 15, 30), 60);
         var longCrossDash = new AttackState(() => Attack_CrossDash(20, 60, 30), 0);
         var plusDash = new AttackState(() => Attack_PlusDash(20, 60, 25), 0);
         var crossDash = new AttackState(() => Attack_CrossDash(20, 60, 25), 0);
@@ -168,13 +175,19 @@ public class TwinsController : AcidicNPC
         
         attackManager.SetAttackPattern([
             hover,
+            recenter,
+            hover, recenter, hover, recenter,
             doubleDash, doubleDash,
             alternatingDashes,
             fastAlternatingDashes,
             recenter,
             hover,
+            doubleDash, doubleDash, doubleDash,
+            hover,
             longCrossDash, plusDash, crossDash, plusDash, crossDash,
-            recenter
+            recenter,
+            hover,
+            alternatingDashes
         ]);
     }
     
@@ -182,19 +195,139 @@ public class TwinsController : AcidicNPC
     {
         if (attackManager.InWindDown)
         {
-            if (Spazmatism.Npc.GetLifePercent() + Retinazer.Npc.GetLifePercent() / 2f <= 0.75f)
+            if (AverageLifePercent <= 0.75f)
             {
                 phaseTracker.NextPhase();
                 attackManager.Reset();
                 return;
             }
             
-            var target = Main.player[NPC.target];
             Attack_Hover(20f, 0.25f);
             return;
         }
         
         attackManager.RunAttackPattern();
+    }
+
+    private Animation transformation;
+    private void EnterPhaseTransformation()
+    {
+        transformation = new Animation();
+        
+        // Stop Moving
+        transformation.AddConstantEvent((progress, frame) =>
+        {
+            Spazmatism.Npc.SimpleFlyMovement(Vector2.Zero, 0.2f);
+            Retinazer.Npc.SimpleFlyMovement(Vector2.Zero, 0.2f);
+        });
+        
+        // Start rumble
+        transformation.AddInstantEvent(0, () =>
+        {
+            ScreenShakeSystem.SetUniversalRumble(0.5f, shakeStrengthDissipationIncrement: 0f);
+        });
+
+        // Make Smoke
+        transformation.AddTimedEvent(0, 120, (progress, frame) =>
+        {
+            DoBothTwins(twin =>
+            {
+                var npc = twin.Npc;
+                if (frame % 30 == 0)
+                {
+                    SoundEngine.PlaySound(SoundID.Item13, npc.Center);
+                }
+
+                var smokeDusts = MathHelper.Lerp(2f, 5f, progress);
+                for (var i = 0; i < smokeDusts; i++)
+                {
+                    var speed = Main.rand.NextVector2Circular(5, 5);
+                    var pos = Main.rand.NextVector2Circular(npc.width / 2f, npc.height / 2f) + npc.Center;
+                    Dust.NewDust(pos, 0, 0, DustID.Smoke, speed.X, speed.Y, Scale: 1.5f);
+                }
+                if (Main.rand.NextBool(smokeDusts % 1f))
+                {
+                    var speed = Main.rand.NextVector2Circular(5, 5);
+                    var pos = Main.rand.NextVector2Circular(npc.width / 2f, npc.height / 2f) + npc.Center;
+                    Dust.NewDust(pos, 0, 0, DustID.Smoke, speed.X, speed.Y, Scale: 1.5f);
+                }
+                
+                var smokeParticles = MathHelper.Lerp(1f, 2f, progress);
+                for (var i = 0; i < smokeParticles; i++)
+                {
+                    var speed = Main.rand.NextVector2Circular(2.5f, 2.5f);
+                    var pos = Main.rand.NextVector2Circular(npc.width / 2f, npc.height / 2f) + npc.Center;
+                    var rot = Main.rand.NextFloatDirection();
+                    var angularVel = Main.rand.NextFloat(0f, MathHelper.Pi / 16f);
+                    var puff = new SmallPuffParticle(pos, speed, rot, Color.WhiteSmoke, 30);
+                    puff.Opacity = 0.5f;
+                    puff.AngularVelocity = angularVel;
+                    puff.Spawn();
+                }
+                if (Main.rand.NextBool(smokeParticles % 1f))
+                {
+                    var speed = Main.rand.NextVector2Circular(2.5f, 2.5f);
+                    var pos = Main.rand.NextVector2Circular(npc.width / 2f, npc.height / 2f) + npc.Center;
+                    var rot = Main.rand.NextFloatDirection();
+                    var angularVel = Main.rand.NextFloat(0f, MathHelper.Pi / 16f);
+                    var puff = new SmallPuffParticle(pos, speed, rot, Color.WhiteSmoke, 30);
+                    puff.Opacity = 0.5f;
+                    puff.AngularVelocity = angularVel;
+                    puff.Spawn();
+                }
+            });
+        });
+        
+        // Transform twins
+        transformation.AddInstantEvent(120, () =>
+        {
+            ScreenShakeSystem.SetUniversalRumble(0f, shakeStrengthDissipationIncrement: 0.2f);
+            ScreenShakeSystem.StartShake(2f);
+            
+            DoBothTwins(twin =>
+            {
+                var npc = twin.Npc;
+            
+                SoundEngine.PlaySound(SoundID.NPCHit1, npc.Center);
+                SoundEngine.PlaySound(SoundID.Roar, npc.Center);
+
+                var burst = new BigSmokeDisperseParticle(npc.Bottom, Vector2.Zero, 0f, Color.WhiteSmoke, 60);
+                burst.IgnoreLighting = true;
+                burst.Scale *= 2.25f;
+                burst.Spawn();
+            
+                for (var i = 0; i < 2; i++)
+                {
+                    Gore.NewGore(NPC.GetSource_FromAI(), npc.Center, Main.rand.NextVector2Square(-30, 31) * 0.2f, 144);
+                    Gore.NewGore(NPC.GetSource_FromAI(), npc.Center, Main.rand.NextVector2Square(-30, 31) * 0.2f, 7);
+                    Gore.NewGore(NPC.GetSource_FromAI(), npc.Center, Main.rand.NextVector2Square(-30, 31) * 0.2f, 6);
+                }
+                for (var i = 0; i < 20; i++)
+                {
+                    Dust.NewDust(npc.position, npc.width, npc.height, DustID.Blood, Main.rand.Next(-30, 31) * 0.2f, Main.rand.Next(-30, 31) * 0.2f);
+                }
+                
+                var dustId = twin is Spazmatism ? DustID.CursedTorch : DustID.CrimsonTorch;
+                for (var i = 0; i < 20; i++)
+                {
+                    var speed = Main.rand.NextVector2CircularEdge(15f, 15f);
+                    Dust.NewDust(npc.Center, 0, 0, dustId, speed.X, speed.Y, Scale: 2f);
+                }
+            
+                npc.HitSound = SoundID.NPCHit4;
+                twin.MechForm = true;
+            });
+        });
+    }
+
+    private void Phase_Transformation()
+    {
+        var done = transformation.RunAnimation();
+        if (done)
+        {
+            phaseTracker.NextPhase();
+            attackManager.Reset();
+        }
     }
     
     private void EnterPhaseTransformed1()
@@ -308,7 +441,7 @@ public class TwinsController : AcidicNPC
         return true;
     }
 
-    private DashState Attack_Dash(Twin twin, int dashLength, float speed, int trackTime, int dashAtTime, bool enraged, float distance)
+    private DashState Attack_Dash(Twin twin, int dashLength, float speed, int trackTime, int dashAtTime, float distance)
     {
         var options = new DashOptions
         {
@@ -320,33 +453,14 @@ public class TwinsController : AcidicNPC
             DashAtTime = dashAtTime
         };
         
-        var npc = twin.Npc;
         var target = Main.player[NPC.target];
 
-        var dashState = DashHelper.Dash(npc, twin.AttackManager, target.Center, options);
-
-        if (twin.AttackManager.AiTimer == 0)
-        {
-            NewDashLine(twin, npc.Center, MathHelper.PiOver2, dashAtTime);
-        }
-        
-        if (enraged)
-        {
-            if (dashState == DashState.StartingDash)
-            {
-                SoundEngine.PlaySound(SoundID.Item89, npc.Center);
-                twin.UseAfterimages = true;
-            }
-            if (dashState == DashState.Done)
-            {
-                twin.UseAfterimages = false;
-            }
-        }
+        var dashState = Dash(twin, twin.AttackManager, target.Center, options);
 
         return dashState;
     }
     
-    private DashState Attack_TrackingDash(Twin twin, int dashLength, float speed, int trackTime, int dashAtTime, bool enraged, float distance)
+    private DashState Attack_TrackingDash(Twin twin, int dashLength, float speed, int trackTime, int dashAtTime, float distance)
     {
         var options = new DashOptions
         {
@@ -366,25 +480,7 @@ public class TwinsController : AcidicNPC
         var travelTime = npc.Distance(trackedPos) / speed;
         trackedPos += target.velocity * travelTime; // Account for travel time
 
-        var dashState = DashHelper.Dash(npc, twin.AttackManager, trackedPos, options);
-        
-        if (twin.AttackManager.AiTimer == 0)
-        {
-            NewDashLine(twin, npc.Center, MathHelper.PiOver2, dashAtTime);
-        }
-        
-        if (enraged)
-        {
-            if (dashState == DashState.StartingDash)
-            {
-                SoundEngine.PlaySound(SoundID.Item89, npc.Center);
-                twin.UseAfterimages = true;
-            }
-            if (dashState == DashState.Done)
-            {
-                twin.UseAfterimages = false;
-            }
-        }
+        var dashState = Dash(twin, twin.AttackManager, trackedPos, options);
         
         return dashState;
     }
@@ -406,13 +502,13 @@ public class TwinsController : AcidicNPC
         // Spaz has a normal dash while Ret tracks the player and dashes later
         if (spazDone == 0)
         {
-            var spazDashState = Attack_Dash(Spazmatism, dashLength, speed, trackTime, dashAtTime, true, 300);
+            var spazDashState = Attack_Dash(Spazmatism, dashLength, speed, trackTime, dashAtTime, 300);
             if (spazDashState == DashState.Done) spazDone = 1;
         }
 
         if (retDone == 0)
         {
-            var retDashState = Attack_TrackingDash(Retinazer, dashLength, speed, trackTime * 2, (int) (dashAtTime * 2f), true, 300);
+            var retDashState = Attack_TrackingDash(Retinazer, dashLength, speed, trackTime * 2, (int) (dashAtTime * 2f), 300);
             if (retDashState == DashState.Done) retDone = 1;
         }
         
@@ -445,10 +541,10 @@ public class TwinsController : AcidicNPC
 
         if (attackManager.AiTimer == 0)
         {
-            var spazPos = target.Center + new Vector2(500, 0);
-            if (Spazmatism.Npc.Center.X < target.Center.X) spazPos = target.Center - new Vector2(500, 0);
-            var retPos = target.Center + new Vector2(0, 500);
-            if (Retinazer.Npc.Center.Y > target.Center.Y) retPos = target.Center - new Vector2(0, 500);
+            var spazPos = target.Center + new Vector2(350, 0);
+            if (Spazmatism.Npc.Center.X < target.Center.X) spazPos = target.Center - new Vector2(350, 0);
+            var retPos = target.Center + new Vector2(0, 350);
+            if (Retinazer.Npc.Center.Y > target.Center.Y) retPos = target.Center - new Vector2(0, 350);
             
             Spazmatism.LookTowards(spazPos, 1f);
             Retinazer.LookTowards(retPos, 1f);
@@ -461,28 +557,11 @@ public class TwinsController : AcidicNPC
             
             Spazmatism.Npc.velocity = Vector2.Zero;
             Retinazer.Npc.velocity = Vector2.Zero;
-
-            NewDashLine(Spazmatism, spazPos, MathHelper.PiOver2, dashAtTime);
-            NewDashLine(Retinazer, retPos, MathHelper.PiOver2, dashAtTime);
         }
         
         // Dashes are perfectly synced together because there's no repositioning
-        var dashState = DashHelper.Dash(Spazmatism.Npc, attackManager, target.Center, dashOptions);
-        DashHelper.Dash(Retinazer.Npc, attackManager, target.Center, dashOptions);
-
-        if (dashState == DashState.StartingDash)
-        {
-            Spazmatism.UseAfterimages = true;
-            Retinazer.UseAfterimages = true;
-            SoundEngine.PlaySound(SoundID.Item89, Spazmatism.Npc.Center);
-            SoundEngine.PlaySound(SoundID.Item89, Retinazer.Npc.Center);
-        }
-        
-        if (dashState == DashState.Done)
-        {
-            Spazmatism.UseAfterimages = false;
-            Retinazer.UseAfterimages = false;
-        }
+        var dashState = Dash(Spazmatism, attackManager, target.Center, dashOptions);
+        Dash(Retinazer, attackManager, target.Center, dashOptions);
 
         return dashState == DashState.Done;
     }
@@ -504,10 +583,10 @@ public class TwinsController : AcidicNPC
 
         if (attackManager.AiTimer == 0)
         {
-            var spazPos = target.Center + new Vector2(500, -500);
-            if (Spazmatism.Npc.Center.Y < target.Center.Y) spazPos = target.Center - new Vector2(500, -500);
-            var retPos = target.Center + new Vector2(-500, -500);
-            if (Retinazer.Npc.Center.Y < target.Center.Y) retPos = target.Center - new Vector2(-500, -500);
+            var spazPos = target.Center + new Vector2(300, -300);
+            if (Spazmatism.Npc.Center.Y < target.Center.Y) spazPos = target.Center - new Vector2(300, -300);
+            var retPos = target.Center + new Vector2(-300, -300);
+            if (Retinazer.Npc.Center.Y < target.Center.Y) retPos = target.Center - new Vector2(-300, -300);
             
             Spazmatism.LookTowards(spazPos, 1f);
             Retinazer.LookTowards(retPos, 1f);
@@ -520,28 +599,11 @@ public class TwinsController : AcidicNPC
             
             Spazmatism.Npc.velocity = Vector2.Zero;
             Retinazer.Npc.velocity = Vector2.Zero;
-
-            NewDashLine(Spazmatism, spazPos, MathHelper.PiOver2, dashAtTime);
-            NewDashLine(Retinazer, retPos, MathHelper.PiOver2, dashAtTime);
         }
         
         // Dashes are perfectly synced together because there's no repositioning
-        var dashState = DashHelper.Dash(Spazmatism.Npc, attackManager, target.Center, dashOptions);
-        DashHelper.Dash(Retinazer.Npc, attackManager, target.Center, dashOptions);
-        
-        if (dashState == DashState.StartingDash)
-        {
-            Spazmatism.UseAfterimages = true;
-            Retinazer.UseAfterimages = true;
-            SoundEngine.PlaySound(SoundID.Item89, Spazmatism.Npc.Center);
-            SoundEngine.PlaySound(SoundID.Item89, Retinazer.Npc.Center);
-        }
-
-        if (dashState == DashState.Done)
-        {
-            Spazmatism.UseAfterimages = false;
-            Retinazer.UseAfterimages = false;
-        }
+        var dashState = Dash(Spazmatism, attackManager, target.Center, dashOptions);
+        Dash(Retinazer, attackManager, target.Center, dashOptions);
         
         return dashState == DashState.Done;
     }
@@ -553,6 +615,8 @@ public class TwinsController : AcidicNPC
         ref var turn = ref NPC.localAI[0];
         Twin dashingTwin = turn == 0 ? Spazmatism : Retinazer;
         Twin notDashingTwin = turn == 0 ? Retinazer : Spazmatism;
+
+        Attack_Hover(notDashingTwin, 20f, 0.2f);
         
         var target = Main.player[NPC.target];
         var dashOptions = new DashOptions
@@ -565,24 +629,12 @@ public class TwinsController : AcidicNPC
             TrackTime = trackTime
         };
 
-        var dashState = DashHelper.Dash(dashingTwin.Npc, dashingTwin.AttackManager, target.Center, dashOptions);
-
-        if (dashingTwin.AttackManager.AiTimer == 0)
-        {
-            NewDashLine(dashingTwin, dashingTwin.Npc.Center, MathHelper.PiOver2, dashAtTime);
-        }
-        
-        if (dashState == DashState.StartingDash)
-        {
-            dashingTwin.UseAfterimages = true;
-            SoundEngine.PlaySound(SoundID.Item89, dashingTwin.Npc.Center);
-        }
+        var dashState = Dash(dashingTwin, dashingTwin.AttackManager, target.Center, dashOptions);
 
         if (dashState == DashState.Done)
         {
             turn = ((int) turn + 1) % 2;
             dashingTwin.AttackManager.Reset();
-            dashingTwin.UseAfterimages = false;
 
             if (attackManager.AiTimer >= length)
             {
@@ -616,34 +668,25 @@ public class TwinsController : AcidicNPC
             TrackTime = trackTime
         };
 
-        var dashState = DashHelper.Dash(dashingTwin.Npc, dashingTwin.AttackManager, target.Center, dashOptions);
-
         if (dashingTwin.AttackManager.AiTimer == 0)
         {
             var dest = new Vector2();
-            if (dashingTwin is Spazmatism) dest = target.Center + new Vector2(0, 500);
-            else dest = target.Center + new Vector2(0, -500);
+            if (dashingTwin is Spazmatism) dest = target.Center + new Vector2(0, 350);
+            else dest = target.Center + new Vector2(0, -350);
             
             dashingTwin.LookTowards(dest, 1f);
             Teleport(dashingTwin, dest, 0);
             dashingTwin.LookTowards(target.Center, 1f);
 
             dashingTwin.Npc.velocity = Vector2.Zero;
-
-            NewDashLine(dashingTwin, dashingTwin.Npc.Center, MathHelper.PiOver2, dashAtTime);
         }
         
-        if (dashState == DashState.StartingDash)
-        {
-            dashingTwin.UseAfterimages = true;
-            SoundEngine.PlaySound(SoundID.Item89, dashingTwin.Npc.Center);
-        }
+        var dashState = Dash(dashingTwin, dashingTwin.AttackManager, target.Center, dashOptions);
 
         if (dashState == DashState.Done)
         {
             turn = ((int) turn + 1) % 2;
             dashingTwin.AttackManager.Reset();
-            dashingTwin.UseAfterimages = false;
 
             if (attackManager.AiTimer >= length)
             {
@@ -655,22 +698,93 @@ public class TwinsController : AcidicNPC
         return false;
     }
 
+    private DashState Dash(Twin twin, AttackManager am, Vector2 dashTarget, DashOptions options)
+    {
+        var npc = twin.Npc;
+        var state = DashHelper.Dash(twin.Npc, am, dashTarget, options);
+        
+        if (am.AiTimer == 0)
+        {
+            if (Main.netMode != NetmodeID.MultiplayerClient)
+            {
+                NewDashLine(twin, npc.Center, MathHelper.PiOver2, options.DashAtTime);
+            }
+        }
+        
+        // Lots of FX
+        if (state == DashState.StartingDash)
+        {
+            DashFx(twin);
+            twin.UseAfterimages = true;
+        }
+        
+        if (state == DashState.Done)
+        {
+            twin.UseAfterimages = false;
+        }
+
+        return state;
+    }
+
+    // Dash effects
+    private void DashFx(Twin twin)
+    {
+        var npc = twin.Npc;
+        
+        // Smoke ring
+        var ring = new SmokeRingParticle(npc.Center, -npc.velocity * 0.25f, npc.rotation, Color.White, 30);
+        ring.Opacity = 0.5f;
+        ring.Scale *= 2f;
+        ring.Spawn();
+
+        // Sparks
+        for (var i = 0; i < 20; i++)
+        {
+            var dustId = twin is Spazmatism ? DustID.CursedTorch : DustID.CrimsonTorch;
+            var velOffset = Main.rand.NextVector2Circular(10f, 10f);
+                
+            Dust.NewDustDirect(npc.Center, 0, 0, dustId, 
+                -(npc.velocity.X * 0.75f) + velOffset.X,
+                -(npc.velocity.Y * 0.75f) + velOffset.Y, Scale: 1.5f);
+        }
+            
+        // Smoke dust
+        for (var i = 0; i < 20; i++)
+        {
+            var velOffset = Main.rand.NextVector2Circular(15f, 15f);
+            Dust.NewDustDirect(npc.Center, 0, 0, DustID.Smoke, 
+                -(npc.velocity.X * 0.75f) + velOffset.X,
+                -(npc.velocity.Y * 0.75f) + velOffset.Y, Scale: 2f);
+        }
+
+        // Lighting
+        var color = twin is Spazmatism ? Color.Lime : Color.Red;
+        Lighting.AddLight(npc.Center - npc.velocity * 5f, color.ToVector3());
+            
+        SoundEngine.PlaySound(SoundID.Item89, npc.Center);
+    }
+
     private void Teleport(Twin twin, Vector2 position, float recoil)
     {
         var npc = twin.Npc;
         var awayDir = npc.DirectionTo(position);
         var startPos = npc.Center;
-        
+
+        npc.rotation = awayDir.ToRotation() - MathHelper.PiOver2;
+        DashFx(twin);
         
         if (Main.netMode != NetmodeID.MultiplayerClient)
         {
-            NewAfterimage(twin, startPos, position, 60);
+            NewAfterimage(twin, startPos, position);
         }
         
         npc.Center = position;
         npc.velocity = awayDir * recoil;
-        
-        SoundEngine.PlaySound(SoundID.Item82, npc.Center);
+
+        var disperse = new BigSmokeDisperseParticle(npc.Center, Vector2.Zero, 0f, Color.WhiteSmoke, 30);
+        disperse.Scale *= 2f;
+        disperse.Opacity = 0.5f;
+        disperse.Spawn();
     }
     
     #endregion
@@ -683,9 +797,9 @@ public class TwinsController : AcidicNPC
         return BaseLineProjectile.Create<TwinsDashLine>(NPC.GetSource_FromAI(), position, offset, lifetime, ai1);
     }
     
-    private Projectile NewAfterimage(Twin twin, Vector2 startPos, Vector2 endPos, int lifetime)
+    private Projectile NewAfterimage(Twin twin, Vector2 startPos, Vector2 endPos)
     {
-        return NpcAfterimageTrail.Create(NPC.GetSource_FromAI(), startPos, endPos, twin.Npc.whoAmI, lifetime);
+        return NpcAfterimageTrail.Create(NPC.GetSource_FromAI(), startPos, endPos, twin.Npc.whoAmI);
     }
 
     private Projectile NewSpazFlamethrower(Vector2 pos, float rotation)
@@ -752,6 +866,12 @@ public class TwinsController : AcidicNPC
         if (!Retinazer.Npc.active || !Spazmatism.Npc.active) return false;
 
         return true;
+    }
+
+    private void DoBothTwins(Action<Twin> action)
+    {
+        action(Spazmatism);
+        action(Retinazer);
     }
 
     public static int Link(NPC npc)
