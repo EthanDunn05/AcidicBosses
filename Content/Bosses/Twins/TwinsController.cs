@@ -695,7 +695,7 @@ public class TwinsController : AcidicNPC
         var npc = Retinazer.Npc;
 
         const int rotateTime = 30;
-        const int indicateTime = rotateTime + 120;
+        const int indicateTime = rotateTime + 60;
         const int rayTime = indicateTime + 120;
 
         const float spreadRadius = MathHelper.PiOver4;
@@ -709,40 +709,31 @@ public class TwinsController : AcidicNPC
             startAngle = npc.rotation;
         }
 
-        if (attackManager.AiTimer == rotateTime && Main.netMode != NetmodeID.MultiplayerClient)
+        if (attackManager.AiTimer == 0 && Main.netMode != NetmodeID.MultiplayerClient)
         {
-            NewRetSweepIndicator(npc.Center, startAngle + MathHelper.PiOver2 + spreadRadius, indicateTime - rotateTime);
-            NewRetSweepIndicator(npc.Center, startAngle + MathHelper.PiOver2 - spreadRadius, indicateTime - rotateTime);
+            NewRetSweepIndicator(npc.Center, startAngle + MathHelper.PiOver2, indicateTime);
         }
 
         if (attackManager.AiTimer == indicateTime && Main.netMode != NetmodeID.MultiplayerClient)
         {
             var pos = npc.Center + npc.rotation.ToRotationVector2() * npc.width;
-            NewRetDeathray(pos, MathHelper.PiOver2, indicateTime - rotateTime);
+            NewRetDeathray(pos, MathHelper.PiOver2, rayTime - indicateTime);
         }
-
-        if (attackManager.AiTimer < rotateTime)
-        {
-            var progress = Utils.GetLerpValue(0, rotateTime, attackManager.AiTimer, true);
-            var ease = EasingHelper.BackInOut(progress);
-            var offset = spreadRadius * ease;
-
-            npc.rotation = startAngle - offset;
-        }
+        
         // Sweep indicator down
         else if (attackManager.AiTimer < indicateTime)
         {
             var progress = Utils.GetLerpValue(rotateTime, indicateTime, attackManager.AiTimer, true);
-            var ease = EasingHelper.BackInOut(progress);
+            var ease = EasingHelper.BackOut(progress);
             
-            var offset = spreadRadius * (ease - 0.5f) * 2f;
+            var offset = spreadRadius * ease;
             npc.rotation = startAngle + offset;
         }
         // Sweep laser up
         else if (attackManager.AiTimer < rayTime)
         {
             var progress = 1f - Utils.GetLerpValue(indicateTime, rayTime, attackManager.AiTimer, true);
-            var ease = EasingHelper.BackInOut(progress);
+            var ease = EasingHelper.QuadInOut(progress);
             
             var offset = spreadRadius * (ease - 0.5f) * 2f;
             npc.rotation = startAngle + offset;
@@ -892,7 +883,7 @@ public class TwinsController : AcidicNPC
 
     private Projectile NewRetSweepIndicator(Vector2 pos, float rotation, int lifetime)
     {
-        return BaseLineProjectile.Create<RetSweepIndicator>(NPC.GetSource_FromAI(), pos, rotation, lifetime,
+        return BaseSweep.Create<RetSweepIndicator>(NPC.GetSource_FromAI(), pos, rotation, lifetime,
             Retinazer.Npc.whoAmI);
     }
     

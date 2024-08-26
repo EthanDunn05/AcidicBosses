@@ -5,6 +5,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
 using Terraria;
+using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -29,7 +30,7 @@ public class RetDeathray : DeathrayBase
         if (timeAlive <= animLen)
         {
             // Bounce in
-            var t = EasingHelper.BackOut((float) timeAlive / animLen);
+            var t = EasingHelper.QuadOut(Utils.GetLerpValue(0, animLen, timeAlive));
             widthScale = MathHelper.Lerp(0f, 1f, t);
         }
         else if (Projectile.timeLeft <= animLen)
@@ -59,8 +60,16 @@ public class RetDeathray : DeathrayBase
 
     public override bool PreDraw(ref Color lightColor)
     {
-        var lc = lightColor;
-        DrawRenderTargetSystem.DrawToTarget(ModRenderTargets.ProjectileBloom, sb => { base.PreDraw(ref lc); });
+        base.PreDraw(ref lightColor);
+        var pos = Projectile.position - Main.screenPosition;
+        var rot = Projectile.rotation + MathHelper.PiOver4;
+        var tex = TextureAssets.Extra[ExtrasID.SharpTears];
+        var frame = tex.Frame();
+        var origin = frame.Center();
+        var scaleOffset = Main.rand.NextFloat(-0.2f, 0.2f);
+        
+        Main.spriteBatch.Draw(tex.Value, pos, frame, Color.White, rot, origin, widthScale * 1.5f + scaleOffset, SpriteEffects.None, 0f);
+        Main.spriteBatch.Draw(tex.Value, pos, frame, Color.White, rot + MathHelper.PiOver2, origin, widthScale * 1.5f + scaleOffset, SpriteEffects.None, 0f);
 
         return false;
     }

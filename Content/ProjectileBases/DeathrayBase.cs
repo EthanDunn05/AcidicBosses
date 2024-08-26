@@ -101,6 +101,9 @@ public abstract class DeathrayBase : ModProjectile, IAnchoredProjectile
             var randPos = Main.rand.NextVector2FromRectangle(rect);
             SpawnDust(randPos);
         }
+        
+        DelegateMethods.v3_1 = Color.ToVector3();
+        Utils.PlotTileLine(Projectile.Center, Projectile.Center + (Projectile.rotation).ToRotationVector2() * Distance, CollisionWidth, DelegateMethods.CastLight);
     }
     
     protected virtual void AiEffects() {}
