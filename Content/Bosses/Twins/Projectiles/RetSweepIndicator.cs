@@ -12,5 +12,5 @@ public class RetSweepIndicator : BaseLineProjectile
     protected override float Width { get; set; } = 25;
     protected override Color Color { get; } = Color.Red;
     protected override Asset<Texture2D> LineTexture => TextureRegistry.SideGlowLine;
-    protected override bool AnchorRotation => false;
+    public override bool AnchorRotation => false;
 }

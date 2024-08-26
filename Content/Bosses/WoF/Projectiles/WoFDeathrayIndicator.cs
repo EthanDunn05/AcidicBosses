@@ -14,5 +14,5 @@ public class WoFDeathrayIndicator : BaseLineProjectile
     protected override Color Color => Color.Purple;
     protected override Asset<Texture2D> LineTexture => TextureRegistry.InvertedGlowLine;
 
-    protected override bool AnchorRotation => false;
+    public override bool AnchorRotation => false;
 }

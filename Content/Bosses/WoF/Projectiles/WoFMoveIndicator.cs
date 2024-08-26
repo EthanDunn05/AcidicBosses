@@ -13,12 +13,12 @@ public class WoFMoveIndicator : BaseLineProjectile
     protected override float Width { get; set; } = 25f;
     protected override Color Color => GetColor();
     protected override Asset<Texture2D> LineTexture => TextureRegistry.SideGlowLine;
-    protected override bool AnchorRotation => false;
+    public override bool AnchorRotation => false;
 
     // Fade over Time
     private Color GetColor()
     {
-        var fadeT = (float) Projectile.timeLeft / maxTimeLeft;
+        var fadeT = (float) Projectile.timeLeft / MaxTimeLeft;
         return Color.Aquamarine * EasingHelper.QuadOut(fadeT);
     }
 }

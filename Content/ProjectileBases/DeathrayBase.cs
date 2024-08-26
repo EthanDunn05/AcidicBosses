@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using AcidicBosses.Helpers;
+using AcidicBosses.Helpers.ProjectileHelpers;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
@@ -12,16 +13,16 @@ using Terraria.ModLoader;
 
 namespace AcidicBosses.Content.ProjectileBases;
 
-public abstract class DeathrayBase : ModProjectile
+public abstract class DeathrayBase : ModProjectile, IAnchoredProjectile
 {
     public float Offset => Projectile.ai[0];
-
-    private Vector2? startOffset;
-
     public int AnchorTo => (int) Projectile.ai[1] - 1;
+    public virtual bool AnchorPosition => true;
+    public virtual bool AnchorRotation => true;
+    public virtual bool RotateAroundCenter => false;
+    public Vector2? StartOffset { get; set; }
     
     public abstract float Distance { get; }
-    
     
     protected abstract int CollisionWidth { get; }
     
@@ -29,10 +30,7 @@ public abstract class DeathrayBase : ModProjectile
     
     protected abstract Asset<Texture2D> DrTexture { get; }
     public virtual int Frames => 1;
-
-    protected virtual bool AnchorPosition => true;
-    protected virtual bool AnchorRotation => true;
-    protected virtual bool RotateAroundCenter => false;
+    
     protected virtual bool StartAtEnd => false;
 
     private bool doneFirstFrame = false;
@@ -81,36 +79,7 @@ public abstract class DeathrayBase : ModProjectile
             doneFirstFrame = true;
         }
 
-        if(AnchorTo >= 0)
-        {
-            var owner = Main.npc[AnchorTo];
-            if (owner != null)
-            {
-                startOffset ??= owner.Center - Projectile.position;
-                
-                if (AnchorRotation)
-                    Projectile.rotation = owner.rotation + Offset;
-                else Projectile.rotation = Offset;
-                
-                if (AnchorPosition && AnchorRotation)
-                {
-                    if (RotateAroundCenter)
-                    {
-                        var rot = owner.rotation + Offset;
-                        var offset = startOffset.Value.Length() * rot.ToRotationVector2();
-                        Projectile.position = owner.Center + offset;
-                    }
-                }
-                else if (AnchorPosition)
-                {
-                    Projectile.position = (Vector2) (owner.Center + startOffset)!;
-                }
-            }
-        }
-        else
-        {
-            Projectile.rotation = Offset;
-        }
+        this.Anchor(Projectile);
         
         AiEffects();
         

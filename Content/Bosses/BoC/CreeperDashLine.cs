@@ -16,7 +16,7 @@ public class CreeperDashLine : BaseLineProjectile
     
     private Color GetColor()
     {
-        var fadeT = (float) Projectile.timeLeft / maxTimeLeft;
+        var fadeT = (float) Projectile.timeLeft / MaxTimeLeft;
         var color = Color.Crimson;
         color *= EasingHelper.CubicOut(fadeT);
         return color;

@@ -15,13 +15,13 @@ public class RetLaserIndicator : BaseLineProjectile
     protected override float Width { get; set; } = 5;
     protected override Color Color => GetColor();
     protected override Asset<Texture2D> LineTexture => TextureRegistry.GlowLine;
-    protected override bool RotateAroundCenter => true;
+    public override bool RotateAroundCenter => true;
 
     private Vector2 laserVel;
     
     private Color GetColor()
     {
-        var fadeT = (float) Projectile.timeLeft / maxTimeLeft;
+        var fadeT = (float) Projectile.timeLeft / MaxTimeLeft;
         var color = Color.Red;
         color *= EasingHelper.CubicOut(fadeT);
         return color;

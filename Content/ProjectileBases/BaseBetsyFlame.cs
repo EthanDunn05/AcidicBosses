@@ -3,6 +3,7 @@ using AcidicBosses.Common.Effects;
 using AcidicBosses.Common.RenderManagers;
 using AcidicBosses.Common.Textures;
 using AcidicBosses.Helpers;
+using AcidicBosses.Helpers.ProjectileHelpers;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
@@ -13,9 +14,16 @@ using Terraria.ModLoader;
 
 namespace AcidicBosses.Content.ProjectileBases;
 
-public abstract class BaseBetsyFlame : ModProjectile
+public abstract class BaseBetsyFlame : ModProjectile, IAnchoredProjectile
 {
     public override string Texture => TextureRegistry.TerrariaProjectile(ProjectileID.DD2BetsyFlameBreath);
+
+    public float Offset => Projectile.ai[2];
+    public int AnchorTo => (int) Projectile.ai[1];
+    public bool AnchorPosition => true;
+    public bool AnchorRotation => true;
+    public bool RotateAroundCenter => true;
+    public Vector2? StartOffset { get; set; }
 
     /// <summary>
     /// The color of the flame at the start. Betsy's is 255, 255, 255.
@@ -33,8 +41,6 @@ public abstract class BaseBetsyFlame : ModProjectile
     /// The dust to use as a flame. Usually a torch dust
     /// </summary>
     public abstract short FlameDust { get; }
-    
-    private Vector2? startoffset;
     
     public override void SetStaticDefaults()
     {
@@ -65,25 +71,13 @@ public abstract class BaseBetsyFlame : ModProjectile
     public override void AI()
     {
 	    ref var aiTime = ref Projectile.ai[0];
-	    ref var anchorTo = ref Projectile.ai[1];
-	    ref var offset = ref Projectile.ai[2];
-	    var npc = Main.npc[(int)anchorTo];
+	    var npc = Main.npc[(int)AnchorTo];
 	    
 	    // Anchor to npc
-	    startoffset ??= npc.Center - Projectile.Center;
-	    Projectile.rotation = npc.rotation + offset;
-	    var rotatedOffset = startoffset * offset.ToRotationVector2();
-	    Projectile.Center = (Vector2) (npc.Center + rotatedOffset)!;
+	    this.Anchor(Projectile);
 	    
 	    // Copied and modified from vanilla.
 	    // I have tried to document this for my own understanding
-	    
-	    // Kill if invalid anchor
-        if (anchorTo < 0f || anchorTo > 200f)
-		{
-			Projectile.Kill();
-			return;
-		}
 		
 		var progress1 = aiTime / 40f;
 		if (progress1 > 1f)

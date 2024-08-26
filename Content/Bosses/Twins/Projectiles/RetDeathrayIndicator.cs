@@ -20,5 +20,5 @@ public class RetDeathrayIndicator : BaseLineProjectile
     protected override float Width { get; set; } = 5;
     protected override Color Color => Color.Red;
     protected override Asset<Texture2D> LineTexture => TextureRegistry.GlowLine;
-    protected override bool RotateAroundCenter => true;
+    public override bool RotateAroundCenter => true;
 }

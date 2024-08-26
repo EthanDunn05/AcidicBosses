@@ -16,13 +16,13 @@ public class WoFLaser : BaseLineProjectile
     protected override Color Color => GetColor();
     protected override Asset<Texture2D> LineTexture => TextureRegistry.GlowLine;
 
-    protected override bool AnchorRotation => false;
+    public override bool AnchorRotation => false;
 
     private Vector2 laserVel;
     
     private Color GetColor()
     {
-        var fadeT = (float) Projectile.timeLeft / maxTimeLeft;
+        var fadeT = (float) Projectile.timeLeft / MaxTimeLeft;
         var color = Color.Purple;
         color *= EasingHelper.CubicOut(fadeT);
         return color;
