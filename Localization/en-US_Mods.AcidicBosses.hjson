@@ -26,6 +26,8 @@ Projectiles: {
 	RetDeathray.DisplayName: Ret Deathray
 	RetDeathrayIndicator.DisplayName: Ret Deathray Indicator
 	TestProj.DisplayName: Test Proj
+	RetLaserIndicator.DisplayName: Ret Laser Indicator
+	RetSweepIndicator.DisplayName: Ret Sweep Indicator
 }
 
 Buffs: {

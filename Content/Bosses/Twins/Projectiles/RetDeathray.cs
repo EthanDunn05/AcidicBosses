@@ -16,7 +16,8 @@ public class RetDeathray : DeathrayBase
     protected override int CollisionWidth => 5;
     protected override Color Color => Color.White;
     protected override Asset<Texture2D> DrTexture => ModContent.Request<Texture2D>(Texture);
-
+    protected override bool RotateAroundCenter => true;
+    
     protected override bool StartAtEnd => true;
 
     public override void AI()

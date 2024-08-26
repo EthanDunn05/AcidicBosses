@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using AcidicBosses.Common.Textures;
 using AcidicBosses.Content.Bosses.Twins.Projectiles;
+using AcidicBosses.Content.Bosses.WoF.Projectiles;
 using AcidicBosses.Content.Particles;
 using AcidicBosses.Content.ProjectileBases;
 using AcidicBosses.Content.Projectiles;
@@ -175,8 +176,6 @@ public class TwinsController : AcidicNPC
         
         attackManager.SetAttackPattern([
             hover,
-            recenter,
-            hover, recenter, hover, recenter,
             doubleDash, doubleDash,
             alternatingDashes,
             fastAlternatingDashes,
@@ -195,7 +194,7 @@ public class TwinsController : AcidicNPC
     {
         if (attackManager.InWindDown)
         {
-            if (AverageLifePercent <= 0.75f)
+            if (AverageLifePercent <= 1f) // TODO Temp
             {
                 phaseTracker.NextPhase();
                 attackManager.Reset();
@@ -238,7 +237,7 @@ public class TwinsController : AcidicNPC
                     SoundEngine.PlaySound(SoundID.Item13, npc.Center);
                 }
 
-                var smokeDusts = MathHelper.Lerp(2f, 5f, progress);
+                var smokeDusts = MathHelper.Lerp(1f, 4f, progress);
                 for (var i = 0; i < smokeDusts; i++)
                 {
                     var speed = Main.rand.NextVector2Circular(5, 5);
@@ -252,7 +251,7 @@ public class TwinsController : AcidicNPC
                     Dust.NewDust(pos, 0, 0, DustID.Smoke, speed.X, speed.Y, Scale: 1.5f);
                 }
                 
-                var smokeParticles = MathHelper.Lerp(1f, 2f, progress);
+                var smokeParticles = MathHelper.Lerp(0f, 1f, progress);
                 for (var i = 0; i < smokeParticles; i++)
                 {
                     var speed = Main.rand.NextVector2Circular(2.5f, 2.5f);
@@ -332,24 +331,15 @@ public class TwinsController : AcidicNPC
     
     private void EnterPhaseTransformed1()
     {
-        var hover = new AttackState(() => Attack_Hover(45, 20, 0.25f), 30);
+        var hover = new AttackState(() => Attack_Hover(45, 30, 0.355f), 30);
         var doubleDash = new AttackState(() => Attack_DoubleDash(15, 30, 15, 30), 60);
-        var longCrossDash = new AttackState(() => Attack_CrossDash(20, 60, 30), 0);
-        var plusDash = new AttackState(() => Attack_PlusDash(20, 60, 25), 0);
-        var crossDash = new AttackState(() => Attack_CrossDash(20, 60, 25), 0);
-        var alternatingDashes = new AttackState(() => Attack_AlternatingDashes(60 * 4, 10, 30, 15, 20), 0);
-        var fastAlternatingDashes = new AttackState(() => Attack_AlternatingFastDashes(60 * 3, 10, 60, 5, 10), 0);
         var recenter = new AttackState(Attack_Recenter, 0);
+        var test = new AttackState(Attack_Test, 30);
+        var sweep = new AttackState(Attack_SweepingLaser, 30);
         
         attackManager.SetAttackPattern([
             hover,
-            doubleDash, doubleDash,
-            alternatingDashes,
-            fastAlternatingDashes,
-            recenter,
-            hover,
-            longCrossDash, plusDash, crossDash, plusDash, crossDash,
-            recenter
+            test, sweep
         ]);
     }
     
@@ -698,6 +688,87 @@ public class TwinsController : AcidicNPC
         return false;
     }
 
+    private bool Attack_SweepingLaser()
+    {
+        ref var startAngle = ref NPC.localAI[0];
+        ref var deathray = ref NPC.localAI[1];
+        var npc = Retinazer.Npc;
+
+        const int rotateTime = 30;
+        const int indicateTime = rotateTime + 120;
+        const int rayTime = indicateTime + 120;
+
+        const float spreadRadius = MathHelper.PiOver4;
+
+        Attack_Hover(Spazmatism, 10f, 0.15f);
+        
+        npc.SimpleFlyMovement(Vector2.Zero, 0.5f);
+        attackManager.CountUp = true;
+        if (attackManager.AiTimer == 0)
+        {
+            startAngle = npc.rotation;
+        }
+
+        if (attackManager.AiTimer == rotateTime && Main.netMode != NetmodeID.MultiplayerClient)
+        {
+            NewRetSweepIndicator(npc.Center, startAngle + MathHelper.PiOver2 + spreadRadius, indicateTime - rotateTime);
+            NewRetSweepIndicator(npc.Center, startAngle + MathHelper.PiOver2 - spreadRadius, indicateTime - rotateTime);
+        }
+
+        if (attackManager.AiTimer == indicateTime && Main.netMode != NetmodeID.MultiplayerClient)
+        {
+            var pos = npc.Center + npc.rotation.ToRotationVector2() * npc.width;
+            NewRetDeathray(pos, MathHelper.PiOver2, indicateTime - rotateTime);
+        }
+
+        if (attackManager.AiTimer < rotateTime)
+        {
+            var progress = Utils.GetLerpValue(0, rotateTime, attackManager.AiTimer, true);
+            var ease = EasingHelper.BackInOut(progress);
+            var offset = spreadRadius * ease;
+
+            npc.rotation = startAngle - offset;
+        }
+        // Sweep indicator down
+        else if (attackManager.AiTimer < indicateTime)
+        {
+            var progress = Utils.GetLerpValue(rotateTime, indicateTime, attackManager.AiTimer, true);
+            var ease = EasingHelper.BackInOut(progress);
+            
+            var offset = spreadRadius * (ease - 0.5f) * 2f;
+            npc.rotation = startAngle + offset;
+        }
+        // Sweep laser up
+        else if (attackManager.AiTimer < rayTime)
+        {
+            var progress = 1f - Utils.GetLerpValue(indicateTime, rayTime, attackManager.AiTimer, true);
+            var ease = EasingHelper.BackInOut(progress);
+            
+            var offset = spreadRadius * (ease - 0.5f) * 2f;
+            npc.rotation = startAngle + offset;
+        }
+        // Done
+        else
+        {
+            if (Main.netMode != NetmodeID.MultiplayerClient)
+            {
+                var dr = Utilities.FindProjectileByIdentity((int) deathray, -1);
+                dr.Kill();
+            }
+            attackManager.CountUp = false;
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool Attack_Test()
+    {
+        NewRetLazer(Retinazer.Npc.Center, (Retinazer.Npc.rotation + MathHelper.PiOver2).ToRotationVector2() * 20f, MathHelper.PiOver2, 30, Retinazer.Npc.whoAmI);
+        NewSpazFireball(Spazmatism.Npc.Center, (Spazmatism.Npc.rotation + MathHelper.PiOver2).ToRotationVector2() * 5f);
+        return true;
+    }
+
     private DashState Dash(Twin twin, AttackManager am, Vector2 dashTarget, DashOptions options)
     {
         var npc = twin.Npc;
@@ -807,17 +878,37 @@ public class TwinsController : AcidicNPC
         return BaseBetsyFlame.Create<SpazFlamethrower>(NPC.GetSource_FromAI(), pos, rotation - MathHelper.PiOver2, Spazmatism.Npc.damage, 4, Spazmatism.Npc.whoAmI);
     }
 
-    private Projectile NewRetDeathray(Vector2 position, float rotation)
+    private Projectile NewSpazFireball(Vector2 pos, Vector2 vel)
     {
-        return BaseLineProjectile.Create<RetDeathrayIndicator>(NPC.GetSource_FromAI(), position, rotation, 30,
+        return ProjHelper.NewUnscaledProjectile(NPC.GetSource_FromAI(), pos, vel, ProjectileID.CursedFlameHostile,
+            Spazmatism.Npc.damage, 3);
+    }
+
+    private Projectile NewRetDeathray(Vector2 position, float rotation, int lifetime)
+    {
+        return DeathrayBase.Create<RetDeathray>(NPC.GetSource_FromAI(), position, Retinazer.Npc.damage, 3, rotation,
+            lifetime, Retinazer.Npc.whoAmI);
+    }
+
+    private Projectile NewRetSweepIndicator(Vector2 pos, float rotation, int lifetime)
+    {
+        return BaseLineProjectile.Create<RetSweepIndicator>(NPC.GetSource_FromAI(), pos, rotation, lifetime,
             Retinazer.Npc.whoAmI);
+    }
+    
+    private Projectile NewRetLazer(Vector2 pos, Vector2 vel, float rotation, int lifetime, int anchor = -1)
+    {
+        return BaseLineProjectile.Create<RetLaserIndicator>(NPC.GetSource_FromAI(), pos, vel, Retinazer.Npc.damage, 3, rotation, lifetime, anchor);
     }
     
     #endregion
 
     private static void FlyTo(NPC npc, Vector2 target, float speed, float acceleration)
     {
-        npc.SimpleFlyMovement(npc.DirectionTo(target) * speed, acceleration);
+        var distanceLerp = Utils.GetLerpValue(400, 200, npc.Distance(target), true);
+        var spd = MathHelper.Lerp(speed, 1f, distanceLerp);
+        var accel = MathHelper.Lerp(acceleration, acceleration * 2, distanceLerp);
+        npc.SimpleFlyMovement(npc.DirectionTo(target) * spd, accel);
     }
 
     public override void SendAcidAI(BinaryWriter binaryWriter)

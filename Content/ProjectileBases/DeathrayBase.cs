@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using AcidicBosses.Helpers;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -93,8 +94,12 @@ public abstract class DeathrayBase : ModProjectile
                 
                 if (AnchorPosition && AnchorRotation)
                 {
-                    var rotatedOffset = startOffset * Offset.ToRotationVector2();
-                    Projectile.position = (Vector2) (owner.Center + rotatedOffset)!;
+                    if (RotateAroundCenter)
+                    {
+                        var rot = owner.rotation + Offset;
+                        var offset = startOffset.Value.Length() * rot.ToRotationVector2();
+                        Projectile.position = owner.Center + offset;
+                    }
                 }
                 else if (AnchorPosition)
                 {
@@ -142,6 +147,16 @@ public abstract class DeathrayBase : ModProjectile
         var r = Projectile.rotation - MathHelper.PiOver2;
 
         var scale = new Vector2(widthScale, 1f);
+
+        // Game sometimes crashes trying to read the texture, so here's a hacky fix
+        try
+        {
+            var test = DrTexture.Value;
+        }
+        catch (Exception e)
+        {
+            return false;
+        }
 
         var frames = Main.projFrames[Type];
         var headRect = DrTexture.Frame(frames, 3, Projectile.frame, 0);

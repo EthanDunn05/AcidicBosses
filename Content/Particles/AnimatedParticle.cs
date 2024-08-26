@@ -37,6 +37,8 @@ public abstract class AnimatedParticle : Particle
     public bool IgnoreLighting = false;
 
     public float AngularVelocity = 0;
+
+    public Action<AnimatedParticle>? OnUpdate = null;
     
     public AnimatedParticle(Vector2 position, Vector2 velocity, float rotation, Color color, int lifetime)
     {
@@ -60,6 +62,8 @@ public abstract class AnimatedParticle : Particle
             doneFirstFrame = true;
             FirstFrame();
         }
+        
+        OnUpdate?.Invoke(this);
 
         Rotation = MathHelper.WrapAngle(Rotation + AngularVelocity);
         

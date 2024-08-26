@@ -103,8 +103,12 @@ public abstract class BaseLineProjectile : ModProjectile
 
                 if (AnchorPosition && AnchorRotation)
                 {
-                    var rotatedOffset = startoffset * Offset.ToRotationVector2();
-                    Projectile.position = (Vector2) (owner.Center + rotatedOffset)!;
+                    if (RotateAroundCenter)
+                    {
+                        var rotation = owner.rotation + Offset;
+                        var offset = startoffset.Value.Length() * rotation.ToRotationVector2();
+                        Projectile.position = owner.Center + offset;
+                    }
                 }
                 else if (AnchorPosition)
                 {
