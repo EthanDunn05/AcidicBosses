@@ -5,6 +5,7 @@ using AcidicBosses.Common.Configs;
 using AcidicBosses.Content.Bosses.BoC;
 using AcidicBosses.Content.Bosses.WoF.Projectiles;
 using AcidicBosses.Content.Particles;
+using AcidicBosses.Content.Particles.Animated;
 using AcidicBosses.Content.ProjectileBases;
 using AcidicBosses.Core.StateManagement;
 using AcidicBosses.Helpers;

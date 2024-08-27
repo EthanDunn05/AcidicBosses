@@ -1,5 +1,6 @@
 ﻿using AcidicBosses.Common.Textures;
 using AcidicBosses.Content.Particles;
+using AcidicBosses.Content.Particles.Animated;
 using AcidicBosses.Helpers;
 using Luminance.Common.Utilities;
 using Microsoft.Xna.Framework;

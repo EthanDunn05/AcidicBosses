@@ -1,20 +1,14 @@
-﻿using System;
-using Luminance.Common.Utilities;
-using Luminance.Core.Graphics;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
-using Terraria;
-using Terraria.ModLoader;
+﻿using Microsoft.Xna.Framework;
 
-namespace AcidicBosses.Content.Particles;
+namespace AcidicBosses.Content.Particles.Animated;
 
 /// <summary>
 /// An animated particle. A texture for a particle should be horizontal and not trimmed
 /// </summary>
-public abstract class AnimatedParticle : Particle
+public abstract class AnimatedParticle : BetterParticle
 {
     private int frame = 0;
-    private bool doneFirstFrame = false;
+    
     public override int FrameCount => Texture.Width / FrameWidth * Texture.Height / FrameHeight;
     
     /// <summary>
@@ -33,39 +27,14 @@ public abstract class AnimatedParticle : Particle
     /// The game ticks between each frame. Default is 2
     /// </summary>
     public int FrameInterval = 2;
-
-    public bool IgnoreLighting = false;
-
-    public float AngularVelocity = 0;
-
-    public Action<AnimatedParticle>? OnUpdate = null;
     
-    public AnimatedParticle(Vector2 position, Vector2 velocity, float rotation, Color color, int lifetime)
+    protected AnimatedParticle(Vector2 position, Vector2 velocity, float rotation, Color color, int lifetime) : base(position, velocity, rotation, color, lifetime)
     {
-        Position = position;
-        Velocity = velocity;
-        Rotation = rotation;
-        DrawColor = IgnoreLighting ? color : color.MultiplyRGB(Lighting.GetColor(position.ToTileCoordinates()));
-        Lifetime = lifetime;
-        Scale = new Vector2(2f, 2f); // 2x scale matches Terraria's pixel size
-    }
-
-    public virtual void FirstFrame()
-    {
-        
     }
 
     public override void Update()
     {
-        if (!doneFirstFrame)
-        {
-            doneFirstFrame = true;
-            FirstFrame();
-        }
-        
-        OnUpdate?.Invoke(this);
-
-        Rotation = MathHelper.WrapAngle(Rotation + AngularVelocity);
+        base.Update();
         
         if (frame >= FrameCount)
         {

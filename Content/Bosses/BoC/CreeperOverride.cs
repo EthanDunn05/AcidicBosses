@@ -2,6 +2,7 @@
 using AcidicBosses.Common.Configs;
 using AcidicBosses.Content.Bosses.EoC;
 using AcidicBosses.Content.Particles;
+using AcidicBosses.Content.Particles.Animated;
 using AcidicBosses.Content.ProjectileBases;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;

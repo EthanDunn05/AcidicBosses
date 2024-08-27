@@ -5,6 +5,7 @@ using AcidicBosses.Common;
 using AcidicBosses.Common.Configs;
 using AcidicBosses.Common.Effects;
 using AcidicBosses.Content.Particles;
+using AcidicBosses.Content.Particles.Animated;
 using AcidicBosses.Core.StateManagement;
 using AcidicBosses.Helpers;
 using Luminance.Common.Utilities;

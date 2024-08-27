@@ -1,7 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Terraria;
 
-namespace AcidicBosses.Content.Particles;
+namespace AcidicBosses.Content.Particles.Animated;
 
 public class TallGroundPuffParticle : AnimatedParticle
 {

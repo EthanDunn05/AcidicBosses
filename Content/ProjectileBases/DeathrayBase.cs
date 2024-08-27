@@ -112,12 +112,18 @@ public abstract class DeathrayBase : ModProjectile, IAnchoredProjectile
 
     public override bool PreDraw(ref Color lightColor)
     {
-        if (!readyToDraw) return false;
-        
         // Have to rotate the visual for vertically aligned stuff
         var rotation = Projectile.rotation.ToRotationVector2();
-        var r = Projectile.rotation - MathHelper.PiOver2;
+        
+        DrawDr(Projectile.position, Projectile.rotation, Color.White);
+        
+        return false;
+    }
 
+    protected void DrawDr(Vector2 pos, float rotation, Color col)
+    {
+        if (!readyToDraw) return;
+        var r = rotation - MathHelper.PiOver2;
         var scale = new Vector2(widthScale, 1f);
 
         // Game sometimes crashes trying to read the texture, so here's a hacky fix
@@ -127,7 +133,7 @@ public abstract class DeathrayBase : ModProjectile, IAnchoredProjectile
         }
         catch (Exception e)
         {
-            return false;
+            return;
         }
 
         var frames = Main.projFrames[Type];
@@ -140,19 +146,18 @@ public abstract class DeathrayBase : ModProjectile, IAnchoredProjectile
         if (StartAtEnd) origin = new Vector2(headRect.Width / 2f, 0f);
 
         // Draw the head
-        Main.spriteBatch.Draw(DrTexture.Value, Projectile.position - Main.screenPosition, headRect, Color, r, origin, scale, SpriteEffects.None, 0f);
+        Main.spriteBatch.Draw(DrTexture.Value, pos - Main.screenPosition, headRect, Color.MultiplyRGBA(col), r, origin, scale, SpriteEffects.None, 0f);
         
         // Body
         for (var i = 1; i <= Distance / step - 1; i++)
         {
-            var position = Projectile.position + rotation * i * step;
-            Main.spriteBatch.Draw(DrTexture.Value, position - Main.screenPosition, bodyRect, Color, r, origin, scale, SpriteEffects.None, 0f);
+            var position = pos + rotation.ToRotationVector2() * i * step;
+            Main.spriteBatch.Draw(DrTexture.Value, position - Main.screenPosition, bodyRect, Color.MultiplyRGBA(col), r, origin, scale, SpriteEffects.None, 0f);
         }
         
         // Tail
-        Main.spriteBatch.Draw(DrTexture.Value, (Projectile.position + rotation * Distance) - Main.screenPosition, tailRect, Color, r, origin, scale, SpriteEffects.None, 0f);
+        Main.spriteBatch.Draw(DrTexture.Value, (pos + rotation.ToRotationVector2() * Distance) - Main.screenPosition, tailRect, Color.MultiplyRGBA(col), r, origin, scale, SpriteEffects.None, 0f);
 
-        return false;
     }
 
     // Change the way of collision check of the projectile

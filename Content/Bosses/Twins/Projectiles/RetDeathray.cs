@@ -1,6 +1,8 @@
 ﻿using AcidicBosses.Common.RenderManagers;
 using AcidicBosses.Content.ProjectileBases;
 using AcidicBosses.Helpers;
+using Luminance.Common.Utilities;
+using Luminance.Core.Graphics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
@@ -21,12 +23,18 @@ public class RetDeathray : DeathrayBase
     
     protected override bool StartAtEnd => true;
 
+    public override void SetStaticDefaults()
+    {
+        base.SetStaticDefaults();
+        ProjectileID.Sets.TrailingMode[Projectile.type] = 2;
+    }
+
     public override void AI()
     {
         base.AI();
 
         const int animLen = 5;
-        var timeAlive = maxTimeLeft - Projectile.timeLeft;
+        ref var timeAlive = ref Projectile.localAI[0];
         if (timeAlive <= animLen)
         {
             // Bounce in
@@ -43,6 +51,8 @@ public class RetDeathray : DeathrayBase
         {
             widthScale = 1f;
         }
+
+        timeAlive++;
     }
 
     protected override void SpawnDust(Vector2 position)
@@ -60,17 +70,19 @@ public class RetDeathray : DeathrayBase
 
     public override bool PreDraw(ref Color lightColor)
     {
+        var color1 = lightColor;
+        ProjHelper.DrawAfterimages(Projectile, (oldPos, oldRot, fade) =>
+        {
+            DrawDr(oldPos, oldRot, Color.Red * fade);
+        });
+        
         base.PreDraw(ref lightColor);
         var pos = Projectile.position - Main.screenPosition;
         var rot = Projectile.rotation + MathHelper.PiOver4;
-        var tex = TextureAssets.Extra[ExtrasID.SharpTears];
-        var frame = tex.Frame();
-        var origin = frame.Center();
+        var tex = AtlasManager.GetTexture("AcidicBosses.GlowStar");
         var scaleOffset = Main.rand.NextFloat(-0.2f, 0.2f);
         
-        Main.spriteBatch.Draw(tex.Value, pos, frame, Color.White, rot, origin, widthScale * 1.5f + scaleOffset, SpriteEffects.None, 0f);
-        Main.spriteBatch.Draw(tex.Value, pos, frame, Color.White, rot + MathHelper.PiOver2, origin, widthScale * 1.5f + scaleOffset, SpriteEffects.None, 0f);
-
+        Main.spriteBatch.Draw(tex, pos, tex.Frame, Color.White, rot, tex.Frame.Size() / 2f, scale: Vector2.One * (3f + scaleOffset));
         return false;
     }
 }

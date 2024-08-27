@@ -7,7 +7,7 @@ namespace AcidicBosses.Core.Animation;
 /// A system to help manage an animation.
 /// An animation is divided into <see cref="TimedAnimationEvent"/> which are executed as the animation progresses.
 /// </summary>
-public class Animation
+public class AcidAnimation
 {
     public delegate void TimedAnimationEvent(float eventProgress, int eventFrame);
     public delegate void InstantAnimationEvent();
@@ -16,10 +16,11 @@ public class Animation
     
     private Dictionary<TimingData, TimedAnimationEvent> timedEvents = new();
     private Dictionary<int, InstantAnimationEvent> instantEvents = new();
-    private List<TimedAnimationEvent> constantEvents = new();
+    private List<TimedAnimationEvent> constantEvents = [];
     
     private int animationEndTime = -1;
     private int animationTime = 0;
+    
 
     /// <summary>
     /// Adds a new event to the animation. The event takes place while <c>startTime &lt;= time &lt; endTime</c>.
@@ -57,9 +58,24 @@ public class Animation
     /// <summary>
     /// Runs the animation. Must be called every frame.
     /// </summary>
+    /// <remarks>
+    /// Event types are performed in the following order:
+    /// <code>
+    /// 1. Instant
+    /// 2. Timed
+    /// 3. Constant
+    /// </code>
+    /// </remarks>
     /// <returns>Whether the animation is done</returns>
     public bool RunAnimation()
     {
+        foreach (var (time, evt) in instantEvents)
+        {
+            if (animationTime != time) continue;
+            
+            evt();
+        }
+        
         foreach (var (data, evt) in timedEvents)
         {
             if (data.StartTime > animationTime || animationTime >= data.EndTime) continue;
@@ -71,13 +87,6 @@ public class Animation
             evt(eventProgress, eventTime);
         }
 
-        foreach (var (time, evt) in instantEvents)
-        {
-            if (animationTime != time) continue;
-            
-            evt();
-        }
-
         foreach (var evt in constantEvents)
         {
             var progress = (float) animationTime / animationEndTime;
@@ -86,5 +95,13 @@ public class Animation
 
         animationTime++;
         return animationTime >= animationEndTime;
+    }
+    
+    /// <summary>
+    /// Resets the animation. Does NOT clear any events
+    /// </summary>
+    public void Reset()
+    {
+        animationTime = 0;
     }
 }

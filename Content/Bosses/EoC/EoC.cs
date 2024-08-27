@@ -2,6 +2,7 @@
 using AcidicBosses.Common.Configs;
 using AcidicBosses.Common.Effects;
 using AcidicBosses.Content.Particles;
+using AcidicBosses.Content.Particles.Animated;
 using AcidicBosses.Content.ProjectileBases;
 using AcidicBosses.Content.Projectiles;
 using AcidicBosses.Core.StateManagement;

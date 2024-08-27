@@ -1,5 +1,7 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using Luminance.Common.Utilities;
+using Luminance.Core.Graphics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
@@ -53,6 +55,19 @@ public static class ProjHelper
                 projectile.oldRot[i], origin, projectile.scale, effects, 0f);
         }
     }
+
+    public delegate void AfterimageDraw(Vector2 oldPos, float oldRot, float fade);
+    
+    public static void DrawAfterimages(Projectile projectile, AfterimageDraw drawCall, int afterimageInterval = 1)
+    {
+        // More Spaced out trail
+        for (var i = 1; i < projectile.oldPos.Length; i += afterimageInterval)
+        {
+            // All of this is heavily simplified from decompiled vanilla  
+            var fade = 0.5f * (projectile.oldPos.Length - i) / 20f;
+            drawCall(projectile.oldPos[i], projectile.oldRot[i], fade);
+        }
+    }
     
     public static void Draw(Projectile projectile, Texture2D texture, ref Color lightColor)
     {
@@ -67,6 +82,20 @@ public static class ProjHelper
         var pos = projectile.position + new Vector2(projectile.width, projectile.height) / 2f - Main.screenPosition;
         Main.spriteBatch.Draw(texture, pos, rect, lightColor,
             projectile.rotation, origin, projectile.scale, effects, 0f);
+    }
+    
+    public static void Draw(Projectile projectile, AtlasTexture texture, ref Color lightColor)
+    {
+        var rect = texture.Frame;
+        var origin = texture.Frame.Size() / 2f;
+
+        var effects = SpriteEffects.None;
+        if (projectile.spriteDirection == -1) effects = SpriteEffects.FlipHorizontally;
+        
+        // All of this is heavily simplified from decompiled vanilla
+        
+        var pos = projectile.position + new Vector2(projectile.width, projectile.height) / 2f - Main.screenPosition;
+        Main.spriteBatch.Draw(texture, pos, rect, lightColor * projectile.Opacity, projectile.rotation, origin, Vector2.One * projectile.scale, effects);
     }
     
     public static Projectile FindProjectile(int identity) => Main.projectile.FirstOrDefault(p => p.identity == identity);

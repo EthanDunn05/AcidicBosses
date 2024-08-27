@@ -26,10 +26,10 @@ public abstract class BaseSweep : ModProjectile, IAnchoredProjectile
     public virtual bool RotateAroundCenter => false;
     public Vector2? StartOffset { get; set; }
 
-    protected abstract float Length { get; }
-    protected abstract float Width { get; }
-    protected abstract Color Color { get; }
-    protected abstract float Radius { get; }
+    protected abstract float Length { get; set; }
+    protected abstract float Width { get; set; }
+    protected abstract Color Color { get; set; }
+    protected abstract float Radius { get; set; }
     
     private bool doneFirstFrame = false;
     private bool readyToDraw = false;

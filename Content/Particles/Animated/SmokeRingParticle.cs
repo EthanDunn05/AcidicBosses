@@ -1,8 +1,6 @@
-﻿using AcidicBosses.Common.Textures;
-using Microsoft.Xna.Framework;
-using Terraria;
+﻿using Microsoft.Xna.Framework;
 
-namespace AcidicBosses.Content.Particles;
+namespace AcidicBosses.Content.Particles.Animated;
 
 public class SmokeRingParticle : AnimatedParticle
 {

@@ -1,6 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 
-namespace AcidicBosses.Content.Particles;
+namespace AcidicBosses.Content.Particles.Animated;
 
 public class BigSmokeDisperseParticle : AnimatedParticle
 {

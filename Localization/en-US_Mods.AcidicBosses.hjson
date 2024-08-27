@@ -28,6 +28,7 @@ Projectiles: {
 	TestProj.DisplayName: Test Proj
 	RetLaserIndicator.DisplayName: Ret Laser Indicator
 	RetSweepIndicator.DisplayName: Ret Sweep Indicator
+	SpazCircleVortex.DisplayName: Spaz Circle Vortex
 }
 
 Buffs: {
