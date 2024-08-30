@@ -1,4 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 
 namespace AcidicBosses.Content.Particles;
 
@@ -9,4 +10,6 @@ public class SharpTearParticle : BetterParticle
     }
 
     public override string AtlasTextureName => "AcidicBosses.SharpTear";
+    
+    public override BlendState BlendState => BlendState.Additive;
 }

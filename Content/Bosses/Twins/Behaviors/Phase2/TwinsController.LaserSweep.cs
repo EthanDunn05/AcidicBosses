@@ -1,6 +1,7 @@
 ﻿using AcidicBosses.Content.Particles;
 using AcidicBosses.Core.Animation;
 using AcidicBosses.Helpers;
+using AcidicBosses.Helpers.NpcHelpers;
 using Luminance.Common.Utilities;
 using Microsoft.Xna.Framework;
 using Terraria;
@@ -27,13 +28,7 @@ public partial class TwinsController
         // Come to a stop
         LaserSweepAnimation.AddConstantEvent((progress, frame) =>
         {
-            Hover(Spazmatism, 10f, 0.15f);
             npc.SimpleFlyMovement(Vector2.Zero, 0.5f);
-            
-            if (frame % 60 == 0 && Main.netMode != NetmodeID.MultiplayerClient)
-            {
-                NewSpazFireball(Spazmatism.Npc.Center, Spazmatism.Npc.Center.DirectionTo(Main.player[NPC.target].Center) * 10f);
-            }
         });
         
         // Start the sweep
@@ -57,12 +52,12 @@ public partial class TwinsController
             npc.rotation = startAngle + offset;
             
             // Collect energy particles
-            var pos  = npc.Center + (npc.rotation + MathHelper.PiOver2).ToRotationVector2() * npc.width;
+            var pos = Retinazer.Front;
             var spawnPos = Main.rand.NextVector2CircularEdge(20f, 20f) + pos;
             var angVel = Main.rand.NextFloat(-0.1f, 0.1f);
             var rot = Main.rand.NextFloatDirection();
             
-            var particle = new GlowStarParticle(spawnPos, Vector2.Zero, rot, Color.White, 30)
+            new GlowStarParticle(spawnPos, Vector2.Zero, rot, Color.White, 30)
             {
                 AngularVelocity = angVel,
                 IgnoreLighting = true,
@@ -74,9 +69,14 @@ public partial class TwinsController
                     p.Position = Vector2.Lerp(spawnPos, pos, suck);
                     p.Scale = Vector2.Lerp(Vector2.One, Vector2.Zero, shrink);
                 }
-            };
-
-            particle.Spawn();
+            }.Spawn();
+            
+            Hover(Spazmatism, 10f, 0.15f);
+            
+            if (frame % 60 == 0 && Main.netMode != NetmodeID.MultiplayerClient)
+            {
+                NewSpazFireball(Spazmatism.Npc.Center, Spazmatism.Npc.Center.DirectionTo(Main.player[NPC.target].Center) * 10f);
+            }
         });
         
         // Create Deathray
@@ -96,6 +96,50 @@ public partial class TwinsController
             
             var offset = spreadRadius * (ease - 0.5f) * 2f;
             npc.rotation = startAngle + offset;
+        });
+        
+        // First Spaz Dash
+        LaserSweepAnimation.AddTimedEvent(indicateTime, indicateTime + 60, (progress, frame) =>
+        {
+            var dashSettings = new DashOptions
+            {
+                DashLength = 30,
+                DashSpeed = 30,
+                LookOffset = MathHelper.PiOver2,
+                MinimumDistance = 250,
+                TrackTime = 15,
+                DashAtTime = 30,
+            };
+
+            Dash(Spazmatism, Spazmatism.AttackManager, Main.player[NPC.target].Center, dashSettings);
+        });
+        
+        // Reset for second dash
+        LaserSweepAnimation.AddInstantEvent(indicateTime + 60, () =>
+        {
+            Spazmatism.AttackManager.Reset();
+        });
+        
+        // Second Spaz dash
+        LaserSweepAnimation.AddTimedEvent(indicateTime + 60, rayTime, (progress, frame) =>
+        {
+            var dashSettings = new DashOptions
+            {
+                DashLength = 30,
+                DashSpeed = 30,
+                LookOffset = MathHelper.PiOver2,
+                MinimumDistance = 250,
+                TrackTime = 15,
+                DashAtTime = 30,
+            };
+
+            Dash(Spazmatism, Spazmatism.AttackManager, Main.player[NPC.target].Center, dashSettings);
+        });
+        
+        // Reset after second dash
+        LaserSweepAnimation.AddInstantEvent(rayTime, () =>
+        {
+            Spazmatism.AttackManager.Reset();
         });
     }
     

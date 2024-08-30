@@ -40,7 +40,7 @@ public partial class TwinsController
     {
         if (attackManager.InWindDown)
         {
-            if (AverageLifePercent <= 1f) // TODO Temp
+            if (AverageLifePercent <= 0.75f)
             {
                 phaseTracker.NextPhase();
                 attackManager.Reset();
@@ -72,11 +72,14 @@ public partial class TwinsController
         var sweep = new AttackState(Attack_SweepingLaser, 30);
         var circle = new AttackState(Attack_SpazCircle, 60);
         var flamethrower = new AttackState(Attack_FlamethrowerChase, 30);
+        var burst = new AttackState(Attack_RetLaserBurst, 60);
         
         attackManager.SetAttackPattern([
             hover,
-            sweep,
-            circle, flamethrower
+            burst,
+            doubleDash,
+            circle,
+            sweep, doubleDash
         ]);
     }
     

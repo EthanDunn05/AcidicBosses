@@ -14,7 +14,7 @@ public partial class TwinsController
 
         if (attackManager.AiTimer % 30 == 0)
         {
-            NewSpazFlamethrower(Spazmatism.Npc.Center, MathHelper.Pi);
+            NewSpazFlamethrower(Spazmatism.Front, MathHelper.Pi);
         }
 
         if (attackManager.AiTimer >= 60 * 5)

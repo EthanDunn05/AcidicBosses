@@ -31,11 +31,12 @@ public class RetSweepIndicator : BaseSweep
 
         ref var timeAlive = ref Projectile.localAI[0];
         
-        var inTime = 15;
+        var inTime = 30;
         if (timeAlive < inTime)
         {
             var ease = EasingHelper.BackOut((float) timeAlive / inTime);
             Width = MathHelper.Lerp(0, 25, ease);
+            Radius = MathHelper.Lerp(0f, MathHelper.PiOver4, ease);
         }
 
         timeAlive++;

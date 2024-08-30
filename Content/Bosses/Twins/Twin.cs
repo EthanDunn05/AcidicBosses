@@ -15,6 +15,8 @@ public abstract class Twin : AcidicNPCOverride
     public bool UseAfterimages = false;
     public bool MechForm = false;
     
+    public Vector2 Front => Npc.Center + (Npc.rotation + MathHelper.PiOver2).ToRotationVector2() * Npc.width;
+    
     protected override bool BossEnabled => BossToggleConfig.Get().EnableTwins;
     
     #region Drawing

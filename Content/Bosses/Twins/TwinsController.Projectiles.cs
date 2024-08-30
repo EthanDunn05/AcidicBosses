@@ -32,6 +32,11 @@ public partial class TwinsController
         return ProjHelper.NewUnscaledProjectile(NPC.GetSource_FromAI(), pos, vel, ProjectileID.CursedFlameHostile,
             Spazmatism.Npc.damage, 3);
     }
+    
+    private Projectile NewSpazCircleIndicator(Vector2 pos, int lifetime)
+    {
+        return BaseEffectProjectile.Create<SpazCircleIndicator>(NPC.GetSource_FromAI(), pos, 0f, lifetime);
+    }
 
     private Projectile NewRetDeathray(Vector2 position, float rotation, int lifetime)
     {

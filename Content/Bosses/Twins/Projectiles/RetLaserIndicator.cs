@@ -11,8 +11,8 @@ namespace AcidicBosses.Content.Bosses.Twins.Projectiles;
 
 public class RetLaserIndicator : BaseLineProjectile
 {
-    protected override float Length { get; set; } = 1200;
-    protected override float Width { get; set; } = 5;
+    protected override float Length { get; set; } = 12000;
+    protected override float Width { get; set; } = 15;
     protected override Color Color => GetColor();
     protected override Asset<Texture2D> LineTexture => TextureRegistry.GlowLine;
     public override bool RotateAroundCenter => true;
@@ -36,6 +36,17 @@ public class RetLaserIndicator : BaseLineProjectile
             laserVel = Projectile.velocity;
             Projectile.velocity = Vector2.Zero;
         }
+        
+        ref var timeAlive = ref Projectile.localAI[0];
+        
+        var inTime = 15;
+        if (timeAlive < inTime)
+        {
+            var ease = EasingHelper.BackOut((float) timeAlive / inTime);
+            Width = MathHelper.Lerp(0, 15, ease);
+        }
+
+        timeAlive++;
     }
 
     public override void OnKill(int timeLeft)
