@@ -18,25 +18,27 @@ public partial class TwinsController
     {
         SpazCircleAnimation = new AcidAnimation();
         var anim = SpazCircleAnimation;
-
-        const int indicateTime = 60;
-        const int circleTime = 60 + indicateTime;
         
         const float distance = 600;
         const float fireballSpeed = 10f;
         const int fireballs = 10;
+
+        const int indicationLength = 60;
+
+        const string targetPosKey = "targetPos";
+        const string fireballsSpawnedKey = "fireballsSpawned";
         
         // Teleport into position and start telegraph
         anim.AddInstantEvent(0, () =>
         {
             var target = Main.player[NPC.target].Center;
+            
+            anim.Data.Set(targetPosKey, target);
+            
             Spazmatism.Npc.rotation = MathHelper.Pi;
             Teleport(Spazmatism, target + new Vector2(distance, 0), 0f);
-            Teleport(Retinazer, target - new Vector2(0, distance + 200), 0f);
-
-            NPC.localAI[0] = target.X;
-            NPC.localAI[1] = target.Y;
-
+            Teleport(Retinazer, target - new Vector2(0, distance + 100), 0f);
+            
             Spazmatism.Npc.rotation = 0f;
             Retinazer.Npc.rotation = 0f;
 
@@ -56,7 +58,7 @@ public partial class TwinsController
                 var fireY = MathF.Sin(angle) * distance;
                 var pos = target + new Vector2(fireX, fireY);
 
-                new GlowStarParticle(pos, Vector2.Zero, angle, Color.White, 30)
+                new GlowStarParticle(pos, Vector2.Zero, angle, Color.White, 60)
                 {
                     IgnoreLighting = true,
                     OnUpdate = p =>
@@ -70,12 +72,12 @@ public partial class TwinsController
 
             if (Main.netMode != NetmodeID.MultiplayerClient)
             {
-                NewSpazCircleIndicator(target, indicateTime);
+                NewSpazCircleIndicator(target, indicationLength);
             }
         });
         
         // Do a spin for visual flair
-        anim.AddTimedEvent(0, indicateTime, (progress, frame) =>
+        var indicateTiming = anim.AddSequencedEvent(indicationLength, (progress, frame) =>
         {
             var spinCurve = new PiecewiseCurve()
                 .Add(MoreEasingCurves.Back, EasingType.Out, MathHelper.TwoPi, 1f);
@@ -83,20 +85,18 @@ public partial class TwinsController
             Spazmatism.Npc.rotation = spinCurve.Evaluate(progress);
         });
         
-        anim.AddInstantEvent(indicateTime, () =>
+        anim.AddInstantEvent(indicateTiming.EndTime, () =>
         {
+            anim.Data.Set(fireballsSpawnedKey, 0);
             Spazmatism.Npc.rotation = 0f;
             SoundEngine.PlaySound(SoundID.Item89, Spazmatism.Npc.Center);
         });
         
         // Circle around the player
-        anim.AddTimedEvent(indicateTime, circleTime, (progress, frame) =>
+        var circleTiming = anim.AddSequencedEvent(60, (progress, frame) =>
         {
-            ref var targetX = ref NPC.localAI[0];
-            ref var targetY = ref NPC.localAI[1];
-            var target = new Vector2(targetX, targetY);
-            
-            ref var fireballsSpawned = ref NPC.localAI[2];
+            var target = anim.Data.Get<Vector2>(targetPosKey);
+            var fireballsSpawned = anim.Data.Get<int>(fireballsSpawnedKey);
             
             var ease = EasingHelper.QuadOut(progress);
             var npc = Spazmatism.Npc;
@@ -108,7 +108,7 @@ public partial class TwinsController
             npc.Center = new Vector2(x, y) + target;
             npc.rotation = rot;
 
-            var fireballProgress = fireballsSpawned / fireballs;
+            var fireballProgress = (float) fireballsSpawned / fireballs;
             if (ease >= fireballProgress && Main.netMode != NetmodeID.MultiplayerClient)
             {
                 var angle = MathHelper.TwoPi * fireballProgress;
@@ -118,15 +118,8 @@ public partial class TwinsController
                 var vel = -angle.ToRotationVector2() * fireballSpeed;
                 
                 NewSpazFireball(pos, vel);
-                fireballsSpawned++;
+                anim.Data.Operate<int>(fireballsSpawnedKey, n => n + 1);
             }
-        });
-        
-        anim.AddInstantEvent(circleTime + 1, () =>
-        {
-            NPC.localAI[0] = 0;
-            NPC.localAI[1] = 0;
-            NPC.localAI[2] = 0;
         });
     }
     

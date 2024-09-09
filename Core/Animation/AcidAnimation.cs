@@ -1,11 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using AcidicBosses.Helpers;
+using Stubble.Core.Imported;
 
 namespace AcidicBosses.Core.Animation;
 
 /// <summary>
 /// A system to help manage an animation.
 /// An animation is divided into <see cref="TimedAnimationEvent"/> which are executed as the animation progresses.
+/// All measurements of time are in frames.
 /// </summary>
 public class AcidAnimation
 {
@@ -13,6 +17,8 @@ public class AcidAnimation
     public delegate void InstantAnimationEvent();
     
     public record TimingData(int StartTime, int EndTime);
+
+    public record SequencedEvent(int Length, TimedAnimationEvent Evt);
     
     private Dictionary<TimingData, TimedAnimationEvent> timedEvents = new();
     private Dictionary<int, InstantAnimationEvent> instantEvents = new();
@@ -20,8 +26,13 @@ public class AcidAnimation
     
     private int animationEndTime = -1;
     private int animationTime = 0;
-    
 
+    /// <summary>
+    /// A generic dictionary that can hold any data to be used throughout an animation.
+    /// This is very versatile and can be used to track any sort of data or changed before playing the animation.
+    /// </summary>
+    public GenericDictionary Data = new();
+    
     /// <summary>
     /// Adds a new event to the animation. The event takes place while <c>startTime &lt;= time &lt; endTime</c>.
     /// </summary>
@@ -33,6 +44,21 @@ public class AcidAnimation
         if (animationEndTime < endTime) animationEndTime = endTime;
         
         timedEvents.Add(new TimingData(startTime, endTime), eventAction);
+    }
+    
+    /// <summary>
+    /// Adds a new event that starts at the end of the last timed event and lasts a certain amount of time.
+    /// </summary>
+    /// <param name="length">The length of the new event</param>
+    /// <param name="eventAction">The action to take place each frame the event is active</param>
+    /// <returns>The timing data for the event</returns>
+    public TimingData AddSequencedEvent(int length, TimedAnimationEvent eventAction)
+    {
+        var timing = new TimingData(animationEndTime, animationEndTime + length);
+        timedEvents.Add(timing, eventAction);
+        animationEndTime += length;
+
+        return timing;
     }
 
     /// <summary>
@@ -103,5 +129,6 @@ public class AcidAnimation
     public void Reset()
     {
         animationTime = 0;
+        Data.Clear();
     }
 }

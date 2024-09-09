@@ -12,40 +12,42 @@ namespace AcidicBosses.Content.Bosses.Twins;
 public partial class TwinsController
 {
     // Using an animation for this attack for easier timing control
-    private AcidAnimation? LaserSweepAnimation;
+    private AcidAnimation? laserSweepAnimation;
 
     private void CreateLaserSweepAnimation()
     {
         var npc = Retinazer.Npc;
 
-        const int indicateTime = 90;
-        const int rayTime = indicateTime + 120;
+        const int indicateLength = 90;
+        const int rayLength =  120;
 
         const float spreadRadius = MathHelper.PiOver4;
+
+        const string startAngleKey = "startAngle";
         
-        LaserSweepAnimation = new AcidAnimation();
+        laserSweepAnimation = new AcidAnimation();
         
         // Come to a stop
-        LaserSweepAnimation.AddConstantEvent((progress, frame) =>
+        laserSweepAnimation.AddConstantEvent((progress, frame) =>
         {
             npc.SimpleFlyMovement(Vector2.Zero, 0.5f);
         });
         
         // Start the sweep
-        LaserSweepAnimation.AddInstantEvent(0, () =>
+        laserSweepAnimation.AddInstantEvent(0, () =>
         {
-            ref var startAngle = ref NPC.localAI[0];
-            startAngle = npc.rotation;
+            var startAngle = npc.rotation;
+            laserSweepAnimation.Data.Set(startAngleKey, npc.rotation);
 
             if (Main.netMode == NetmodeID.MultiplayerClient) return;
             
-            NewRetSweepIndicator(npc.Center, startAngle + MathHelper.PiOver2, indicateTime);
+            NewRetSweepIndicator(npc.Center, startAngle + MathHelper.PiOver2, indicateLength);
         });
         
         // Turn to the start of the sweep and play effects
-        LaserSweepAnimation.AddTimedEvent(0, indicateTime, (progress, frame) =>
+        var indicateTiming = laserSweepAnimation.AddSequencedEvent(indicateLength, (progress, frame) =>
         {
-            ref var startAngle = ref NPC.localAI[0];
+            var startAngle = laserSweepAnimation.Data.Get<float>(startAngleKey);
             var ease = EasingHelper.BackOut(progress);
             
             var offset = spreadRadius * ease;
@@ -80,18 +82,18 @@ public partial class TwinsController
         });
         
         // Create Deathray
-        LaserSweepAnimation.AddInstantEvent(indicateTime, () =>
+        laserSweepAnimation.AddInstantEvent(indicateTiming.EndTime, () =>
         {
             if (Main.netMode == NetmodeID.MultiplayerClient) return;
             
             var pos = npc.Center + npc.rotation.ToRotationVector2() * npc.width;
-            NewRetDeathray(pos, MathHelper.PiOver2, rayTime - indicateTime);
+            NewRetDeathray(pos, MathHelper.PiOver2, rayLength);
         });
         
         // Sweep deathray
-        LaserSweepAnimation.AddTimedEvent(indicateTime, rayTime, (progress, frame) =>
+        var rayTiming = laserSweepAnimation.AddSequencedEvent(rayLength, (progress, frame) =>
         {
-            ref var startAngle = ref NPC.localAI[0];
+            var startAngle = laserSweepAnimation.Data.Get<float>(startAngleKey);
             var ease = 1f - EasingHelper.QuadInOut(progress);
             
             var offset = spreadRadius * (ease - 0.5f) * 2f;
@@ -99,7 +101,7 @@ public partial class TwinsController
         });
         
         // First Spaz Dash
-        LaserSweepAnimation.AddTimedEvent(indicateTime, indicateTime + 60, (progress, frame) =>
+        laserSweepAnimation.AddTimedEvent(indicateTiming.EndTime, indicateTiming.EndTime + 60, (progress, frame) =>
         {
             var dashSettings = new DashOptions
             {
@@ -115,13 +117,13 @@ public partial class TwinsController
         });
         
         // Reset for second dash
-        LaserSweepAnimation.AddInstantEvent(indicateTime + 60, () =>
+        laserSweepAnimation.AddInstantEvent(indicateTiming.EndTime + 60, () =>
         {
             Spazmatism.AttackManager.Reset();
         });
         
         // Second Spaz dash
-        LaserSweepAnimation.AddTimedEvent(indicateTime + 60, rayTime, (progress, frame) =>
+        laserSweepAnimation.AddTimedEvent(indicateTiming.EndTime + 60, rayTiming.EndTime, (progress, frame) =>
         {
             var dashSettings = new DashOptions
             {
@@ -137,7 +139,7 @@ public partial class TwinsController
         });
         
         // Reset after second dash
-        LaserSweepAnimation.AddInstantEvent(rayTime, () =>
+        laserSweepAnimation.AddInstantEvent(rayTiming.EndTime, () =>
         {
             Spazmatism.AttackManager.Reset();
         });
@@ -145,9 +147,9 @@ public partial class TwinsController
     
     private bool Attack_SweepingLaser()
     {
-        if (LaserSweepAnimation is null) CreateLaserSweepAnimation();
-        if (!LaserSweepAnimation.RunAnimation()) return false;
-        LaserSweepAnimation.Reset();
+        if (laserSweepAnimation is null) CreateLaserSweepAnimation();
+        if (!laserSweepAnimation.RunAnimation()) return false;
+        laserSweepAnimation.Reset();
         return true;
     }
 }

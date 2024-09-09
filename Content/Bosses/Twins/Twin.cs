@@ -12,13 +12,21 @@ namespace AcidicBosses.Content.Bosses.Twins;
 // They have so much in common that having this be a parent class is useful.
 public abstract class Twin : AcidicNPCOverride
 {
-    public bool UseAfterimages = false;
     public bool MechForm = false;
+    public bool Hidden = false;
     
     public Vector2 Front => Npc.Center + (Npc.rotation + MathHelper.PiOver2).ToRotationVector2() * Npc.width;
     
     protected override bool BossEnabled => BossToggleConfig.Get().EnableTwins;
-    
+
+    public override void SetDefaults(NPC entity)
+    {
+        base.SetDefaults(entity);
+        // Reduce max Hp due to the faster paced fight
+        entity.lifeMax = (int) (entity.lifeMax * 0.75f);
+        entity.life = entity.lifeMax;
+    }
+
     #region Drawing
     
     public override bool AcidicDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
@@ -34,17 +42,17 @@ public abstract class Twin : AcidicNPCOverride
         
         // Afterimages
         // if (UseAfterimages)
-            for (var i = 1; i < npc.oldPos.Length; i++)
-            {
-                // All of this is heavily simplified from decompiled vanilla
-                var fade = 0.5f * (10 - i) / 20f;
-                var afterImageColor = Color.Multiply(drawColor, fade);
+        for (var i = 1; i < npc.oldPos.Length; i++)
+        {
+            // All of this is heavily simplified from decompiled vanilla
+            var fade = 0.5f * (10 - i) / 20f * Npc.Opacity;
+            var afterImageColor = Color.Multiply(drawColor, fade);
 
-                var pos = npc.oldPos[i] + new Vector2(npc.width, npc.height) / 2f - Main.screenPosition;
-                spriteBatch.Draw(eyeTexture, pos, npc.frame, afterImageColor, npc.rotation, eyeOrigin, npc.scale,
-                    effects,
-                    0f);
-            }
+            var pos = npc.oldPos[i] + new Vector2(npc.width, npc.height) / 2f - Main.screenPosition;
+            spriteBatch.Draw(eyeTexture, pos, npc.frame, afterImageColor, npc.rotation, eyeOrigin, npc.scale,
+                effects,
+                0f);
+        }
 
         spriteBatch.Draw(
             eyeTexture, drawPos,
@@ -87,6 +95,13 @@ public abstract class Twin : AcidicNPCOverride
     public override void BossHeadSlot(NPC npc, ref int index)
     {
         if (!ShouldOverride()) return;
+        
+        if (Hidden)
+        {
+            index = -1;
+            return;
+        }
+        
         index = MechForm ? 1 : 0;
     }
     
@@ -94,13 +109,11 @@ public abstract class Twin : AcidicNPCOverride
     
     public override void SendAcidAI(BitWriter bitWriter, BinaryWriter binaryWriter)
     {
-        bitWriter.WriteBit(UseAfterimages);
         bitWriter.WriteBit(MechForm);
     }
 
     public override void ReceiveAcidAI(BitReader bitReader, BinaryReader binaryReader)
     {
-        UseAfterimages = bitReader.ReadBit();
         MechForm = bitReader.ReadBit();
     }
     

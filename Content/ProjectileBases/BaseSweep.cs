@@ -55,12 +55,6 @@ public abstract class BaseSweep : ModProjectile, IAnchoredProjectile
             ModContent.ProjectileType<T>(), 0, 0, ai0: rotation, ai1: anchorTo + 1, ai2: lifetime);
     }
     
-    public static Projectile Create<T>(IEntitySource spawnSource, Vector2 position, Vector2 velocity, float rotation, int lifetime, int anchorTo = -1) where T : BaseSweep
-    {
-        return ProjHelper.NewUnscaledProjectile(spawnSource, position, velocity,
-            ModContent.ProjectileType<T>(), 0, 0, ai0: rotation, ai1: anchorTo + 1, ai2: lifetime);
-    }
-    
     public override void AI()
     {
         // Avoid flickering when spawning

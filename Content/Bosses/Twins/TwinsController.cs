@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using AcidicBosses.Common.Textures;
 using AcidicBosses.Core.StateManagement;
+using Luminance.Common.StateMachines;
 using Luminance.Common.VerletIntergration;
 using Luminance.Core.Graphics;
 using Microsoft.Xna.Framework;
@@ -73,11 +74,14 @@ public partial class TwinsController : AcidicNPC
         NPC.TargetClosest();
         NPC.position = Main.player[NPC.target].position;
 
+        // Only these three are in order. The rest are managed by the phase ai
         phaseTracker = new PhaseTracker([
             PhaseUntransformed,
             PhaseTransformation,
-            PhaseTransformed1
+            PhaseTransformed1,
+            PhaseTransformed2,
         ]);
+
 
         // Fill out the connector on the client
         if (Main.netMode != NetmodeID.Server) FillTether();

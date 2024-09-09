@@ -18,11 +18,20 @@ public class PhaseTracker
     private int currentStateIndex = 0;
 
     private bool toCallEnter = false;
-    
+    private PhaseState currentPhase;
+
     /// <summary>
     /// The current phase
     /// </summary>
-    public PhaseState CurrentPhase => phases[currentStateIndex];
+    public PhaseState CurrentPhase
+    {
+        get => currentPhase;
+        set
+        {
+            currentPhase = value;
+            toCallEnter = true;
+        }
+    }
 
     /// <summary>
     /// Creates the phase tracker with a list of phases. Phases are progressed
@@ -32,7 +41,7 @@ public class PhaseTracker
     public PhaseTracker(PhaseState[] phases)
     {
         this.phases = phases;
-        CurrentPhase.EnterTransition?.Invoke();
+        CurrentPhase = phases[currentStateIndex];
     }
 
     /// <summary>
@@ -63,7 +72,17 @@ public class PhaseTracker
         if (currentStateIndex >= phases.Length) 
             throw new IndexOutOfRangeException("Cannot move to the next phase as it is not defined.");
         
-        toCallEnter = true;
+        CurrentPhase = phases[currentStateIndex];
+    }
+
+    /// <summary>
+    /// Changes the current phase to the given phase. Does not affect the current position in the phase array.
+    /// </summary>
+    /// <param name="phase">The phase to use</param>
+    public void ChangeState(PhaseState phase)
+    {
+        CurrentPhase.ExitTransition?.Invoke();
+        CurrentPhase = phase;
     }
 
     /// <summary>

@@ -55,7 +55,7 @@ public class SpazCircleIndicator : BaseEffectProjectile
             Shader: ShaderManager.GetShader("AcidicBosses.Rope")
         );
         
-        circleSettings.Shader.SetTexture(TextureRegistry.InvertedGlowLine, 1, SamplerState.PointClamp);
+        circleSettings.Shader.SetTexture(TextureRegistry.SideGlowLine, 1, SamplerState.PointClamp);
         circleSettings.Shader.TrySetParameter("segments", 1);
         PrimitiveRenderer.RenderCircleEdge(Projectile.position, circleSettings);
 

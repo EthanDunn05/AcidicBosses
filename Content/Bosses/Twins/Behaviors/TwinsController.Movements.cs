@@ -104,12 +104,6 @@ public partial class TwinsController
         if (state == DashState.StartingDash)
         {
             DashFx(twin);
-            twin.UseAfterimages = true;
-        }
-        
-        if (state == DashState.Done)
-        {
-            twin.UseAfterimages = false;
         }
 
         return state;

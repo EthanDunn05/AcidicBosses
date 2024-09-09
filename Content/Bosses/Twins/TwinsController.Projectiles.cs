@@ -40,7 +40,7 @@ public partial class TwinsController
 
     private Projectile NewRetDeathray(Vector2 position, float rotation, int lifetime)
     {
-        return DeathrayBase.Create<RetDeathray>(NPC.GetSource_FromAI(), position, Retinazer.Npc.damage, 3, rotation,
+        return DeathrayBase.Create<RetDeathray>(NPC.GetSource_FromAI(), position, Retinazer.Npc.damage * 2, 3, rotation,
             lifetime, Retinazer.Npc.whoAmI);
     }
 

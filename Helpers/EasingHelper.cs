@@ -1,5 +1,6 @@
 ﻿using System;
 using Luminance.Common.Easings;
+using Microsoft.Xna.Framework;
 
 namespace AcidicBosses.Helpers;
 
