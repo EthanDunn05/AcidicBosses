@@ -28,8 +28,14 @@ public partial class TwinsController
                 Hover(Spazmatism, 10f, 0.15f);
             }
         });
+
+        var posTiming = anim.AddSequencedEvent(15, (progress, frame) =>
+        {
+            Retinazer.Npc.velocity = Vector2.Lerp(Retinazer.Npc.velocity, Vector2.Zero, progress);
+            Retinazer.LookTowards(Main.player[NPC.target].Center, 0.5f);
+        });
         
-        anim.AddInstantEvent(0, () =>
+        anim.AddInstantEvent(posTiming.EndTime, () =>
         {
             anim.Data.Set(startingAngleKey, Retinazer.Npc.rotation);
             anim.Data.Set(spawnedLasersKey, 0);
@@ -41,7 +47,6 @@ public partial class TwinsController
             
             var ease = EasingHelper.QuadIn(progress);
             Retinazer.Npc.rotation = MathHelper.Lerp(startingAngle, startingAngle - spread, ease);
-            Retinazer.Npc.velocity = Vector2.Lerp(Retinazer.Npc.velocity, Vector2.Zero, progress);
         });
 
         var indicateTiming = anim.AddSequencedEvent(spreadLength, (progress, frame) =>

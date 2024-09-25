@@ -83,4 +83,12 @@ public static class EffectsManager
         EffectsRegistry.Shield.TrySetParameter("texFrames", frames);
         EffectsRegistry.Shield.Apply();
     }
+
+    public static void IndicatorColorApply(Asset<Texture2D> texture, Color color)
+    {
+        EffectsRegistry.IndicatorColor.SetTexture(texture, 0);
+        EffectsRegistry.IndicatorColor.TrySetParameter("color", color);
+        
+        EffectsRegistry.IndicatorColor.Apply();
+    }
 }

@@ -73,11 +73,15 @@ public partial class TwinsController
                 }
             }.Spawn();
             
-            Hover(Spazmatism, 10f, 0.15f);
-            
-            if (frame % 60 == 0 && Main.netMode != NetmodeID.MultiplayerClient)
+            if (Spazmatism.Npc.active)
             {
-                NewSpazFireball(Spazmatism.Npc.Center, Spazmatism.Npc.Center.DirectionTo(Main.player[NPC.target].Center) * 10f);
+                Hover(Spazmatism, 10f, 0.15f);
+
+                if (frame % 60 == 0 && Main.netMode != NetmodeID.MultiplayerClient)
+                {
+                    NewSpazFireball(Spazmatism.Npc.Center,
+                        Spazmatism.Npc.Center.DirectionTo(Main.player[NPC.target].Center) * 10f);
+                }
             }
         });
         
@@ -103,6 +107,8 @@ public partial class TwinsController
         // First Spaz Dash
         laserSweepAnimation.AddTimedEvent(indicateTiming.EndTime, indicateTiming.EndTime + 60, (progress, frame) =>
         {
+            if (!Spazmatism.Npc.active) return;
+            
             var dashSettings = new DashOptions
             {
                 DashLength = 30,
@@ -119,12 +125,14 @@ public partial class TwinsController
         // Reset for second dash
         laserSweepAnimation.AddInstantEvent(indicateTiming.EndTime + 60, () =>
         {
+            if (!Spazmatism.Npc.active) return;
             Spazmatism.AttackManager.Reset();
         });
         
         // Second Spaz dash
         laserSweepAnimation.AddTimedEvent(indicateTiming.EndTime + 60, rayTiming.EndTime, (progress, frame) =>
         {
+            if (!Spazmatism.Npc.active) return;
             var dashSettings = new DashOptions
             {
                 DashLength = 30,
@@ -141,6 +149,7 @@ public partial class TwinsController
         // Reset after second dash
         laserSweepAnimation.AddInstantEvent(rayTiming.EndTime, () =>
         {
+            if (!Spazmatism.Npc.active) return;
             Spazmatism.AttackManager.Reset();
         });
     }

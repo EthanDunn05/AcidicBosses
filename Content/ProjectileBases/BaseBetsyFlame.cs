@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using AcidicBosses.Common.Effects;
 using AcidicBosses.Common.RenderManagers;
 using AcidicBosses.Common.Textures;
@@ -54,6 +55,7 @@ public abstract class BaseBetsyFlame : ModProjectile, IAnchoredProjectile
         Projectile.tileCollide = false;
         Projectile.friendly = false;
         Projectile.hostile = true;
+        Projectile.hide = true;
     }
     
     public static Projectile Create<T>(IEntitySource spawnSource, Vector2 position, float rotation, int damage, int knockback, int anchorTo) where T : BaseBetsyFlame
@@ -149,9 +151,15 @@ public abstract class BaseBetsyFlame : ModProjectile, IAnchoredProjectile
 		}
     }
 
+    public override void DrawBehind(int index, List<int> behindNPCsAndTiles, List<int> behindNPCs, List<int> behindProjectiles, List<int> overPlayers,
+	    List<int> overWiresUI)
+    {
+	    behindNPCs.Add(index);
+    }
+
     public override bool PreDraw(ref Color lightColor)
     {
-	    DrawRenderTargetSystem.DrawToTarget(ModRenderTargets.ProjectileBloom, DrawFlame);
+	    DrawFlame(Main.spriteBatch);
 		
 		return false;
     }

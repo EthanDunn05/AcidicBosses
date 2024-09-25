@@ -37,10 +37,10 @@ public partial class TwinsController
             
             Spazmatism.Npc.rotation = MathHelper.Pi;
             Teleport(Spazmatism, target + new Vector2(distance, 0), 0f);
-            Teleport(Retinazer, target - new Vector2(0, distance + 100), 0f);
+            if (Retinazer.Npc.active) Teleport(Retinazer, target - new Vector2(0, distance + 100), 0f);
             
             Spazmatism.Npc.rotation = 0f;
-            Retinazer.Npc.rotation = 0f;
+            if (Retinazer.Npc.active) Retinazer.Npc.rotation = 0f;
 
             SoundEngine.PlaySound(SoundID.ForceRoarPitched, Spazmatism.Npc.Center);
             

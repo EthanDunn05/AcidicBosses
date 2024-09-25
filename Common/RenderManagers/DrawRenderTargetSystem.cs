@@ -53,7 +53,7 @@ public class DrawRenderTargetSystem : ModSystem
         {
             if (renderTarget.Layer != RenderLayer.Projectile) continue;
             
-            Main.spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, Main.DefaultSamplerState, DepthStencilState.None, Main.Rasterizer, null, Main.GameViewMatrix.TransformationMatrix);
+            Main.spriteBatch.EnterShader();
             renderTarget.ApplyShader();
             Main.spriteBatch.Draw(renderTarget, Main.screenLastPosition - Main.screenPosition, Color.White);
             Main.spriteBatch.End();
@@ -66,6 +66,7 @@ public class DrawRenderTargetSystem : ModSystem
 
     private void DrawNpcLayer(On_Main.orig_DrawNPCs orig, Main self, bool behindtiles)
     {
+        
         foreach (var renderTarget in DrawActions.Keys)
         {
             if (renderTarget.Layer != RenderLayer.Npc) continue;
@@ -73,7 +74,7 @@ public class DrawRenderTargetSystem : ModSystem
             Main.spriteBatch.EnterShader();
             renderTarget.ApplyShader();
             Main.spriteBatch.Draw(renderTarget, Main.screenLastPosition - Main.screenPosition, Color.White);
-            Main.spriteBatch.ExitShader();
+            Main.spriteBatch.End();
             
             DrawActions.Remove(renderTarget);
         }
@@ -83,6 +84,15 @@ public class DrawRenderTargetSystem : ModSystem
     
     private void DrawToRenderTargets()
     {
+        try
+        {
+            Main.spriteBatch.End();
+        }
+        catch (Exception _)
+        {
+            // ignored
+        }
+
         foreach (var batch in DrawActions)
         {
             batch.Key.SwapToRenderTarget();

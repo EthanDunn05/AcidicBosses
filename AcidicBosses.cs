@@ -19,6 +19,8 @@ namespace AcidicBosses;
  */
 partial class AcidicBosses : Mod
 {
+    public static Mod Instance => ModContent.GetInstance<AcidicBosses>();
+    
     public override void Load()
     {
     }

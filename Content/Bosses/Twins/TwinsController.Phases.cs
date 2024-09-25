@@ -1,7 +1,11 @@
 ﻿using System;
 using AcidicBosses.Core.StateManagement;
 using Luminance.Common.StateMachines;
+using Luminance.Common.Utilities;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Media;
 using Terraria;
+using Terraria.ID;
 
 namespace AcidicBosses.Content.Bosses.Twins;
 
@@ -11,6 +15,8 @@ public partial class TwinsController
     private PhaseState PhaseTransformation => new(Phase_Transformation, CreateTransformationAnimation);
     private PhaseState PhaseTransformed1 => new PhaseState(Phase_Transformed1, EnterPhaseTransformed1);
     private PhaseState PhaseTransformed2 => new PhaseState(Phase_Transformed2, EnterPhaseTransformed2);
+    private PhaseState PhaseSoloSpaz => new PhaseState(Phase_SoloSpaz, EnterSoloSpaz);
+    private PhaseState PhaseSoloRet => new PhaseState(Phase_SoloRet, EnterSoloRet);
     
     
     private void EnterPhaseUntransformed()
@@ -44,10 +50,6 @@ public partial class TwinsController
     
     private void Phase_Untransformed()
     {
-        // phaseTracker.NextPhase();
-        // attackManager.Reset();
-        // return;
-        
         if (attackManager.InWindDown)
         {
             if (AverageLifePercent <= 0.75f)
@@ -151,6 +153,67 @@ public partial class TwinsController
         {
             var target = Main.player[NPC.target];
             Hover(30f, 0.3f);
+            return;
+        }
+        
+        attackManager.RunAttackPattern();
+    }
+
+    private void EnterSoloSpaz()
+    {
+        attackManager.Reset();
+        Utilities.BroadcastLocalizedText("Broadcasts.SoloSpaz");
+
+        var spit = new AttackState(Attack_TripleFireball, 20);
+        var circle = new AttackState(Attack_SpazCircle, 60);
+        var dash = new AttackState(Attack_EnragedDash, 30);
+        var flemthrower = new AttackState(Attack_FlamethrowerChase, 30);
+        
+        attackManager.SetAttackPattern([
+            flemthrower,
+            spit, spit, dash,
+            circle,
+            dash, dash, dash, spit
+        ]);
+    }
+
+    private void Phase_SoloSpaz()
+    {
+        if (attackManager.InWindDown)
+        {
+            var target = Main.player[NPC.target];
+            Hover(Spazmatism, 50f, 0.4f);
+            return;
+        }
+        
+        attackManager.RunAttackPattern();
+    }
+
+    private void EnterSoloRet()
+    {
+        attackManager.Reset();
+        Utilities.BroadcastLocalizedText("Broadcasts.SoloRet");
+
+        var hover = new AttackState(() => Attack_Hover(30, 50, 0.5f), 0);
+        var lasers = new AttackState(Attack_LaserSpread, 20);
+        var dash = new AttackState(Attack_EnragedDash, 30);
+        var burst = new AttackState(Attack_RetLaserBurst, 60);
+        var sweep = new AttackState(Attack_SweepingLaser, 60);
+        
+        attackManager.SetAttackPattern([
+            hover,
+            burst, dash, hover,
+            lasers, dash, dash, hover,
+            sweep, dash, lasers, lasers
+        ]);
+    }
+
+    private void Phase_SoloRet()
+    {
+        if (attackManager.InWindDown)
+        {
+            var target = Main.player[NPC.target];
+            Hover(Retinazer, 50f, 0.4f);
             return;
         }
         

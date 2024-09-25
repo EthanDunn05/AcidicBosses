@@ -69,6 +69,8 @@ public partial class TwinsController : AcidicNPC
 
     private PhaseTracker phaseTracker;
 
+    private bool changedState = false;
+
     public override void OnFirstFrame()
     {
         NPC.TargetClosest();
@@ -103,6 +105,17 @@ public partial class TwinsController : AcidicNPC
         NPC.TargetClosest();
         var target = Main.player[NPC.target];
         NPC.Center = target.Center;
+
+        if (!Spazmatism.Npc.active && !changedState)
+        {
+            phaseTracker.ChangeState(PhaseSoloRet);
+            changedState = true;
+        }
+        if (!Retinazer.Npc.active && !changedState)
+        {
+            phaseTracker.ChangeState(PhaseSoloSpaz);
+            changedState = true;
+        }
         
         phaseTracker.RunPhaseAI();
         
@@ -197,6 +210,14 @@ public partial class TwinsController : AcidicNPC
         if (!Retinazer.Npc.active || !Spazmatism.Npc.active) return false;
 
         return true;
+    }
+
+    // Returns null when both are alive
+    private Twin? AliveTwin()
+    {
+        if (Spazmatism.Npc.active && Retinazer.Npc.active) return null;
+        if (Spazmatism.Npc.active) return Spazmatism;
+        return Retinazer;
     }
 
     private void DoBothTwins(Action<Twin> action)

@@ -123,7 +123,12 @@ Configs: {
 
 		EnableTwins: {
 			Label: Enable Twins
-			Tooltip: ""
+			Tooltip: Enable Twins AI Changes
 		}
 	}
+}
+
+Broadcasts: {
+	SoloSpaz: "[c/FF00FF:Spazmatism is enraged at the loss of their sibling!]"
+	SoloRet: "[c/FF0000:Retinazer is enraged at the loss of their sibling!]"
 }

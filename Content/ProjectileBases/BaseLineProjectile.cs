@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using AcidicBosses.Common;
+using AcidicBosses.Common.Effects;
+using AcidicBosses.Common.RenderManagers;
 using AcidicBosses.Common.Textures;
 using AcidicBosses.Helpers;
 using AcidicBosses.Helpers.ProjectileHelpers;
@@ -107,17 +109,27 @@ public abstract class BaseLineProjectile : ModProjectile, IAnchoredProjectile
     {
         if (!readyToDraw) return false;
         
+        // BatchShadingManager.DrawProjectile(Projectile, EffectsRegistry.IndicatorColor, sb =>
+        // {
+        
+        Main.spriteBatch.EnterShader();
         var pos = Projectile.position - Main.screenPosition;
         var rect = LineTexture.Frame(horizontalFrames: Frames,  frameX: Projectile.frame);
         var origin = new Vector2(rect.Width / 2f, 0);
         var scale = new Vector2(Width * 2, Length) / rect.Size();
         
-        Main.EntitySpriteDraw(
+        EffectsManager.IndicatorColorApply(LineTexture, Color);
+    
+        Main.spriteBatch.Draw(
             LineTexture.Value, pos, rect, Color, 
             Projectile.rotation - MathHelper.PiOver2, origin, scale,
-            SpriteEffects.None
+            SpriteEffects.None, 0f
         );
-
+        Main.spriteBatch.ExitShader();
+        
+        // });
+        
+        
         return false;
     }
 

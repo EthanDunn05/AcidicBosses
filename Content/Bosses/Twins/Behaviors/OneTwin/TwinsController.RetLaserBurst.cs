@@ -24,7 +24,11 @@ public partial class TwinsController
         const string startingAngleKey = "startAngle";
         const string spawnedLasersKey = "spawnedLasers";
 
-        anim.AddConstantEvent((progress, frame) => { Hover(Spazmatism, 10f, 0.15f); });
+        anim.AddConstantEvent((progress, frame) =>
+        {
+            if (!Spazmatism.Npc.active) return;
+            Hover(Spazmatism, 10f, 0.15f);
+        });
 
         anim.AddInstantEvent(0, () =>
         {
@@ -54,6 +58,7 @@ public partial class TwinsController
                 anim.Data.Set(spawnedLasersKey, spawnedLasers + 1);
             }
 
+            if (!Spazmatism.Npc.active) return;
             if (frame % 15 == 0 && Main.netMode != NetmodeID.MultiplayerClient)
             {
                 NewSpazFireball(Spazmatism.Npc.Center, Spazmatism.Npc.Center.DirectionTo(Main.player[NPC.target].Center).RotatedBy(Main.rand.NextFloat(-0.5f, 0.5f)) * 10f);
