@@ -30,6 +30,7 @@ Projectiles: {
 	RetSweepIndicator.DisplayName: Ret Sweep Indicator
 	SpazCircleVortex.DisplayName: Spaz Circle Vortex
 	SpazCircleIndicator.DisplayName: Spaz Circle Indicator
+	BlackHole.DisplayName: Black Hole
 }
 
 Buffs: {
@@ -126,9 +127,4 @@ Configs: {
 			Tooltip: Enable Twins AI Changes
 		}
 	}
-}
-
-Broadcasts: {
-	SoloSpaz: "[c/FF00FF:Spazmatism is enraged at the loss of their sibling!]"
-	SoloRet: "[c/FF0000:Retinazer is enraged at the loss of their sibling!]"
 }

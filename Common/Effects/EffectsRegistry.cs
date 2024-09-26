@@ -23,6 +23,7 @@ public static class EffectsRegistry
     public static ManagedScreenFilter Shockwave => ScreenShader("Shockwave");
     public static ManagedScreenFilter BossRage => ScreenShader("BossRage");
     public static ManagedScreenFilter ChromaticAberration => ScreenShader("ChromaticAbberation");
+    public static ManagedScreenFilter BlackHole => ScreenShader("BlackHole");
     public static ManagedShader UndergroundOutline => Shader("UndergroundOutline");
     public static ManagedShader SlimeRage => Shader("SlimeRage");
     public static ManagedShader Shield => Shader("Shield");

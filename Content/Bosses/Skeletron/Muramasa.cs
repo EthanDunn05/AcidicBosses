@@ -20,6 +20,7 @@ public class Muramasa : ModProjectile
 
     private Vector2 oldVel = Vector2.Zero;
     private bool setOldVel = false;
+    private int startingDamage;
 
     public override void SetStaticDefaults()
     {
@@ -49,6 +50,7 @@ public class Muramasa : ModProjectile
             oldVel = Projectile.velocity;
             Projectile.velocity = Vector2.Zero;
             setOldVel = true;
+            startingDamage = Projectile.damage;
             Projectile.damage = 0;
         }
 
@@ -73,10 +75,10 @@ public class Muramasa : ModProjectile
         {
             Projectile.velocity = oldVel;
             Projectile.rotation = Projectile.velocity.ToRotation() + MathHelper.PiOver4;
-            Projectile.damage = Projectile.originalDamage;
+            Projectile.damage = startingDamage;
         }
 
-        Lighting.AddLight(Projectile.Center, Color.Blue.ToVector3());
+        Lighting.AddLight(Projectile.Center, Color.Cyan.ToVector3());
 
         aiTime++;
     }

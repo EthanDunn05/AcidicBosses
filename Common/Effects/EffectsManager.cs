@@ -45,6 +45,16 @@ public static class EffectsManager
         EffectsRegistry.ChromaticAberration.Activate();
         return true;
     }
+    
+    public static bool BlackHoleActivate(float eventHorizonRadius, Vector2 position)
+    {
+        if (Main.netMode == NetmodeID.Server || EffectsRegistry.BlackHole.IsActive) return false;
+        
+        EffectsRegistry.BlackHole.TrySetParameter("eventHorizonRadius", eventHorizonRadius);
+        EffectsRegistry.BlackHole.TrySetParameter("targetPos", position);
+        EffectsRegistry.BlackHole.Activate();
+        return true;
+    }
 
     public static void BloomActivate(RenderTarget2D texture)
     {

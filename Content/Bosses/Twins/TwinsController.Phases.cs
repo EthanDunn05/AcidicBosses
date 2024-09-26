@@ -162,7 +162,7 @@ public partial class TwinsController
     private void EnterSoloSpaz()
     {
         attackManager.Reset();
-        Utilities.BroadcastLocalizedText("Broadcasts.SoloSpaz");
+        if (Main.netMode != NetmodeID.MultiplayerClient) Utilities.BroadcastText("Spazmatism is enraged at the loss of their sibling!", Color.Lime);
 
         var spit = new AttackState(Attack_TripleFireball, 20);
         var circle = new AttackState(Attack_SpazCircle, 60);
@@ -192,7 +192,7 @@ public partial class TwinsController
     private void EnterSoloRet()
     {
         attackManager.Reset();
-        Utilities.BroadcastLocalizedText("Broadcasts.SoloRet");
+        if (Main.netMode != NetmodeID.MultiplayerClient) Utilities.BroadcastText("Retinazer is enraged at the loss of their sibling!", Color.Red);
 
         var hover = new AttackState(() => Attack_Hover(30, 50, 0.5f), 0);
         var lasers = new AttackState(Attack_LaserSpread, 20);

@@ -194,7 +194,10 @@ public class KingSlime : AcidicNPCOverride
             }
 
             ScreenShakeSystem.StartShakeAtPoint(npc.Bottom, npc.scale * 1.5f);
-            SoundEngine.PlaySound(SoundID.Item89, npc.Bottom);
+            SoundEngine.PlaySound(Npc.HitSound.Value with
+            {
+                Pitch = -1
+            }, npc.Bottom);
 
             isGrounded = true;
             npc.velocity.X = 0;
