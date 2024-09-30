@@ -19,6 +19,18 @@ Projectiles: {
 	KingSlimeLaserIndicator.DisplayName: King Slime Laser Indicator
 	ShadowflameLine.DisplayName: Shadowflame Line
 	EvilWaterbolt.DisplayName: Waterbolt
+	TwinsDashLine.DisplayName: Twins Dash Line
+	SpazFlamethrower.DisplayName: Spaz Flamethrower
+	NpcAfterimageProjectile.DisplayName: Npc Afterimage Projectile
+	NpcAfterimageTrail.DisplayName: Npc Afterimage Trail
+	RetDeathray.DisplayName: Ret Deathray
+	RetDeathrayIndicator.DisplayName: Ret Deathray Indicator
+	TestProj.DisplayName: Test Proj
+	RetLaserIndicator.DisplayName: Ret Laser Indicator
+	RetSweepIndicator.DisplayName: Ret Sweep Indicator
+	SpazCircleVortex.DisplayName: Spaz Circle Vortex
+	SpazCircleIndicator.DisplayName: Spaz Circle Indicator
+	BlackHole.DisplayName: Black Hole
 }
 
 Buffs: {
@@ -32,6 +44,7 @@ NPCs: {
 	WoFMouth.DisplayName: Wall of Flesh
 	EasyPixieNPC.DisplayName: Pixie
 	EoWServant.DisplayName: Servant of the Eater
+	TwinsController.DisplayName: Twins Controller
 }
 
 Items: {
@@ -107,6 +120,11 @@ Configs: {
 		EnableWallOfFlesh: {
 			Label: Enable Wall of Flesh
 			Tooltip: Enable Wall of Flesh AI changes
+		}
+
+		EnableTwins: {
+			Label: Enable Twins
+			Tooltip: Enable Twins AI Changes
 		}
 	}
 }

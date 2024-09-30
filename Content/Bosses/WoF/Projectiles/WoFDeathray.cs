@@ -17,7 +17,7 @@ public class WoFDeathray : DeathrayBase
     protected override Color Color => Color.White;
     protected override Asset<Texture2D> DrTexture => ModContent.Request<Texture2D>(Texture);
 
-    protected override bool AnchorRotation => false;
+    public override bool AnchorRotation => false;
 
     private const float AberrationStrength = 0.003f;
 

@@ -1,6 +1,7 @@
 using System.IO;
 using AcidicBosses.Common.Effects;
 using AcidicBosses.Content.Bosses;
+using Luminance.Core.Graphics;
 using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
 using Terraria;
@@ -18,13 +19,10 @@ namespace AcidicBosses;
  */
 partial class AcidicBosses : Mod
 {
+    public static Mod Instance => ModContent.GetInstance<AcidicBosses>();
+    
     public override void Load()
     {
-        if (Main.netMode != NetmodeID.Server)
-        {
-            
-        }
     }
-
     
 }

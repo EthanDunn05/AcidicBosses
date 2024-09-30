@@ -27,6 +27,11 @@ public class AttackManager
     public AttackState CurrentAttackState => attackPattern[currentStateIndex];
 
     /// <summary>
+    /// If the attack manager is winding down from an attack
+    /// </summary>
+    public bool InWindDown => AiTimer > 0 && !CountUp;
+
+    /// <summary>
     /// Does logic that takes place before most NPC logic.
     /// This is called in AcidicNpcOverride, so don't call this manually
     /// </summary>

@@ -2,8 +2,12 @@
 using System.Collections.Generic;
 using System.IO;
 using AcidicBosses.Common;
+using AcidicBosses.Common.Effects;
+using AcidicBosses.Common.RenderManagers;
 using AcidicBosses.Common.Textures;
 using AcidicBosses.Helpers;
+using AcidicBosses.Helpers.ProjectileHelpers;
+using Luminance.Common.Utilities;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
@@ -15,19 +19,18 @@ using Terraria.ModLoader;
 
 namespace AcidicBosses.Content.ProjectileBases;
 
-public abstract class BaseLineProjectile : ModProjectile
+public abstract class BaseLineProjectile : ModProjectile, IAnchoredProjectile
 {
     public virtual bool DrawBehindNpcs => true;
 
     public override string Texture => TextureRegistry.InvisPath;
 
     public float Offset => Projectile.ai[0];
-
-    private Vector2? startoffset;
-
     public int AnchorTo => (int) Projectile.ai[1] - 1;
-
-    protected virtual MiscShaderData? Shader { get; }
+    public virtual bool AnchorPosition => true;
+    public virtual bool AnchorRotation => true;
+    public virtual bool RotateAroundCenter => false;
+    public Vector2? StartOffset { get; set; }
 
     protected abstract float Length { get; set; }
 
@@ -38,14 +41,10 @@ public abstract class BaseLineProjectile : ModProjectile
     protected abstract Asset<Texture2D> LineTexture { get; }
     
     public virtual int Frames => 1;
-
-    protected virtual bool AnchorPosition => true;
-    protected virtual bool AnchorRotation => true;
-
+    
     private bool doneFirstFrame = false;
     private bool readyToDraw = false;
-
-    protected int maxTimeLeft = 0;
+    protected int MaxTimeLeft = 0;
     
     public override void SetStaticDefaults()
     {
@@ -78,8 +77,7 @@ public abstract class BaseLineProjectile : ModProjectile
         return ProjHelper.NewUnscaledProjectile(spawnSource, position, velocity,
             ModContent.ProjectileType<T>(), damage, knockback, ai0: rotation, ai1: anchorTo + 1, ai2: lifetime);
     }
-
-
+    
     public override void AI()
     {
         // Avoid flickering when spawning
@@ -91,38 +89,13 @@ public abstract class BaseLineProjectile : ModProjectile
             doneFirstFrame = true;
         }
         
-        if (AnchorTo >= 0)
-        {
-            var owner = Main.npc[AnchorTo];
-            if (owner != null)
-            {
-                startoffset ??= owner.Center - Projectile.position;
-
-                if (AnchorRotation) Projectile.rotation = owner.rotation + Offset;
-                else Projectile.rotation = Offset;
-
-                if (AnchorPosition && AnchorRotation)
-                {
-                    var rotatedOffset = startoffset * Offset.ToRotationVector2();
-                    Projectile.position = (Vector2) (owner.Center + rotatedOffset)!;
-                }
-                else if (AnchorPosition)
-                {
-                    Projectile.position = (Vector2) (owner.Center + startoffset)!;
-                }
-
-            }
-        }
-        else
-        {
-            Projectile.rotation = Offset;
-        }
+        this.Anchor(Projectile);
     }
 
     public virtual void FirstFrame()
     {
         Projectile.timeLeft = (int) Projectile.ai[2];
-        maxTimeLeft = (int) Projectile.ai[2];
+        MaxTimeLeft = (int) Projectile.ai[2];
     }
 
     public override void DrawBehind(int index, List<int> behindNPCsAndTiles, List<int> behindNPCs,
@@ -136,21 +109,27 @@ public abstract class BaseLineProjectile : ModProjectile
     {
         if (!readyToDraw) return false;
         
+        // BatchShadingManager.DrawProjectile(Projectile, EffectsRegistry.IndicatorColor, sb =>
+        // {
+        
+        Main.spriteBatch.EnterShader();
         var pos = Projectile.position - Main.screenPosition;
         var rect = LineTexture.Frame(horizontalFrames: Frames,  frameX: Projectile.frame);
         var origin = new Vector2(rect.Width / 2f, 0);
         var scale = new Vector2(Width * 2, Length) / rect.Size();
         
-        if (Shader != null) Main.spriteBatch.EnterShader(effect: Shader.Shader);
-
-        Main.EntitySpriteDraw(
+        EffectsManager.IndicatorColorApply(LineTexture, Color);
+    
+        Main.spriteBatch.Draw(
             LineTexture.Value, pos, rect, Color, 
             Projectile.rotation - MathHelper.PiOver2, origin, scale,
-            SpriteEffects.None
+            SpriteEffects.None, 0f
         );
+        Main.spriteBatch.ExitShader();
         
-        if (Shader != null) Main.spriteBatch.ExitShader();
-
+        // });
+        
+        
         return false;
     }
 

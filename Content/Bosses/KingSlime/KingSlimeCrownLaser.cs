@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using AcidicBosses.Common.Effects;
+using AcidicBosses.Common.RenderManagers;
 using AcidicBosses.Content.ProjectileBases;
 using AcidicBosses.Helpers;
 using Luminance.Common.Easings;
@@ -57,5 +58,16 @@ public class KingSlimeCrownLaser : DeathrayBase
         {
             Dust.NewDust(position, 0, 0, DustID.GemRuby, Scale: 0.5f);
         }
+    }
+
+    public override bool PreDraw(ref Color lightColor)
+    {
+        var lc = lightColor;
+        DrawRenderTargetSystem.DrawToTarget(ModRenderTargets.ProjectileBloom, sb =>
+        {
+            base.PreDraw(ref lc);
+        });
+        
+        return false;
     }
 }

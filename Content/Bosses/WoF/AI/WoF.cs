@@ -2,10 +2,14 @@
 using System.IO;
 using System.Linq;
 using AcidicBosses.Common.Configs;
+using AcidicBosses.Content.Bosses.BoC;
 using AcidicBosses.Content.Bosses.WoF.Projectiles;
+using AcidicBosses.Content.Particles;
+using AcidicBosses.Content.Particles.Animated;
 using AcidicBosses.Content.ProjectileBases;
 using AcidicBosses.Core.StateManagement;
 using AcidicBosses.Helpers;
+using Luminance.Common.Easings;
 using Luminance.Core.Graphics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -168,12 +172,12 @@ public class WoF : AcidicNPCOverride
         var laserShotgun = new AttackState(() => Attack_LaserShotgun(10, MathHelper.Pi / 2f), 10);
         var laserSpam = new AttackState(() => Attack_LaserSpam(5, 15), 30);
         var laserWall = new AttackState(() => Attack_LaserWall(), 30);
-        var staggeredBursts = new AttackState(() => Attack_FireballStaggeredBursts(2, 6, 5f, 30), 15);
+        var fireStaggeredBursts = new AttackState(() => Attack_FireballStaggeredBursts(2, 6, 5f, 30), 15);
         var deathray = new AttackState(() => Attack_Deathray(60), 15);
         
         AttackManager.SetAttackPattern([
             laserShotgun,
-            staggeredBursts,
+            fireStaggeredBursts,
             deathray,
             laserShotgun,
             laserWall,
@@ -272,7 +276,7 @@ public class WoF : AcidicNPCOverride
     {
         var deathray = new AttackState(() => Attack_Deathray(60), 15);
         var doubleFireball = new AttackState(() => Attack_DoubleFireballBurst(10, 5f), 30);
-        var staggeredBursts = new AttackState(() => Attack_FireballStaggeredBursts(4, 8, 5f, 60), 45);
+        var staggeredBursts = new AttackState(() => Attack_IchorStaggeredBursts(4, 8, 5f, 60), 45);
         var summon = new AttackState(() => Attack_SpawnBiomeMobs(3, 7), 45);
         var laserSpam =  new AttackState(() => Attack_LaserSpam(15, 10), 30);
         var laserShotgun = new AttackState(() => Attack_LaserShotgun(16, MathHelper.Pi / 2f), 30);
@@ -334,6 +338,17 @@ public class WoF : AcidicNPCOverride
 
         var partPos = deathrayOrder.Get();
         var raySpawnPos = PartPosToWorldPos(partPos);
+
+        if (AttackManager.AiTimer == 0 && TryFindPartAtPos(out var part2, partPos))
+        {
+            var pos = raySpawnPos;
+            if ((partPos & WoFPartPosition.Left) != 0) pos.X += part2.width;
+                    
+            var energy = new GatherEnergyParticle(pos, Npc.velocity, 0f, Color.White, telegraphTime);
+            energy.Scale *= 2f;
+            energy.IgnoreLighting = true;
+            energy.Spawn();
+        }
 
         if (Main.netMode != NetmodeID.MultiplayerClient)
         {
@@ -407,8 +422,11 @@ public class WoF : AcidicNPCOverride
             }
             case < 30 + 120 + 60:
             {
+                var curve = new PiecewiseCurve()
+                    .Add(EasingCurves.Quadratic, EasingType.In, 0.5f, 0.5f)
+                    .Add(MoreEasingCurves.Back, EasingType.Out, 1f, 1f);
                 var t = (AttackManager.AiTimer - 30 - 120) / 60f;
-                t = EasingHelper.QuadInOut(t);
+                t = curve.Evaluate(t);
                 WallDistance = MathHelper.Lerp(distance, initialDist, t);
                 break;
             }
@@ -429,10 +447,45 @@ public class WoF : AcidicNPCOverride
 
     private bool Attack_FireballBurst(int projectiles, float spread, float angle, float speed, WoFPartPosition pos)
     {
-        if (Main.netMode == NetmodeID.MultiplayerClient) return true;
-
         var position = PartPosToWorldPos(pos);
-        var targetPos = Main.player[Npc.target].Center;
+        if ((pos & WoFPartPosition.Left) != 0) position.X += 100;
+        var rot = (pos & WoFPartPosition.Left) != 0 ? MathHelper.PiOver2 : -MathHelper.PiOver2;
+        
+        if (TryFindPartAtPos(out var part, pos))
+        {
+            var smoke = new FireSmokeParticle(position, Npc.velocity, rot, Color.Gray, 30);
+            smoke.Opacity = 0.5f;
+            smoke.Scale *= 2f;
+            smoke.Spawn();
+        }
+        
+        if (Main.netMode == NetmodeID.MultiplayerClient) return true;
+        
+        for (int i = 0; i < projectiles; i++)
+        {
+            var offset = ((float) i / projectiles - 0.5f) * 2 * spread;
+            var a = angle + offset + (spread / projectiles);
+            var vel = (a.ToRotationVector2() * speed) + (Npc.velocity / 2);
+
+            NewFireball(position, vel);
+        }
+
+        return true;
+    }
+    
+    private bool Attack_IchorBurst(int projectiles, float spread, float angle, float speed, WoFPartPosition pos)
+    {
+        var position = PartPosToWorldPos(pos);
+        var rot = (pos & WoFPartPosition.Left) != 0 ? MathHelper.PiOver2 : -MathHelper.PiOver2;
+        if (TryFindPartAtPos(out var part, pos))
+        {
+            var smoke = new FireSmokeParticle(position + new Vector2(100, 200), Npc.velocity, rot, Color.Gray, 30);
+            smoke.Opacity = 0.5f;
+            smoke.Scale *= 2f;
+            smoke.Spawn();
+        }
+        
+        if (Main.netMode == NetmodeID.MultiplayerClient) return true;
         
         if ((pos & WoFPartPosition.Left) != 0) position.X += 100;
 
@@ -442,7 +495,7 @@ public class WoF : AcidicNPCOverride
             var a = angle + offset + (spread / projectiles);
             var vel = (a.ToRotationVector2() * speed) + (Npc.velocity / 2);
 
-            NewFireball(position, vel);
+            NewIchor(position, vel);
         }
 
         return true;
@@ -456,6 +509,41 @@ public class WoF : AcidicNPCOverride
         Attack_FireballBurst(projectiles, MathHelper.PiOver2, MathHelper.Pi, speed, WoFPartPosition.Right | WoFPartPosition.Center);
 
         return true;
+    }
+    
+    private bool Attack_IchorStaggeredBursts(int waves, int ballsPerWave, float speed, int waveInterval)
+    {
+        AttackManager.CountUp = true;
+
+        var isDone = AttackManager.AiTimer > (waves - 1) * waveInterval;
+
+        if (isDone)
+        {
+            AttackManager.CountUp = false;
+            return true;
+        }
+        
+        if (Main.netMode == NetmodeID.MultiplayerClient) return false;
+
+        if (AttackManager.AiTimer == 0) Npc.localAI[0] = (int) Main.rand.NextFromList(WoFPartPosition.Left, WoFPartPosition.Right);
+
+        if (AttackManager.AiTimer % waveInterval == 0)
+        {
+            var side = (WoFPartPosition) Npc.localAI[0];
+            var direction = 0f;
+            if (side == WoFPartPosition.Right) direction = MathHelper.Pi;
+
+            if (AttackManager.AiTimer % (waveInterval * 2) == 0)
+            {
+                Attack_IchorBurst(ballsPerWave, MathHelper.PiOver2, direction, speed, side | WoFPartPosition.Center);
+            } 
+            else
+            {
+                Attack_IchorBurst(ballsPerWave + 1, MathHelper.PiOver2, direction, speed, side | WoFPartPosition.Center);
+            }
+        }
+
+        return false;
     }
     
     private bool Attack_FireballStaggeredBursts(int waves, int ballsPerWave, float speed, int waveInterval)
@@ -668,6 +756,15 @@ public class WoF : AcidicNPCOverride
         var proj = ProjHelper.NewUnscaledProjectile(Npc.GetSource_FromAI(), pos, vel, 
             ProjectileID.CursedFlameHostile, Npc.damage / 2, 3);
         proj.scale = 0.9f;
+        proj.tileCollide = false;
+        return proj;
+    }
+    
+    private Projectile NewIchor(Vector2 pos, Vector2 vel)
+    {
+        var proj = ProjHelper.NewUnscaledProjectile(Npc.GetSource_FromAI(), pos, vel, 
+            ModContent.ProjectileType<IchorShot>(), Npc.damage / 2, 3);
+        proj.scale = 1.25f;
         proj.tileCollide = false;
         return proj;
     }

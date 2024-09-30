@@ -9,4 +9,7 @@
   <ItemGroup>
     <Reference Include="lib\Luminance.dll"/>
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Assets\Atlases\" />
+  </ItemGroup>
 </Project>

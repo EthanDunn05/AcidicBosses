@@ -1,5 +1,7 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using AcidicBosses.Helpers;
+using AcidicBosses.Helpers.ProjectileHelpers;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
@@ -11,16 +13,16 @@ using Terraria.ModLoader;
 
 namespace AcidicBosses.Content.ProjectileBases;
 
-public abstract class DeathrayBase : ModProjectile
+public abstract class DeathrayBase : ModProjectile, IAnchoredProjectile
 {
     public float Offset => Projectile.ai[0];
-
-    private Vector2? startOffset;
-
     public int AnchorTo => (int) Projectile.ai[1] - 1;
+    public virtual bool AnchorPosition => true;
+    public virtual bool AnchorRotation => true;
+    public virtual bool RotateAroundCenter => false;
+    public Vector2? StartOffset { get; set; }
     
     public abstract float Distance { get; }
-    
     
     protected abstract int CollisionWidth { get; }
     
@@ -28,9 +30,7 @@ public abstract class DeathrayBase : ModProjectile
     
     protected abstract Asset<Texture2D> DrTexture { get; }
     public virtual int Frames => 1;
-
-    protected virtual bool AnchorPosition => true;
-    protected virtual bool AnchorRotation => true;
+    
     protected virtual bool StartAtEnd => false;
 
     private bool doneFirstFrame = false;
@@ -79,32 +79,7 @@ public abstract class DeathrayBase : ModProjectile
             doneFirstFrame = true;
         }
 
-        if(AnchorTo >= 0)
-        {
-            var owner = Main.npc[AnchorTo];
-            if (owner != null)
-            {
-                startOffset ??= owner.Center - Projectile.position;
-                
-                if (AnchorRotation)
-                    Projectile.rotation = owner.rotation + Offset;
-                else Projectile.rotation = Offset;
-                
-                if (AnchorPosition && AnchorRotation)
-                {
-                    var rotatedOffset = startOffset * Offset.ToRotationVector2();
-                    Projectile.position = (Vector2) (owner.Center + rotatedOffset)!;
-                }
-                else if (AnchorPosition)
-                {
-                    Projectile.position = (Vector2) (owner.Center + startOffset)!;
-                }
-            }
-        }
-        else
-        {
-            Projectile.rotation = Offset;
-        }
+        this.Anchor(Projectile);
         
         AiEffects();
         
@@ -126,6 +101,9 @@ public abstract class DeathrayBase : ModProjectile
             var randPos = Main.rand.NextVector2FromRectangle(rect);
             SpawnDust(randPos);
         }
+        
+        DelegateMethods.v3_1 = Color.ToVector3();
+        Utils.PlotTileLine(Projectile.Center, Projectile.Center + (Projectile.rotation).ToRotationVector2() * Distance, CollisionWidth, DelegateMethods.CastLight);
     }
     
     protected virtual void AiEffects() {}
@@ -134,13 +112,29 @@ public abstract class DeathrayBase : ModProjectile
 
     public override bool PreDraw(ref Color lightColor)
     {
-        if (!readyToDraw) return false;
-        
         // Have to rotate the visual for vertically aligned stuff
         var rotation = Projectile.rotation.ToRotationVector2();
-        var r = Projectile.rotation - MathHelper.PiOver2;
+        
+        DrawDr(Projectile.position, Projectile.rotation, Color.White);
+        
+        return false;
+    }
 
+    protected void DrawDr(Vector2 pos, float rotation, Color col)
+    {
+        if (!readyToDraw) return;
+        var r = rotation - MathHelper.PiOver2;
         var scale = new Vector2(widthScale, 1f);
+
+        // Game sometimes crashes trying to read the texture, so here's a hacky fix
+        try
+        {
+            var test = DrTexture.Value;
+        }
+        catch (Exception e)
+        {
+            return;
+        }
 
         var frames = Main.projFrames[Type];
         var headRect = DrTexture.Frame(frames, 3, Projectile.frame, 0);
@@ -152,19 +146,18 @@ public abstract class DeathrayBase : ModProjectile
         if (StartAtEnd) origin = new Vector2(headRect.Width / 2f, 0f);
 
         // Draw the head
-        Main.spriteBatch.Draw(DrTexture.Value, Projectile.position - Main.screenPosition, headRect, Color, r, origin, scale, SpriteEffects.None, 0f);
+        Main.spriteBatch.Draw(DrTexture.Value, pos - Main.screenPosition, headRect, Color.MultiplyRGBA(col), r, origin, scale, SpriteEffects.None, 0f);
         
         // Body
         for (var i = 1; i <= Distance / step - 1; i++)
         {
-            var position = Projectile.position + rotation * i * step;
-            Main.spriteBatch.Draw(DrTexture.Value, position - Main.screenPosition, bodyRect, Color, r, origin, scale, SpriteEffects.None, 0f);
+            var position = pos + rotation.ToRotationVector2() * i * step;
+            Main.spriteBatch.Draw(DrTexture.Value, position - Main.screenPosition, bodyRect, Color.MultiplyRGBA(col), r, origin, scale, SpriteEffects.None, 0f);
         }
         
         // Tail
-        Main.spriteBatch.Draw(DrTexture.Value, (Projectile.position + rotation * Distance) - Main.screenPosition, tailRect, Color, r, origin, scale, SpriteEffects.None, 0f);
+        Main.spriteBatch.Draw(DrTexture.Value, (pos + rotation.ToRotationVector2() * Distance) - Main.screenPosition, tailRect, Color.MultiplyRGBA(col), r, origin, scale, SpriteEffects.None, 0f);
 
-        return false;
     }
 
     // Change the way of collision check of the projectile

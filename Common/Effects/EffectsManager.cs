@@ -17,8 +17,6 @@ namespace AcidicBosses.Common.Effects;
 [Autoload(Side = ModSide.Client)]
 public static class EffectsManager
 {
-    // Shockwave //
-    
     public static bool ShockwaveActivate(Vector2 source, float intensity, float width, Color tintColor, float progress)
     {
         if (Main.netMode == NetmodeID.Server || EffectsRegistry.Shockwave.IsActive) return false; 
@@ -30,8 +28,6 @@ public static class EffectsManager
         EffectsRegistry.Shockwave.Activate();
         return true;
     }
-    
-    // Boss Rage //
 
     public static bool BossRageActivate(Color tintColor)
     {
@@ -40,8 +36,6 @@ public static class EffectsManager
         EffectsRegistry.BossRage.Activate();
         return true;
     }
-    
-    // Chromatic Aberration //
 
     public static bool AberrationActivate(float offset)
     {
@@ -52,7 +46,21 @@ public static class EffectsManager
         return true;
     }
     
-    // Other Shaders //
+    public static bool BlackHoleActivate(float eventHorizonRadius, Vector2 position)
+    {
+        if (Main.netMode == NetmodeID.Server || EffectsRegistry.BlackHole.IsActive) return false;
+        
+        EffectsRegistry.BlackHole.TrySetParameter("eventHorizonRadius", eventHorizonRadius);
+        EffectsRegistry.BlackHole.TrySetParameter("targetPos", position);
+        EffectsRegistry.BlackHole.Activate();
+        return true;
+    }
+
+    public static void BloomActivate(RenderTarget2D texture)
+    {
+        EffectsRegistry.Bloom.SetTexture(texture, 0);
+        EffectsRegistry.Bloom.Apply();
+    }
 
     /// <summary>
     /// Outlines a texture while in 0 light
@@ -69,10 +77,11 @@ public static class EffectsManager
     /// Applies the slime rage effect to king slime.
     /// This will not work with another npc because there's specifically 6 frames of animation.
     /// </summary>
-    public static void SlimeRageApply(Asset<Texture2D> texture)
+    public static void SlimeRageApply(Asset<Texture2D> texture, Color lightColor)
     {
         EffectsRegistry.SlimeRage.SetTexture(texture, 0);
         EffectsRegistry.SlimeRage.SetTexture(TextureRegistry.RgbPerlin, 1);
+        EffectsRegistry.SlimeRage.TrySetParameter("lightColor", lightColor);
         EffectsRegistry.SlimeRage.Apply();
     }
     
@@ -83,5 +92,13 @@ public static class EffectsManager
         EffectsRegistry.Shield.TrySetParameter("opacity", alpha);
         EffectsRegistry.Shield.TrySetParameter("texFrames", frames);
         EffectsRegistry.Shield.Apply();
+    }
+
+    public static void IndicatorColorApply(Asset<Texture2D> texture, Color color)
+    {
+        EffectsRegistry.IndicatorColor.SetTexture(texture, 0);
+        EffectsRegistry.IndicatorColor.TrySetParameter("color", color);
+        
+        EffectsRegistry.IndicatorColor.Apply();
     }
 }

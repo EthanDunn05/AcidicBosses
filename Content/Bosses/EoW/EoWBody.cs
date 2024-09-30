@@ -1,5 +1,6 @@
 ﻿using System;
 using AcidicBosses.Common.Configs;
+using AcidicBosses.Helpers.NpcHelpers;
 using Luminance.Common.Utilities;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;

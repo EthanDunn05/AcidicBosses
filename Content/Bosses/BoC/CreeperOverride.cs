@@ -1,6 +1,8 @@
 ﻿using System;
 using AcidicBosses.Common.Configs;
 using AcidicBosses.Content.Bosses.EoC;
+using AcidicBosses.Content.Particles;
+using AcidicBosses.Content.Particles.Animated;
 using AcidicBosses.Content.ProjectileBases;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -69,6 +71,8 @@ public class CreeperOverride : AcidicNPCOverride
             var vel = Main.rand.NextVector2Circular(5, 5);
             Dust.NewDustDirect(Npc.Center, 0, 0, DustID.Blood, vel.X, vel.Y);
         }
+
+        new RingBurstParticle(Npc.Center, Vector2.Zero, 0f, Color.Red, 30).Spawn();
     }
 
     public override bool AcidAI(NPC npc)

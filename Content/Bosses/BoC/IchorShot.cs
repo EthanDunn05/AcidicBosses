@@ -50,4 +50,9 @@ public class IchorShot : ModProjectile
             }
         }
     }
+
+    public override void OnHitPlayer(Player target, Player.HurtInfo info)
+    {
+        target.AddBuff(BuffID.Ichor, 60 * 5);
+    }
 }

@@ -40,4 +40,7 @@ public class BossToggleConfig : ModConfig
     
     [DefaultValue(true)]
     public bool EnableWallOfFlesh;
+
+    [DefaultValue(true)] 
+    public bool EnableTwins;
 }

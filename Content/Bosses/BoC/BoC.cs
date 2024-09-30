@@ -4,6 +4,8 @@ using System.Linq;
 using AcidicBosses.Common;
 using AcidicBosses.Common.Configs;
 using AcidicBosses.Common.Effects;
+using AcidicBosses.Content.Particles;
+using AcidicBosses.Content.Particles.Animated;
 using AcidicBosses.Core.StateManagement;
 using AcidicBosses.Helpers;
 using Luminance.Common.Utilities;
@@ -156,6 +158,8 @@ public class BoC : AcidicNPCOverride
 
     private void EnterPhaseAngerOne()
     {
+        ScreenShakeSystem.StartShake(2f);
+        
         var teleport = new AttackState(() => Attack_Teleport(1.5f), 120);
         var tripleIchor = new AttackState(Attack_TripleIchorShot, 120);
         
@@ -368,6 +372,10 @@ public class BoC : AcidicNPCOverride
         const float spread = MathF.PI / 6f;
         const float speed = 5f;
 
+        SoundEngine.PlaySound(SoundID.Item21, Npc.Center);
+
+        if (Main.netMode == NetmodeID.MultiplayerClient) return true;
+        
         for (var i = -1; i <= 1; i++)
         {
             var angleOffset = spread * i;
@@ -389,6 +397,16 @@ public class BoC : AcidicNPCOverride
         AttackManager.CountUp = true;
         var isDone = false;
 
+        // FX
+        if (AttackManager.AiTimer == 0)
+        {
+            var smoke = new BigSmokeDisperseParticle(Npc.Center, Vector2.Zero, 0f, Color.Gray, 120);
+            smoke.Opacity = 0.25f;
+            smoke.FrameInterval = 4;
+            smoke.Scale *= 2f;
+            smoke.Spawn();
+        }
+
         if (AttackManager.AiTimer == 0 && Main.netMode != NetmodeID.MultiplayerClient)
         {
             var target = Main.player[Npc.target].Center;
@@ -396,9 +414,18 @@ public class BoC : AcidicNPCOverride
             var distance = MathF.Min(Npc.Distance(target), 750); // Don't teleport too far
             distance = MathF.Max(distance, 250); // Nor too close
             
-            var pos = Main.rand.NextVector2Unit() * distance;
-            offsetX = pos.X;
-            offsetY = pos.Y;
+            // Safely teleport
+            var tile = Vector2.Zero;
+            for (var i = 0; i < 50; i++)
+            {
+                var pos = Main.rand.NextVector2Unit() * distance + target;
+                
+                if (Npc.AI_AttemptToFindTeleportSpot(ref tile, pos.ToTileCoordinates().X, pos.ToTileCoordinates().Y))
+                    break;
+            }
+            
+            offsetX = tile.ToWorldCoordinates().X - target.X;
+            offsetY = tile.ToWorldCoordinates().Y - target.Y;
             NetSync(Npc);
         }
 
@@ -464,7 +491,7 @@ public class BoC : AcidicNPCOverride
             {
                 // Refresh if confusion has less than a second left
                 var buffSlot = player.buffType.First(b => b == BuffID.Confused);
-                if(player.buffTime[buffSlot] < 60) player.AddBuff(BuffID.Confused, 120);
+                if(player.buffTime[buffSlot] < 60) player.AddBuff(BuffID.Confused, 2);
             }
         }
     }
@@ -541,7 +568,7 @@ public class BoC : AcidicNPCOverride
                 if (i is 0 or 1) phantomPos.Y = Main.player[Main.myPlayer].Center.Y + offsetY;
                 else phantomPos.Y = Main.player[Main.myPlayer].Center.Y - offsetY;
                 
-                var phantomColor = Lighting.GetColor(phantomPos.ToTileCoordinates()) * 0.5f;
+                var phantomColor = Lighting.GetColor(phantomPos.ToTileCoordinates()) * 0.5f * npc.Opacity;
                 
                 spriteBatch.Draw(
                     brainTexture, phantomPos - Main.screenPosition, 
@@ -569,6 +596,16 @@ public class BoC : AcidicNPCOverride
         }
 
         if (npc.frame.Y > frameHeight * 3) npc.frame.Y = 0;
+    }
+
+    public override void BossHeadSlot(NPC npc, ref int index)
+    {
+        if (showPhantoms)
+        {
+            index = -1;
+            return;
+        }
+        base.BossHeadSlot(npc, ref index);
     }
 
     #endregion

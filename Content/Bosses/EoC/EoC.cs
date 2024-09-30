@@ -1,9 +1,14 @@
 ﻿using System.IO;
 using AcidicBosses.Common.Configs;
 using AcidicBosses.Common.Effects;
+using AcidicBosses.Content.Particles;
+using AcidicBosses.Content.Particles.Animated;
 using AcidicBosses.Content.ProjectileBases;
+using AcidicBosses.Content.Projectiles;
 using AcidicBosses.Core.StateManagement;
 using AcidicBosses.Helpers;
+using AcidicBosses.Helpers.NpcHelpers;
+using Luminance.Common.Easings;
 using Luminance.Common.Utilities;
 using Luminance.Core.Graphics;
 using Microsoft.Xna.Framework;
@@ -294,19 +299,11 @@ public class EoC : AcidicNPCOverride
 
             // Spin :)
             var spinT = AttackManager.AiTimer / 90f;
-            var angularAccel = MathHelper.Pi * 0.125f;
-            if (spinT < 0.25f)
-            {
-                angularAccel *= EasingHelper.QuadIn(spinT * 4f);
-            }
-
-            if (spinT >= 0.5f)
-            {
-                angularAccel *= 1 - EasingHelper.QuadOut((spinT - 0.5f) * 2f);
-            }
-        
-            Npc.rotation += angularAccel;
-            Npc.rotation = MathHelper.WrapAngle(Npc.rotation);
+            var spinCurve = new PiecewiseCurve()
+                .Add(EasingCurves.Quadratic, EasingType.In, MathHelper.PiOver2, 0.25f)
+                .Add(MoreEasingCurves.Back, EasingType.Out, MathHelper.TwoPi, 1f);
+            
+            Npc.rotation = MathHelper.WrapAngle(Npc.localAI[0] + spinCurve.Evaluate(spinT) * 2f);
 
         }
         // Transform to mouth and start shockwave
@@ -393,53 +390,39 @@ public class EoC : AcidicNPCOverride
     private static int dashTrackTime = 15;
     private static int dashAtTime = 30;
 
-    enum DashState
-    {
-        Repositioning,
-        Tracking,
-        Dashing,
-        Done
-    }
-
     private DashState Attack_DashAtPlayer(int dashLength, float speed, bool enraged, float distance)
     {
-        AttackManager.CountUp = true;
+        var options = new DashOptions
+        {
+            MinimumDistance = distance,
+            DashSpeed = speed,
+            DashLength = dashLength,
+            TrackTime = dashTrackTime,
+            DashAtTime = dashAtTime,
+            LookOffset = MathHelper.PiOver2
+        };
+        
         var target = Main.player[Npc.target];
+        var dashState = DashHelper.Dash(Npc, AttackManager, target.Center, options);
 
-        // Don't dash while too close to the player
-        // Back away until it's far enough
-        if (Npc.Distance(target.Center + target.velocity * dashTrackTime * 0.5f) < distance && AttackManager.AiTimer < dashTrackTime)
+        if (enraged)
         {
-            AttackManager.AiTimer = -1;
-            Npc.SimpleFlyMovement(-Npc.DirectionTo(target.Center) * 10f, 0.5f);
-            LookTowards(target.Center, 0.25f);
-            return DashState.Repositioning;
-        }
-
-        if (AttackManager.AiTimer < dashTrackTime)
-        {
-            Npc.SimpleFlyMovement(Vector2.Zero, 0.75f);
-            LookTowards(target.Center, 0.25f);
-            return DashState.Tracking;
-        }
-
-        if (AttackManager.AiTimer == dashAtTime)
-        {
-            Npc.velocity = (Npc.rotation + MathHelper.PiOver2).ToRotationVector2() * speed;
-            if (enraged)
+            if (dashState == DashState.StartingDash)
             {
+                var ring = new SmokeRingParticle(Npc.Center, Vector2.Zero, Npc.rotation, Color.Gray, 30);
+                ring.Scale *= 2f;
+                ring.Spawn();
+                
                 SoundEngine.PlaySound(SoundID.ForceRoarPitched, Npc.Center);
                 useAfterimages = true;
             }
-        }
-        else if (AttackManager.AiTimer >= dashAtTime + dashLength)
-        {
-            AttackManager.CountUp = false;
-            useAfterimages = false;
-            return DashState.Done;
+            if (dashState == DashState.Done)
+            {
+                useAfterimages = false;
+            }
         }
 
-        return DashState.Dashing;
+        return dashState;
     }
 
     private bool Attack_TelegraphedDash(int dashLength, float speed)
@@ -707,24 +690,23 @@ public class EoC : AcidicNPCOverride
     {
         AttackManager.CountUp = true;
         const int spawnDelay = 15;
+        ref var startAngle = ref Npc.localAI[0];
+
+        if (AttackManager.AiTimer == 0)
+        {
+            startAngle = Npc.rotation;
+        }
 
         // Speen 
         Npc.velocity = Vector2.Zero;
         var spinTime = spawnDelay * minionCount;
-        var spinT = (float) AttackManager.AiTimer / (spinTime);
+        var spinT = Utils.GetLerpValue(0f, spinTime, AttackManager.AiTimer);
         var angularAccel = MathHelper.Pi * 0.1f;
-        if (spinT < 0.25f)
-        {
-            angularAccel *= EasingHelper.QuadIn(spinT * 4f);
-        }
-
-        if (spinT >= 0.5f)
-        {
-            angularAccel *= 1 - EasingHelper.QuadOut((spinT - 0.5f) * 2f);
-        }
+        var spinCurve = new PiecewiseCurve()
+            .Add(EasingCurves.Quadratic, EasingType.In, MathHelper.PiOver2, 0.25f)
+            .Add(EasingCurves.Quadratic, EasingType.Out, MathHelper.TwoPi, 1f);
         
-        Npc.rotation += angularAccel;
-        Npc.rotation = MathHelper.WrapAngle(Npc.rotation);
+        Npc.rotation = MathHelper.WrapAngle(startAngle + spinCurve.Evaluate(spinT));
 
         if (AttackManager.AiTimer >= spinTime)
         {
@@ -748,16 +730,27 @@ public class EoC : AcidicNPCOverride
             destination = -target.DirectionTo(Npc.Center) * 250;
             destination += target;
         }
-        Teleport(destination);
+        Teleport(destination, 20f);
 
         return true;
     }
 
-    private void Teleport(Vector2 destination)
+    private void Teleport(Vector2 destination, float recoil)
     {
-        Npc.Teleport(destination, TeleportationStyleID.RodOfDiscord);
-        Npc.velocity = Vector2.Zero;
-        Npc.rotation += MathHelper.Pi;
+        var awayDir = Npc.DirectionTo(destination);
+        var startPos = Npc.Center;
+
+        Npc.rotation = awayDir.ToRotation() - MathHelper.PiOver2;
+        
+        if (Main.netMode != NetmodeID.MultiplayerClient)
+        {
+            NpcAfterimageTrail.Create(Npc.GetSource_FromAI(), Npc.Center, destination, Npc.whoAmI);
+        }
+        
+        Npc.Center = destination;
+        Npc.velocity = awayDir * recoil;
+        
+        SoundEngine.PlaySound(SoundID.DD2_JavelinThrowersAttack, Npc.Center);
     }
 
     private void NewMinion()
@@ -876,7 +869,7 @@ public class EoC : AcidicNPCOverride
         mouthMode = bitReader.ReadBit();
     }
 
-    protected override void LookTowards(Vector2 target, float power)
+    public override void LookTowards(Vector2 target, float power)
     {
         Npc.rotation = Npc.rotation.AngleLerp(Npc.AngleTo(target) - MathHelper.PiOver2, power);
     }

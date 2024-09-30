@@ -1,4 +1,6 @@
 ﻿using AcidicBosses.Common.Textures;
+using AcidicBosses.Content.Particles;
+using AcidicBosses.Content.Particles.Animated;
 using AcidicBosses.Helpers;
 using Luminance.Common.Utilities;
 using Microsoft.Xna.Framework;
@@ -27,7 +29,6 @@ public class Muramasa : ModProjectile
 
     public override void SetDefaults()
     {
-        Projectile.scale = 1.5f;
         Projectile.width = (int) (60 * 1.5);
         Projectile.height = (int) (60 * 1.5);
         Projectile.alpha = 255;
@@ -47,21 +48,26 @@ public class Muramasa : ModProjectile
             oldVel = Projectile.velocity;
             Projectile.velocity = Vector2.Zero;
             setOldVel = true;
+            Projectile.scale = 0f;
             Projectile.damage = 0;
         }
 
         if (aiTime == 0)
         {
             SoundEngine.PlaySound(SoundID.Item1);
+            var puff = new BigPuffParticle(Projectile.Center, Vector2.Zero, 0f, Color.White, 30);
+            puff.Opacity = 0.5f;
+            puff.Spawn();
         }
 
         // Spin
         if (aiTime < rotationTime)
         {
             var baseRot = oldVel.ToRotation() + MathHelper.PiOver4;
-            var rotT = EasingHelper.QuadOut(aiTime / rotationTime);
+            var rotT = EasingHelper.BackOut(aiTime / rotationTime);
             var offset = MathHelper.TwoPi * rotT;
             Projectile.rotation = MathHelper.WrapAngle(baseRot + offset);
+            Projectile.scale = MathHelper.Lerp(0f, 1.5f, rotT);
         }
         else
         {
@@ -70,19 +76,14 @@ public class Muramasa : ModProjectile
             Projectile.damage = Projectile.originalDamage;
         }
 
-        aiTime++;
-    }
+        Lighting.AddLight(Projectile.Center, Color.Cyan.ToVector3());
 
-    // Glow
-    public override Color? GetAlpha(Color lightColor)
-    {
-        return new Color(255, 255, 255, 255);
+        aiTime++;
     }
 
     public override bool PreDraw(ref Color lightColor)
     {
         var texture = ModContent.Request<Texture2D>(Texture).Value;
-        lightColor = (Color) GetAlpha(lightColor);
         ProjHelper.DrawAfterimages(Projectile, texture, ref lightColor, 2);
         ProjHelper.Draw(Projectile, texture, ref lightColor);
 

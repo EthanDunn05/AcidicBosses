@@ -4,8 +4,11 @@ using System.IO;
 using AcidicBosses.Common;
 using AcidicBosses.Common.Configs;
 using AcidicBosses.Common.Effects;
+using AcidicBosses.Content.Particles;
+using AcidicBosses.Content.Particles.Animated;
 using AcidicBosses.Helpers;
 using Luminance.Common.Utilities;
+using Luminance.Core.Graphics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
@@ -165,9 +168,33 @@ public class KingSlime : AcidicNPCOverride
 
     public override bool AcidAI(NPC npc)
     {
+        // if (npc.velocity.Y > 0) isGrounded = false;
+        
         // Land
         if (!isGrounded && npc.velocity.Y == 0)
         {
+            // Smoke puffs
+            var puff = new WideGroundPuffParticle(npc.Bottom, Vector2.Zero, 0f, Color.White, 30);
+            puff.Scale *= npc.scale * 1.5f;
+            puff.Opacity = 0.25f;
+            puff.FrameInterval = 4;
+            puff.Spawn();
+            var puff2 = new WideGroundPuffParticle(npc.Bottom, Vector2.Zero, 0f, Color.White, 30);
+            puff2.Scale *= npc.scale;
+            puff2.Opacity = 0.25f;
+            puff2.Spawn();
+
+            // Dust from tiles landed on
+            var xTile = npc.position.ToTileCoordinates().X;
+            var yTile = npc.Bottom.ToTileCoordinates().Y;
+            for (var x = xTile; x < npc.width / 16f + xTile; x++)
+            {
+                var ground = new Point(x, yTile);
+                WorldGen.KillTile(ground.X, ground.Y, true, true);
+            }
+
+            ScreenShakeSystem.StartShakeAtPoint(npc.Bottom, npc.scale * 1.5f);
+
             isGrounded = true;
             npc.velocity.X = 0;
         }
@@ -554,7 +581,6 @@ public class KingSlime : AcidicNPCOverride
 
     private void Attack_Teleport(NPC npc, out bool done)
     {
-        // TODO Add light to the indication for night visibility
         void IndicationDust()
         {
             for (var i = 0; i < 25; i++)
@@ -593,18 +619,17 @@ public class KingSlime : AcidicNPCOverride
                 IndicationDust();
                 break;
             case >= 90 and < 120: // Grow at the indicated position
-                npc.position = teleportDestination;
-
                 if (AiTimer == 90)
                     Gore.NewGore(npc.GetSource_FromAI(), npc.Center, Vector2.Zero, GoreID.KingSlimeCrown);
 
+                npc.Center = teleportDestination;
                 var growT = (AiTimer - 90f) / (120f - 90f);
                 growT = EasingHelper.QuadIn(growT);
                 ChangeScale(npc, MathHelper.Lerp(0f, targetScale, growT));
                 IndicationDust();
                 break;
             default: // Finish the teleport
-                npc.position = teleportDestination;
+                npc.Center = teleportDestination;
                 npc.velocity.Y = 10f;
                 isGrounded = false;
                 ChangeScale(npc, targetScale);
@@ -619,6 +644,10 @@ public class KingSlime : AcidicNPCOverride
     private void Attack_Summon(NPC npc)
     {
         SoundEngine.PlaySound(SoundID.Item95, npc.Center);
+
+        var puff = new SmallPuffParticle(npc.Top, Vector2.Zero, 0f, Color.Blue, 30);
+        puff.Opacity = 0.25f;
+        puff.Spawn();
 
         // Only spawn from a server
         if (Main.netMode == NetmodeID.MultiplayerClient) return;
@@ -643,6 +672,7 @@ public class KingSlime : AcidicNPCOverride
         {
             case 0:
                 SoundEngine.PlaySound(SoundID.Item8, npc.Center);
+                new GatherEnergyParticle(npc.Top, Vector2.Zero, 0f, Color.Red, 60).Spawn();
 
                 if (Main.netMode == NetmodeID.MultiplayerClient) break;
                 
@@ -663,6 +693,8 @@ public class KingSlime : AcidicNPCOverride
     private void Attack_CrownLaserCircle(NPC npc, out bool done, int projCount)
     {
         const int length = 30;
+        if (AiTimer == 0) new GatherEnergyParticle(npc.Top, Vector2.Zero, 0f, Color.Red, 60).Spawn();
+        
         switch (AiTimer)
         {
             case >= 0 and < length:
@@ -712,7 +744,7 @@ public class KingSlime : AcidicNPCOverride
         if (CurrentPhase is PhaseState.Desperation or PhaseState.Transition2)
         {
             spriteBatch.EnterShader();
-            EffectsManager.SlimeRageApply(TextureAssets.Npc[npc.type]);
+            EffectsManager.SlimeRageApply(TextureAssets.Npc[npc.type], lightColor);
         }
         
         DrawSlime(npc, spriteBatch, screenPos, lightColor);

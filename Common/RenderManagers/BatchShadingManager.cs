@@ -54,7 +54,7 @@ public class BatchShadingManager : ModSystem
         }
     }
     
-    public static void DrawProjectile(ManagedShader shader, ShadedDrawAction drawAction)
+    public static void DrawProjectile(Projectile proj, ManagedShader shader, ShadedDrawAction drawAction)
     {
         if (!ProjsToDraw.ContainsKey(shader)) ProjsToDraw.Add(shader, []);
         
@@ -85,7 +85,6 @@ public class BatchShadingManager : ModSystem
             {
                 drawAction.Invoke(Main.spriteBatch);
             }
-
             Main.spriteBatch.ExitShader();
         }
         

@@ -1,6 +1,7 @@
 sampler slimeTex : register(s0);
 sampler noiseTex : register(s1);
 float globalTime;
+float4 lightColor;
 
 float intensity = 0.05;
 float scale = 0.025;
@@ -45,6 +46,8 @@ float4 PixelShaderFunction(float2 coords : TEXCOORD0) : COLOR0
     float4 color = tex2D(slimeTex, coords);
     color.r /= 0.5;
     color.bg *= float2(1.0, 1.0) * 0.3;
+    color.rgb *= lightColor.rgb;
+    color.a = tex2D(slimeTex, coords).a * 0.75;
 
     return color;
 }
