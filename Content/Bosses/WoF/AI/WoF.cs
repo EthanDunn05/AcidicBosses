@@ -9,6 +9,7 @@ using AcidicBosses.Content.Particles.Animated;
 using AcidicBosses.Content.ProjectileBases;
 using AcidicBosses.Core.StateManagement;
 using AcidicBosses.Helpers;
+using Luminance.Common.Easings;
 using Luminance.Core.Graphics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -349,17 +350,6 @@ public class WoF : AcidicNPCOverride
             energy.Spawn();
         }
 
-        if (AttackManager.AiTimer == telegraphTime && TryFindPartAtPos(out var part1, partPos))
-        {
-            var pos = raySpawnPos;
-            if ((partPos & WoFPartPosition.Left) != 0) pos.X += part1.width;
-                    
-            var ring = new BurstParticle(pos, Npc.velocity, 0f, Color.White, 30);
-            ring.Scale *= 2f;
-            ring.IgnoreLighting = true;
-            ring.Spawn();
-        }
-
         if (Main.netMode != NetmodeID.MultiplayerClient)
         {
             ref var targetRot = ref Npc.localAI[0];
@@ -432,8 +422,11 @@ public class WoF : AcidicNPCOverride
             }
             case < 30 + 120 + 60:
             {
+                var curve = new PiecewiseCurve()
+                    .Add(EasingCurves.Quadratic, EasingType.In, 0.5f, 0.5f)
+                    .Add(MoreEasingCurves.Back, EasingType.Out, 1f, 1f);
                 var t = (AttackManager.AiTimer - 30 - 120) / 60f;
-                t = EasingHelper.QuadInOut(t);
+                t = curve.Evaluate(t);
                 WallDistance = MathHelper.Lerp(distance, initialDist, t);
                 break;
             }

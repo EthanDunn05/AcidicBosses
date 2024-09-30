@@ -8,6 +8,7 @@ using AcidicBosses.Content.Projectiles;
 using AcidicBosses.Core.StateManagement;
 using AcidicBosses.Helpers;
 using AcidicBosses.Helpers.NpcHelpers;
+using Luminance.Common.Easings;
 using Luminance.Common.Utilities;
 using Luminance.Core.Graphics;
 using Microsoft.Xna.Framework;
@@ -298,19 +299,11 @@ public class EoC : AcidicNPCOverride
 
             // Spin :)
             var spinT = AttackManager.AiTimer / 90f;
-            var angularAccel = MathHelper.Pi * 0.125f;
-            if (spinT < 0.25f)
-            {
-                angularAccel *= EasingHelper.QuadIn(spinT * 4f);
-            }
-
-            if (spinT >= 0.5f)
-            {
-                angularAccel *= 1 - EasingHelper.QuadOut((spinT - 0.5f) * 2f);
-            }
-        
-            Npc.rotation += angularAccel;
-            Npc.rotation = MathHelper.WrapAngle(Npc.rotation);
+            var spinCurve = new PiecewiseCurve()
+                .Add(EasingCurves.Quadratic, EasingType.In, MathHelper.PiOver2, 0.25f)
+                .Add(MoreEasingCurves.Back, EasingType.Out, MathHelper.TwoPi, 1f);
+            
+            Npc.rotation = MathHelper.WrapAngle(Npc.localAI[0] + spinCurve.Evaluate(spinT) * 2f);
 
         }
         // Transform to mouth and start shockwave
@@ -697,24 +690,23 @@ public class EoC : AcidicNPCOverride
     {
         AttackManager.CountUp = true;
         const int spawnDelay = 15;
+        ref var startAngle = ref Npc.localAI[0];
+
+        if (AttackManager.AiTimer == 0)
+        {
+            startAngle = Npc.rotation;
+        }
 
         // Speen 
         Npc.velocity = Vector2.Zero;
         var spinTime = spawnDelay * minionCount;
-        var spinT = (float) AttackManager.AiTimer / (spinTime);
+        var spinT = Utils.GetLerpValue(0f, spinTime, AttackManager.AiTimer);
         var angularAccel = MathHelper.Pi * 0.1f;
-        if (spinT < 0.25f)
-        {
-            angularAccel *= EasingHelper.QuadIn(spinT * 4f);
-        }
-
-        if (spinT >= 0.5f)
-        {
-            angularAccel *= 1 - EasingHelper.QuadOut((spinT - 0.5f) * 2f);
-        }
+        var spinCurve = new PiecewiseCurve()
+            .Add(EasingCurves.Quadratic, EasingType.In, MathHelper.PiOver2, 0.25f)
+            .Add(EasingCurves.Quadratic, EasingType.Out, MathHelper.TwoPi, 1f);
         
-        Npc.rotation += angularAccel;
-        Npc.rotation = MathHelper.WrapAngle(Npc.rotation);
+        Npc.rotation = MathHelper.WrapAngle(startAngle + spinCurve.Evaluate(spinT));
 
         if (AttackManager.AiTimer >= spinTime)
         {
