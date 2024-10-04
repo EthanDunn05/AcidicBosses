@@ -106,6 +106,23 @@ public partial class TwinsController : AcidicNPC
         var target = Main.player[NPC.target];
         NPC.Center = target.Center;
 
+        // Despawn when day
+        if (Main.IsItDay())
+        {
+            Flee();
+        }
+        
+        // Despawn when no targets
+        if (!target.active || target.dead)
+        {
+            NPC.TargetClosest();
+            target = Main.player[NPC.target];
+            if (!target.active || target.dead)
+            {
+                Flee();
+            }
+        }
+
         if (!Spazmatism.Npc.active && !changedState)
         {
             phaseTracker.ChangeState(PhaseSoloRet);
@@ -125,6 +142,13 @@ public partial class TwinsController : AcidicNPC
     private bool CheckTwinsDead()
     {
         return !Spazmatism.Npc.active && !Retinazer.Npc.active;
+    }
+
+    private void Flee()
+    {
+        Spazmatism.Npc.active = false;
+        Retinazer.Npc.active = false;
+        NPC.active = false;
     }
 
     private void FillTether()
