@@ -89,6 +89,10 @@ public abstract class BaseSwarmProjectile : ModProjectile
 
                 var dir = currentPos.DirectionTo(nextPos).RotatedBy(MathHelper.PiOver2);
                 p.Position = currentPos + dir * posOffset;
+                p.Rotation = dir.ToRotation() - MathHelper.PiOver2;
+
+                p.IgnoreLighting = true;
+                p.DrawColor = Lighting.GetColor(p.Position.ToTileCoordinates());
             };
 
             particle.Spawn();
@@ -138,7 +142,7 @@ public abstract class BaseSwarmProjectile : ModProjectile
         // Draw collision for debug
         // DoOnSegments((i1, i2) =>
         // {
-        //     Utils.DrawLine(Main.spriteBatch, MakeWorldPos(i1), MakeWorldPos(i2), Color.Red, Color.Red, CollisionWidth);
+        //     Utils.DrawLine(Main.spriteBatch, MakeWorldPos(i1), MakeWorldPos(i2), Color.Red * 0.5f, Color.Red * 0.5f, CollisionWidth);
         // });
         
         return false;

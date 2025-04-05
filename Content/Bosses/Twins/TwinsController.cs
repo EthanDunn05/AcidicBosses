@@ -224,7 +224,7 @@ public partial class TwinsController : AcidicNPC
     
         PrimitiveRenderer.RenderTrail(connectionSegments.Select(s => s.Position), renderSettings);
         
-        spriteBatch.DrawString(FontAssets.MouseText.Value, attackManager.AiTimer.ToString(), NPC.position - Main.screenPosition + new Vector2(50, 50), Color.White);
+        // spriteBatch.DrawString(FontAssets.MouseText.Value, attackManager.AiTimer.ToString(), NPC.position - Main.screenPosition + new Vector2(50, 50), Color.White);
 
         return false;
     }
