@@ -41,6 +41,8 @@ public abstract class BaseSwarmProjectile : ModProjectile
     /// A smaller interval means a more accurate hitbox, but less performant collision detection.
     /// </summary>
     protected virtual int CollisionInterval=> 32;
+
+    protected virtual int MembersPerSpawn => 1;
     
     private int timer = 0;
     private bool doneFirstFrame = false;
@@ -73,29 +75,34 @@ public abstract class BaseSwarmProjectile : ModProjectile
         // Spawn a swarm particle
         if (timer % SwarmSpawnInterval == 0 && Projectile.timeLeft > SwarmMemberLifetime)
         {
-            // Add a bit of variance to the speed
-            var speedOffset = Main.rand.NextFloat(-2f, 2f);
-
-            var posOffset = Main.rand.NextFloat(0, CollisionWidth);
-            
-            var particle = SwarmParticleConstructor(Projectile.position, Vector2.Zero, Projectile.rotation, Color.White, SwarmMemberLifetime);
-            particle.OnUpdate = p =>
+            for (var i = 0; i < MembersPerSpawn; i++)
             {
-                var dist = (float) p.Time / (SwarmMemberLifetime + speedOffset) * Length;
-                var d1 = dist + 0.01f;
+                // Add a bit of variance to the speed
+                var speedOffset = Main.rand.NextFloat(-2f, 2f);
+
+                var posOffset = Main.rand.NextFloat(-CollisionWidth / 2f, CollisionWidth / 2f);
+            
+                var particle = SwarmParticleConstructor(Projectile.position, Vector2.Zero, Projectile.rotation, Color.White, SwarmMemberLifetime);
+                particle.OnUpdate = p =>
+                {
+                    var dist = (float) p.Time / (SwarmMemberLifetime + speedOffset) * Length;
+                    var d1 = dist + 0.01f;
                 
-                var nextPos = MakeWorldPos(d1);
-                var currentPos = MakeWorldPos(dist);
+                    var nextPos = MakeWorldPos(d1);
+                    var currentPos = MakeWorldPos(dist);
 
-                var dir = currentPos.DirectionTo(nextPos).RotatedBy(MathHelper.PiOver2);
-                p.Position = currentPos + dir * posOffset;
-                p.Rotation = dir.ToRotation() - MathHelper.PiOver2;
+                    var dir = currentPos.DirectionTo(nextPos).RotatedBy(MathHelper.PiOver2);
+                    p.Position = currentPos + dir * posOffset;
+                    p.Rotation = dir.ToRotation() - MathHelper.PiOver2;
 
-                p.IgnoreLighting = true;
-                p.DrawColor = Lighting.GetColor(p.Position.ToTileCoordinates());
-            };
+                    p.IgnoreLighting = true;
+                    p.DrawColor = Lighting.GetColor(p.Position.ToTileCoordinates());
+                };
 
-            particle.Spawn();
+                particle.Spawn();
+            }
+            
+            
         }
     }
 

@@ -38,6 +38,8 @@ Projectiles: {
 	BeeWave.DisplayName: Bee Wave
 	QueenBeeAfterimageTrail.DisplayName: Queen Bee Afterimage Trail
 	QueenBeeDashLine.DisplayName: Queen Bee Dash Line
+	BeePillar.DisplayName: Bee Pillar
+	QueenBeePillarLine.DisplayName: Queen Bee Pillar Line
 }
 
 Buffs: {

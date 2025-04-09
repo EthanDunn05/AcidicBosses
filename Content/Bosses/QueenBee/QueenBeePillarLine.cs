@@ -7,10 +7,10 @@ using ReLogic.Content;
 
 namespace AcidicBosses.Content.Bosses.QueenBee;
 
-public class QueenBeeDashLine : BaseLineProjectile
+public class QueenBeePillarLine : BaseLineProjectile
 {
     protected override float Length { get; set; } = 12000f;
-    protected override float Width { get; set; } = 33f;
+    protected override float Width { get; set; } = 50f;
     protected override Color Color => GetColor();
     
     protected override Asset<Texture2D> LineTexture { get; } = TextureRegistry.InvertedGlowLine;
@@ -20,6 +20,7 @@ public class QueenBeeDashLine : BaseLineProjectile
         var fadeT = (float) Projectile.timeLeft / MaxTimeLeft;
         var color = Color.White;
         color *= EasingHelper.CubicOut(fadeT);
+        
         return color;
     }
 }
