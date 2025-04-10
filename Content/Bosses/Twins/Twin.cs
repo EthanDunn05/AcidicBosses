@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.GameContent;
+using Terraria.ID;
 using Terraria.ModLoader.IO;
 
 namespace AcidicBosses.Content.Bosses.Twins;
@@ -101,9 +102,11 @@ public abstract class Twin : AcidicNPCOverride
             index = -1;
             return;
         }
-        
-        index = MechForm ? 1 : 0;
+
+        index = NPCID.Sets.BossHeadTextures[npc.type];
+        if (MechForm) index++;
     }
+    
     
     #endregion
     
