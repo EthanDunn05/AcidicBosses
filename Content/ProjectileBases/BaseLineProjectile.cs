@@ -112,20 +112,16 @@ public abstract class BaseLineProjectile : ModProjectile, IAnchoredProjectile
         // BatchShadingManager.DrawProjectile(Projectile, EffectsRegistry.IndicatorColor, sb =>
         // {
         
-        Main.spriteBatch.EnterShader();
         var pos = Projectile.position - Main.screenPosition;
         var rect = LineTexture.Frame(horizontalFrames: Frames,  frameX: Projectile.frame);
         var origin = new Vector2(rect.Width / 2f, 0);
         var scale = new Vector2(Width * 2, Length) / rect.Size();
-        
-        EffectsManager.IndicatorColorApply(LineTexture, Color);
     
         Main.spriteBatch.Draw(
-            LineTexture.Value, pos, rect, Color, 
+            LineTexture.Value, pos, rect, Color with { A = 0 },
             Projectile.rotation - MathHelper.PiOver2, origin, scale,
             SpriteEffects.None, 0f
         );
-        Main.spriteBatch.ExitShader();
         
         // });
         

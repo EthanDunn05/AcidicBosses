@@ -95,22 +95,17 @@ public abstract class BaseSweep : ModProjectile, IAnchoredProjectile
         var leftOrigin = new Vector2(0, 0);
         var rightOrigin = new Vector2(rect.Width, 0);
         
-        Main.spriteBatch.EnterShader();
-        EffectsManager.IndicatorColorApply(tex, Color);
-        
         Main.EntitySpriteDraw(
-            tex.Value, pos, rect, Color, 
+            tex.Value, pos, rect, Color with { A = 0 }, 
             Projectile.rotation - MathHelper.PiOver2 + Radius, leftOrigin, scale,
             SpriteEffects.None
         );
         
         Main.EntitySpriteDraw(
-            tex.Value, pos, rect, Color, 
+            tex.Value, pos, rect, Color with { A = 0 }, 
             Projectile.rotation - MathHelper.PiOver2 - Radius, rightOrigin, scale,
             SpriteEffects.FlipHorizontally
         );
-
-        Main.spriteBatch.ExitShader();
 
         return false;
     }

@@ -50,7 +50,7 @@ public class SpazCircleIndicator : BaseEffectProjectile
     {
         var circleSettings = new PrimitiveSettingsCircleEdge(
             _ => width, 
-            _ => Color.Lime * Projectile.Opacity, 
+            _ => (Color.Lime * Projectile.Opacity) with { A = 0 }, 
             _ => MathF.Max(0f, size - width / 2f), 
             Shader: ShaderManager.GetShader("AcidicBosses.Rope")
         );

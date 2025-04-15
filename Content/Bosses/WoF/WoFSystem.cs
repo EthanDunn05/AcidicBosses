@@ -140,7 +140,7 @@ public class WoFSystem : ModSystem
         var rightWallX = WoF.position.X + WallDistance;
 
         int frameY = Main.wofDrawFrameIndex / 6 * frameHeight;
-        if (!Main.gamePaused && ++Main.wofDrawFrameIndex >= 18)
+        if (!Main.gamePaused && Main.wofDrawFrameIndex >= 18)
         {
 	        Main.wofDrawFrameIndex = 0;
         }

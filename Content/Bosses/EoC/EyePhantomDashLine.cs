@@ -4,15 +4,19 @@ using AcidicBosses.Helpers;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
+using ReLogic.Graphics;
+using Terraria;
+using Terraria.GameContent;
 
-namespace AcidicBosses.Content.Bosses.BoC;
+namespace AcidicBosses.Content.Bosses.EoC;
 
-public class CreeperDashLine : BaseLineProjectile
+public class EyePhantomDashLine : BaseLineProjectile
 {
-    protected override float Length { get; set; } = 1000f;
-    protected override float Width { get; set; } = 14;
+    protected override float Length { get; set; } = 2000f;
+    protected override float Width { get; set; } = 33f;
     protected override Color Color => GetColor();
-    protected override Asset<Texture2D> LineTexture { get; } = TextureRegistry.InvertedFadingGlowLine;
+    
+    protected override Asset<Texture2D> LineTexture { get; } = TextureRegistry.InvertedGlowLine;
     
     private Color GetColor()
     {
