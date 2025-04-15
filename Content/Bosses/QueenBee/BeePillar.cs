@@ -2,6 +2,8 @@ using System;
 using AcidicBosses.Content.Particles.Animated;
 using AcidicBosses.Content.ProjectileBases;
 using Microsoft.Xna.Framework;
+using Terraria;
+using Terraria.ID;
 
 namespace AcidicBosses.Content.Bosses.QueenBee;
 
@@ -26,5 +28,21 @@ public class BeePillar : BaseSwarmProjectile
     {
         base.SetDefaults();
         Projectile.hostile = true;
+    }
+
+    public override void AI()
+    {
+        base.AI();
+        
+        // Kick up block dust
+        if (Projectile.timeLeft % 15 == 0 && Projectile.timeLeft >= SwarmMemberLifetime)
+        {
+            var tilePos = Projectile.position.ToTileCoordinates();
+            for (var i = -3; i <= 3; i++)
+            {
+                var offsetTilePos = tilePos + new Point(i, 1);
+                WorldGen.KillTile(offsetTilePos.X, offsetTilePos.Y, true, true);
+            }
+        }
     }
 }

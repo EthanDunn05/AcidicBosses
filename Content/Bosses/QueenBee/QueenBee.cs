@@ -1,11 +1,8 @@
-using System;
 using System.IO;
 using AcidicBosses.Common.Configs;
-using AcidicBosses.Common.Effects;
-using AcidicBosses.Content.Bosses.EoC;
+using AcidicBosses.Content.Particles;
 using AcidicBosses.Content.Particles.Animated;
 using AcidicBosses.Content.ProjectileBases;
-using AcidicBosses.Content.Projectiles;
 using AcidicBosses.Core.Animation;
 using AcidicBosses.Core.StateManagement;
 using AcidicBosses.Helpers;
@@ -26,14 +23,15 @@ public class QueenBee : AcidicNPCOverride
 {
     private static readonly SoundStyle SpitSound = SoundID.Item17;
     private static readonly SoundStyle ScreechSound = SoundID.Zombie125;
-    public static readonly SoundStyle FlapSound = SoundID.Item32;
-    private static readonly SoundStyle SummonBeesSound = SoundID.DD2_WyvernScream;
+    private static readonly SoundStyle FlapSound = SoundID.Item32;
+    private static readonly SoundStyle SummonBeesSound = SoundID.DD2_WyvernScream with { Pitch = 0.5f };
 
     protected override int OverriddenNpc => NPCID.QueenBee;
     protected override bool BossEnabled => BossToggleConfig.Get().EnableQueenBee;
 
     private bool useUprightSprite = true;
     private bool useAfterimages = false;
+    private bool doneIntermission = false;
 
     private Vector2 StingerPos => Npc.Center + ((Npc.Bottom - Npc.Center) * 1.75f) +
                                   new Vector2(25f * (Npc.rotation.ToRotationVector2().X > 0 ? 1 : -1), 0f);
@@ -55,11 +53,35 @@ public class QueenBee : AcidicNPCOverride
         phaseTracker = new PhaseTracker([
             PhaseIntro,
             PhaseOne,
+            PhaseTwo
         ]);
     }
 
     public override bool AcidAI(NPC npc)
     {
+        if (IsTargetGone(npc))
+        {
+            Npc.TargetClosest(false);
+
+            if (IsTargetGone(npc))
+            {
+                Npc.active = false;
+            }
+        }
+
+        // Enrage
+        if (!TargetPlayer.ZoneJungle && !enraged)
+        {
+            phaseTracker.ChangeState(PhaseEnraged);
+            enraged = true;
+        }
+
+        if (TargetPlayer.ZoneJungle && enraged)
+        {
+            phaseTracker.ResumePhase();
+            enraged = false;
+        }
+
         phaseTracker.RunPhaseAI();
 
         return false;
@@ -70,6 +92,10 @@ public class QueenBee : AcidicNPCOverride
     #region Phases
 
     private PhaseState PhaseIntro => new PhaseState(Phase_Intro);
+    private PhaseState PhaseOne => new PhaseState(Phase_One, Phase_EnterOne);
+    private PhaseState PhaseTwo => new PhaseState(Phase_Two, Phase_EnterTwo);
+    private PhaseState PhaseIntermission => new PhaseState(Phase_Intermission);
+    private PhaseState PhaseEnraged => new PhaseState(Phase_Enraged, Phase_EnterEnraged);
 
     private AcidAnimation? introAnimation;
 
@@ -130,22 +156,26 @@ public class QueenBee : AcidicNPCOverride
         phaseTracker.NextPhase();
     }
 
-    private PhaseState PhaseOne => new PhaseState(Phase_One, Phase_EnterOne);
-
     private void Phase_EnterOne()
     {
+        var sideL = () => Attack_SideDash(-1, 20, 30, 60);
+        var sideR = () => Attack_SideDash(1, 20, 30, 60);
+        var dash = () => Attack_Dash(20, 30, 60);
+        var singlePillar = () => Attack_BeePillar(0f, 0, 10f, 0.5f);
+        var spreadPillar = () => Attack_BeePillar(500f, 3, 10f, 0.5f);
+
         AttackManager.SetAttackPattern([
-            new AttackState(() => Attack_SideDash(-1, 20), 0),
-            new AttackState(() => Attack_SideDash(1, 20), 60),
-            new AttackState(() => Attack_BeePillar(0f, 0), 30),
-            new AttackState(() => Attack_Dash(20), 0),
-            new AttackState(() => Attack_Dash(20), 0),
-            new AttackState(() => Attack_Dash(20), 0),
+            new AttackState(sideL, 0),
+            new AttackState(sideR, 60),
+            new AttackState(singlePillar, 30),
+            new AttackState(dash, 0),
+            new AttackState(dash, 0),
+            new AttackState(dash, 0),
             new AttackState(Attack_Reposition, 120),
             new AttackState(Attack_BeeWave, 120),
-            new AttackState(() => Attack_BeePillar(500f, 3), 30),
-            new AttackState(() => Attack_SideDash(-1, 20), 0),
-            new AttackState(() => Attack_SideDash(1, 20), 60),
+            new AttackState(spreadPillar, 30),
+            new AttackState(sideL, 0),
+            new AttackState(sideR, 60),
         ]);
     }
 
@@ -154,7 +184,171 @@ public class QueenBee : AcidicNPCOverride
     {
         if (AttackManager.AiTimer > 0 && !AttackManager.CountUp)
         {
+            if (Npc.GetLifePercent() <= 0.60f)
+            {
+                phaseTracker.NextPhase();
+                AttackManager.Reset();
+            }
+
             HoverAbove(10f, 0.3f, 250f);
+            return;
+        }
+
+        AttackManager.RunAttackPattern();
+    }
+
+    private void Phase_EnterTwo()
+    {
+        var sideL = () => Attack_SideDash(-1, 20, 30, 45);
+        var sideR = () => Attack_SideDash(1, 20, 30, 45);
+        var dash = () => Attack_Dash(20, 30, 45);
+        var ring = () => Attack_BeeRing((30 + 45) * 3);
+        var spreadPillar = () => Attack_BeePillar(500f, 3, 10f, 0.5f);
+
+        AttackManager.SetAttackPattern([
+            new AttackState(sideL, 0),
+            new AttackState(sideR, 60),
+            new AttackState(Attack_HiveLaunch, 60),
+            new AttackState(Attack_Reposition, 120),
+            new AttackState(Attack_BeeWave, 120),
+            new AttackState(spreadPillar, 30),
+            new AttackState(sideL, 0),
+            new AttackState(sideR, 60),
+            new AttackState(ring, 60),
+            new AttackState(dash, 0),
+            new AttackState(dash, 0),
+            new AttackState(dash, 60),
+        ]);
+    }
+
+
+    private void Phase_Two()
+    {
+        if (AttackManager.AiTimer > 0 && !AttackManager.CountUp)
+        {
+            HoverAbove(10f, 0.3f, 250f);
+
+            if (Npc.GetLifePercent() <= 0.25f && !doneIntermission)
+            {
+                AttackManager.Reset();
+                phaseTracker.ChangeState(PhaseIntermission);
+            }
+
+            return;
+        }
+
+        AttackManager.RunAttackPattern();
+    }
+
+    private AcidAnimation? intermissionAnimation;
+
+    private AcidAnimation PrepareIntermissionAnimation()
+    {
+        var anim = new AcidAnimation();
+
+        anim.AddInstantEvent(0, () =>
+        {
+            Npc.velocity = Vector2.Zero;
+            anim.Data.Set<Vector2>("npcPos", Npc.position);
+
+            SoundEngine.PlaySound(ScreechSound, Npc.Center);
+            ScreenShakeSystem.StartShakeAtPoint(Npc.Center, 10f);
+
+            new InternalCircleParticle(Npc.Center - new Vector2(0f, Npc.Size.Y * 0.25f), Vector2.Zero, 0f, Color.White,
+                30)
+            {
+                OnUpdate = particle =>
+                {
+                    var scaleEase = EasingHelper.QuadOut(particle.LifetimeRatio);
+                    particle.Scale = Vector2.Lerp(Vector2.Zero, Vector2.One * 4f, scaleEase);
+
+                    var fadeEase = EasingHelper.ExpIn(particle.LifetimeRatio);
+                    particle.Opacity = MathHelper.Lerp(0.75f, 0f, fadeEase);
+                }
+            }.Spawn();
+        });
+
+        anim.AddSequencedEvent(30, (progress, frame) => { });
+
+        const int shootSpeed = 10;
+        anim.AddSequencedEvent(60, (progress, frame) =>
+        {
+            var ease = EasingHelper.QuadInOut(progress);
+            var angle = MathHelper.Lerp(0f, MathHelper.TwoPi, ease) - MathHelper.PiOver2;
+            var vel = angle.ToRotationVector2() * 10f;
+            ShootHive((frame % shootSpeed) / (float)shootSpeed, frame % shootSpeed, vel);
+        });
+
+        return anim;
+
+        void ShootHive(float progress, int frame, Vector2 vel)
+        {
+            var pos = anim.Data.Get<Vector2>("npcPos");
+            if (frame == 0)
+            {
+                Npc.rotation = vel.X < 0
+                    ? new Vector2(-1, 0).ToRotation()
+                    : new Vector2(1, 0).ToRotation();
+
+                NewBeeHive(Npc.Center, vel);
+            }
+
+            var ease = EasingHelper.QuadOut(progress);
+            Npc.position = pos + Vector2.Lerp(-vel * 2f, Vector2.Zero, ease);
+        }
+    }
+
+    private void Phase_Intermission()
+    {
+        intermissionAnimation ??= PrepareIntermissionAnimation();
+        var animationDone = intermissionAnimation.RunAnimation();
+        if (!animationDone) return;
+
+        doneIntermission = true;
+        AttackManager.Reset();
+        phaseTracker.ResumePhase();
+    }
+
+    private void Phase_EnterEnraged()
+    {
+        // She is speed.
+        var sideL = () => Attack_SideDash(side: -1, speed: 50, dashLength: 15, dashAtTime: 30);
+        var sideR = () => Attack_SideDash(side: 1, speed: 50, dashLength: 15, dashAtTime: 30);
+        var dash = () => Attack_Dash(speed: 50, dashLength: 15, dashAtTime: 30);
+        var spreadPillar = () => Attack_BeePillar(spacing: 500f, pillarsToEachSide: 3, 50f, 1.2f);
+        var hiveLaunch = () => Attack_HiveLaunch();
+        var ring = () => Attack_BeeRing(240);
+        var halt = () =>
+        {
+            Npc.velocity = Vector2.Zero;
+            return true;
+        };
+
+        AttackManager.SetAttackPattern([
+            new AttackState(sideL, 0),
+            new AttackState(sideR, 0),
+            new AttackState(hiveLaunch, 15),
+            new AttackState(dash, 0), new AttackState(halt, 0),
+            new AttackState(dash, 0), new AttackState(halt, 0),
+            new AttackState(dash, 0),
+            new AttackState(Attack_Reposition, 15),
+            new AttackState(spreadPillar, 0),
+            new AttackState(sideL, 0),
+            new AttackState(sideR, 0),
+            new AttackState(sideL, 0), new AttackState(halt, 0),
+            new AttackState(ring, 60),
+            new AttackState(dash, 0), new AttackState(halt, 0),
+            new AttackState(dash, 0), new AttackState(halt, 0),
+            new AttackState(dash, 0), new AttackState(halt, 0),
+        ]);
+    }
+
+
+    private void Phase_Enraged()
+    {
+        if (AttackManager.AiTimer > 0 && !AttackManager.CountUp)
+        {
+            HoverAbove(50f, 1.2f, 250f);
             return;
         }
 
@@ -200,22 +394,40 @@ public class QueenBee : AcidicNPCOverride
         disperse.Spawn();
     }
 
+    private void SummonFx()
+    {
+        SoundEngine.PlaySound(SummonBeesSound, Npc.Center);
+
+        new InternalCircleParticle(Npc.Center - new Vector2(0f, Npc.Size.Y * 0.25f), Vector2.Zero, 0f, Color.White, 30)
+        {
+            OnUpdate = particle =>
+            {
+                var scaleEase = EasingHelper.QuadOut(particle.LifetimeRatio);
+                particle.Scale = Vector2.Lerp(Vector2.Zero, Vector2.One * 4f, scaleEase);
+
+                var fadeEase = EasingHelper.ExpIn(particle.LifetimeRatio);
+                particle.Opacity = MathHelper.Lerp(0.75f, 0f, fadeEase);
+            }
+        }.Spawn();
+    }
+
     private bool Attack_Reposition()
     {
-        Teleport(TargetPlayer.Center - new Vector2(0, 250), 5f);
+        var target = TargetPlayer.Center - new Vector2(0, 250);
+        if (Npc.Distance(target) > 250) Teleport(target, 5f);
         return true;
     }
 
-    private bool Attack_SideDash(int side, float speed)
+    private bool Attack_SideDash(int side, float speed, int dashLength, int dashAtTime)
     {
         ref var dashStartX = ref Npc.localAI[0];
 
         var dashOptions = new DashOptions
         {
-            DashLength = 30,
+            DashLength = dashLength,
             DashSpeed = speed,
             TrackTime = 0,
-            DashAtTime = 60,
+            DashAtTime = dashAtTime,
             MinimumDistance = 0,
             LookOffset = 0,
             DontReposition = true
@@ -268,14 +480,14 @@ public class QueenBee : AcidicNPCOverride
         return dashState == DashState.Done;
     }
 
-    private bool Attack_Dash(float speed)
+    private bool Attack_Dash(float speed, int dashLength, int dashAtTime)
     {
         var dashOptions = new DashOptions
         {
-            DashLength = 30,
+            DashLength = dashLength,
             DashSpeed = speed,
-            TrackTime = 30,
-            DashAtTime = 60,
+            TrackTime = dashAtTime / 2,
+            DashAtTime = dashAtTime,
             MinimumDistance = 200,
             LookOffset = 0,
             DontReposition = false
@@ -331,27 +543,26 @@ public class QueenBee : AcidicNPCOverride
         return false;
     }
 
-    private bool Attack_BeePillar(float spacing, int pillarsToEachSide)
+    private bool Attack_BeePillar(float spacing, int pillarsToEachSide, float hoverSpeed, float hoverAccel)
     {
         AttackManager.CountUp = true;
 
         ref var centerX = ref Npc.localAI[0];
         ref var centerY = ref Npc.localAI[1];
 
-        HoverAbove(10, 0.5f, 250);
-
+        HoverAbove(hoverSpeed, hoverAccel, 250);
 
         if (AttackManager.AiTimer == 0)
         {
+            SummonFx();
+
             var center = Main.player[Npc.target].Center;
             centerX = center.X;
             centerY = center.Y;
 
-
             var pos = center;
             pos.Y = Utilities.FindGroundVertical(pos.ToTileCoordinates()).ToWorldCoordinates().Y;
 
-            SoundEngine.PlaySound(SummonBeesSound, Npc.Center);
             NewDashLine(pos, new Vector2(0, -1).ToRotation(), 60, false);
 
             for (var i = 1; i <= pillarsToEachSide; i++)
@@ -405,7 +616,7 @@ public class QueenBee : AcidicNPCOverride
                 {
                     Scale = Vector2.One * 2f
                 }.Spawn();
-                
+
                 SoundEngine.PlaySound(SpitSound, leftPos);
                 SoundEngine.PlaySound(SpitSound, rightPos);
 
@@ -453,6 +664,14 @@ public class QueenBee : AcidicNPCOverride
         return false;
     }
 
+    private bool Attack_BeeRing(int ringTime)
+    {
+        SummonFx();
+
+        NewBeeCircle(Npc.Center, 0f, 60 + ringTime);
+        return true;
+    }
+
     #endregion
 
     #region Projectiles
@@ -482,6 +701,13 @@ public class QueenBee : AcidicNPCOverride
         if (!AcidUtils.IsServer()) return null;
         return BaseSwarmProjectile.Create<BeePillar>(Npc.GetSource_FromAI(), position, rotation, Npc.damage, 3,
             lifetime);
+    }
+
+    private Projectile? NewBeeCircle(Vector2 position, float rotation, int lifetime)
+    {
+        if (!AcidUtils.IsServer()) return null;
+        return BeeCircle.Create(Npc.GetSource_FromAI(), position, rotation, Npc.damage, 3,
+            lifetime, Npc.whoAmI);
     }
 
     private Projectile? NewBeeHive(Vector2 position, Vector2 velocity)
@@ -558,7 +784,9 @@ public class QueenBee : AcidicNPCOverride
             }
 
             if (npc.frame.Y >= frameHeight * 4)
+            {
                 npc.frame.Y = 0;
+            }
         }
     }
 

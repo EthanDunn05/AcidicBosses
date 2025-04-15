@@ -18,7 +18,7 @@ public class QueenBeePillarLine : BaseLineProjectile
     private Color GetColor()
     {
         var fadeT = (float) Projectile.timeLeft / MaxTimeLeft;
-        var color = Color.White;
+        var color = Color.White * 0.75f;
         color *= EasingHelper.CubicOut(fadeT);
         
         return color;
