@@ -109,9 +109,6 @@ public abstract class BaseLineProjectile : ModProjectile, IAnchoredProjectile
     {
         if (!readyToDraw) return false;
         
-        // BatchShadingManager.DrawProjectile(Projectile, EffectsRegistry.IndicatorColor, sb =>
-        // {
-        
         var pos = Projectile.position - Main.screenPosition;
         var rect = LineTexture.Frame(horizontalFrames: Frames,  frameX: Projectile.frame);
         var origin = new Vector2(rect.Width / 2f, 0);
@@ -122,9 +119,6 @@ public abstract class BaseLineProjectile : ModProjectile, IAnchoredProjectile
             Projectile.rotation - MathHelper.PiOver2, origin, scale,
             SpriteEffects.None, 0f
         );
-        
-        // });
-        
         
         return false;
     }

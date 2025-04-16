@@ -2,11 +2,13 @@
 using AcidicBosses.Common.Effects;
 using AcidicBosses.Common.RenderManagers;
 using AcidicBosses.Common.Textures;
+using AcidicBosses.Helpers;
 using AcidicBosses.Helpers.NpcHelpers;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.GameContent;
+using Terraria.GameContent.Bestiary;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -43,7 +45,23 @@ public class EoWServant : AcidicNPC
     
     public override void SetStaticDefaults()
     {
+        var bestiary = new NPCID.Sets.NPCBestiaryDrawModifiers()
+        {
+            CustomTexturePath = "Terraria/Images/UI/Bestiary/NPCs/NPC_13",
+            Position = new Vector2(40f, 24f),
+            PortraitPositionXOverride = 0f,
+            PortraitPositionYOverride = 12f
+        };
         
+        NPCID.Sets.NPCBestiaryDrawOffset.Add(NPC.type, bestiary);
+    }
+
+    public override void SetBestiary(BestiaryDatabase database, BestiaryEntry bestiaryEntry)
+    {
+       bestiaryEntry.Info.AddRange([
+            BestiaryDatabaseNPCsPopulator.CommonTags.SpawnConditions.Biomes.TheCorruption,
+            new FlavorTextBestiaryInfoElement(ModLanguage.FormatLocalized("Bestiary.EoWServant"))
+       ]);
     }
 
     public override void OnFirstFrame()

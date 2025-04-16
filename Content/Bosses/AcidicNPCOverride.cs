@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Linq;
 using AcidicBosses.Common.Effects;
 using AcidicBosses.Core.StateManagement;
@@ -195,7 +196,14 @@ public abstract class AcidicNPCOverride : GlobalNPC
     {
         if (!ShouldOverride()) return true;
         if (isFirstFrame) return true; // Use vanilla rendering if acidic stuff hasn't taken over yet
-        return AcidicDraw(npc, spriteBatch, screenPos, drawColor);
+        try
+        {
+            return AcidicDraw(npc, spriteBatch, screenPos, drawColor);
+        }
+        catch (Exception e)
+        {
+            return true;
+        }
     }
 
     public virtual void LookTowards(Vector2 target, float power)
