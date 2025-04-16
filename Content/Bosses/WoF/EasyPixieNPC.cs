@@ -12,6 +12,14 @@ public class EasyPixieNPC : AcidicNPC
     public override void SetStaticDefaults()
     {
         Main.npcFrameCount[Type] = 4;
+        
+        // Nobody can know this isn't a real pixie
+        var bestiary = new NPCID.Sets.NPCBestiaryDrawModifiers()
+        {
+            Hide = true
+        };
+        
+        NPCID.Sets.NPCBestiaryDrawOffset.Add(NPC.type, bestiary);
     }
 
     public override void SetDefaults()

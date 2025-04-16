@@ -31,6 +31,17 @@ Projectiles: {
 	SpazCircleVortex.DisplayName: Spaz Circle Vortex
 	SpazCircleIndicator.DisplayName: Spaz Circle Indicator
 	BlackHole.DisplayName: Black Hole
+	BeeSwarm.DisplayName: Bee Swarm
+	BeeLasso.DisplayName: Bee Lasso
+	BeeCircle.DisplayName: Bee Circle
+	BeePattern.DisplayName: Bee Pattern
+	BeeWave.DisplayName: Bee Wave
+	QueenBeeAfterimageTrail.DisplayName: Queen Bee Afterimage Trail
+	QueenBeeDashLine.DisplayName: Queen Bee Dash Line
+	BeePillar.DisplayName: Bee Pillar
+	QueenBeePillarLine.DisplayName: Queen Bee Pillar Line
+	EyePhantomDashLine.DisplayName: Eye Phantom Dash Line
+	BeeWaveIndicator.DisplayName: Bee Wave Indicator
 }
 
 Buffs: {
@@ -126,5 +137,12 @@ Configs: {
 			Label: Enable Twins
 			Tooltip: Enable Twins AI Changes
 		}
+
+		EnableQueenBee: {
+			Label: Enable Queen Bee
+			Tooltip: ""
+		}
 	}
 }
+
+Bestiary.EoWServant: This miniature worm exists to serve and protect its master as it devours all it can.

@@ -510,13 +510,13 @@ public class EoC : AcidicNPCOverride
 
         var targetPos = Main.player[Npc.target].Center;
 
-        var offsetFromPlayer0 = new Vector2(800, -800);
+        var offsetFromPlayer0 = new Vector2(710, -710);
         var vel0 = (targetPos + offsetFromPlayer0).DirectionTo(targetPos) * dashSpeed;
         var pos0 = targetPos + offsetFromPlayer0;
         var vel2 = (targetPos - offsetFromPlayer0).DirectionTo(targetPos) * dashSpeed;
         var pos2 = targetPos - offsetFromPlayer0;
 
-        var offsetFromPlayer1 = new Vector2(-800, -800);
+        var offsetFromPlayer1 = new Vector2(-710, -710);
         var vel1 = (targetPos + offsetFromPlayer1).DirectionTo(targetPos) * dashSpeed;
         var pos1 = targetPos + offsetFromPlayer1;
         var vel3 = (targetPos - offsetFromPlayer1).DirectionTo(targetPos) * dashSpeed;
@@ -543,14 +543,14 @@ public class EoC : AcidicNPCOverride
             // Spawn Right
             var rightEye = NewPhantomEoC(pos0, vel0, indicateTime);
             rightEye.timeLeft = indicateTime + dashLength;
-            var rightLine = NewDashLine(pos0, vel0.ToRotation(), indicateTime, false);
+            var rightLine = NewPhantomDashLine(pos0, vel0.ToRotation(), indicateTime, false);
             var rightEye1 = NewPhantomEoC(pos2, vel2, indicateTime);
             rightEye1.timeLeft = indicateTime + dashLength;
 
             // Spawn Left
             var leftEye = NewPhantomEoC(pos1, vel1, indicateTime);
             leftEye.timeLeft = indicateTime + dashLength;
-            var leftLine = NewDashLine(pos1, vel1.ToRotation(), indicateTime, false);
+            var leftLine = NewPhantomDashLine(pos1, vel1.ToRotation(), indicateTime, false);
             var leftEye1 = NewPhantomEoC(pos3, vel3, indicateTime);
             leftEye1.timeLeft = indicateTime + dashLength;
         }
@@ -605,14 +605,14 @@ public class EoC : AcidicNPCOverride
             // Spawn Right
             var rightEye = NewPhantomEoC(pos0, vel0, indicateTime);
             rightEye.timeLeft = indicateTime + dashLength;
-            var rightLine = NewDashLine(pos0, vel0.ToRotation(), indicateTime, false);
+            var rightLine = NewPhantomDashLine(pos0, vel0.ToRotation(), indicateTime, false);
             var rightEye1 = NewPhantomEoC(pos2, vel2, indicateTime);
             rightEye1.timeLeft = indicateTime + dashLength;
 
             // Spawn Left
             var leftEye = NewPhantomEoC(pos1, vel1, indicateTime);
             leftEye.timeLeft = indicateTime + dashLength;
-            var leftLine = NewDashLine(pos1, vel1.ToRotation(), indicateTime, false);
+            var leftLine = NewPhantomDashLine(pos1, vel1.ToRotation(), indicateTime, false);
             var leftEye1 = NewPhantomEoC(pos3, vel3, indicateTime);
             leftEye1.timeLeft = indicateTime + dashLength;
         }
@@ -678,7 +678,7 @@ public class EoC : AcidicNPCOverride
             var eye = NewPhantomEoC(pos, vel, dashAtTime);
             var eye2 = NewPhantomEoC(pos2, -vel, dashAtTime);
             eye.timeLeft = dashAtTime + dashLength;
-            var line = NewDashLine(pos, vel.ToRotation(), (int) (dashAtTime + dashLength / 2f), false);
+            var line = NewPhantomDashLine(pos, vel.ToRotation(), (int) (dashAtTime + dashLength / 2f), false);
         }
 
         return isDone;
@@ -767,6 +767,12 @@ public class EoC : AcidicNPCOverride
     {
         var ai1 = anchorToBoss ? Npc.whoAmI : -1;
         return BaseLineProjectile.Create<EyeDashLine>(Npc.GetSource_FromAI(), position, offset, lifetime, ai1);
+    }
+    
+    private Projectile NewPhantomDashLine(Vector2 position, float offset, int lifetime, bool anchorToBoss = true)
+    {
+        var ai1 = anchorToBoss ? Npc.whoAmI : -1;
+        return BaseLineProjectile.Create<EyePhantomDashLine>(Npc.GetSource_FromAI(), position, offset, lifetime, ai1);
     }
 
     private Projectile NewPhantomEoC(Vector2 position, Vector2 dashVelocity, int dashDelay = 0)

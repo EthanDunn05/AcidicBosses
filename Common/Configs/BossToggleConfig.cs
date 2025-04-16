@@ -36,6 +36,9 @@ public class BossToggleConfig : ModConfig
     public bool EnableBrainOfCthulhu;
     
     [DefaultValue(true)]
+    public bool EnableQueenBee;
+    
+    [DefaultValue(true)]
     public bool EnableSkeletron;
     
     [DefaultValue(true)]

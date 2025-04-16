@@ -1,8 +1,8 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Linq;
 using AcidicBosses.Common.Effects;
 using AcidicBosses.Core.StateManagement;
-using AcidicBosses.Core.Systems.DifficultySystem;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
@@ -48,8 +48,6 @@ public abstract class AcidicNPCOverride : GlobalNPC
     protected float[] ExtraLocalAI = new float[4];
 
     private bool isFirstFrame = true;
-
-    private static bool AcidicActive => AcidicDifficultySystem.AcidicActive;
 
     public override bool AppliesToEntity(NPC entity, bool lateInstantiation)
     {
@@ -198,7 +196,14 @@ public abstract class AcidicNPCOverride : GlobalNPC
     {
         if (!ShouldOverride()) return true;
         if (isFirstFrame) return true; // Use vanilla rendering if acidic stuff hasn't taken over yet
-        return AcidicDraw(npc, spriteBatch, screenPos, drawColor);
+        try
+        {
+            return AcidicDraw(npc, spriteBatch, screenPos, drawColor);
+        }
+        catch (Exception e)
+        {
+            return true;
+        }
     }
 
     public virtual void LookTowards(Vector2 target, float power)
@@ -214,6 +219,6 @@ public abstract class AcidicNPCOverride : GlobalNPC
 
     public bool ShouldOverride()
     {
-        return AcidicActive && BossEnabled;
+        return BossEnabled;
     }
 }

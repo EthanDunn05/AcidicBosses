@@ -34,6 +34,14 @@ public class WoFMouth : AcidicNPC
     {
         Main.npcFrameCount[Type] = 2;
         NPCID.Sets.MustAlwaysDraw[Type] = true;
+        
+        // No bestiary entry since it's part of the WoF
+        var bestiary = new NPCID.Sets.NPCBestiaryDrawModifiers()
+        {
+            Hide = true
+        };
+        
+        NPCID.Sets.NPCBestiaryDrawOffset.Add(NPC.type, bestiary);
     }
 
     public override void SetDefaults()

@@ -1,11 +1,14 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using AcidicBosses.Common.Configs;
-using AcidicBosses.Content.Bosses.EoC;
-using AcidicBosses.Content.Particles;
 using AcidicBosses.Content.Particles.Animated;
 using AcidicBosses.Content.ProjectileBases;
+using Luminance.Common.VerletIntergration;
+using Luminance.Core.Graphics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using ReLogic.Content;
 using Terraria;
 using Terraria.GameContent;
 using Terraria.ID;
@@ -46,6 +49,17 @@ public class CreeperOverride : AcidicNPCOverride
     private bool useAfterimages = false;
 
     private bool countUpTimer = false;
+    
+    // Only exists on client
+    private List<VerletSegment> connectionSegments = [];
+    private VerletSettings connectionSimSettings = new()
+    {
+        ConserveEnergy = true
+    };
+    
+    private Texture2D connectionTex = TextureAssets.Chain12.Value; // The sprite is oriented vertically
+    private Asset<Texture2D> connectionTexAsset = TextureAssets.Chain12;
+    private int connectionLength = 500;
 
     public override void SetStaticDefaults()
     {
@@ -73,6 +87,17 @@ public class CreeperOverride : AcidicNPCOverride
         }
 
         new RingBurstParticle(Npc.Center, Vector2.Zero, 0f, Color.Red, 30).Spawn();
+        
+        // Fill out the connector on the client
+        if (Main.netMode != NetmodeID.Server) FillTether();
+    }
+
+    public override void DrawBehind(NPC npc, int index)
+    {
+        if (!ShouldOverride()) return;
+        
+        // Draw over the brain
+        Main.instance.DrawCacheNPCProjectiles.Add(index);
     }
 
     public override bool AcidAI(NPC npc)
@@ -99,6 +124,20 @@ public class CreeperOverride : AcidicNPCOverride
     {
         // Empty loot pool
         npcLoot.RemoveWhere(_ => true);
+    }
+    
+    private void FillTether()
+    {
+        connectionSegments.Clear(); // Just to be safe
+        
+        for (var i = 0; i < connectionLength; i += connectionTex.Height)
+        {
+            connectionSegments.Add(
+                new VerletSegment(new Vector2(Npc.Center.X + i, Npc.Center.Y), Vector2.Zero));
+        }
+            
+        // Remove one segment
+        connectionSegments.RemoveAt(0);
     }
 
     #region Ai
@@ -258,6 +297,8 @@ public class CreeperOverride : AcidicNPCOverride
         var texture = TextureAssets.Npc[npc.type].Value;
         var origin = npc.frame.Size() * 0.5f;
         
+        DrawTether();
+        
         // Afterimages
         if (useAfterimages)
             for (var i = 1; i < npc.oldPos.Length; i++)
@@ -278,5 +319,31 @@ public class CreeperOverride : AcidicNPCOverride
             SpriteEffects.None, 0f);
 
         return false;
+    }
+
+    private void DrawTether()
+    {
+        var brain = Main.npc[NPC.crimsonBoss];
+        if (brain == null || !brain.active) return;
+        
+        connectionSegments = VerletSimulations.RopeVerletSimulation(connectionSegments, brain.Center,
+            connectionLength * 0.75f, connectionSimSettings, Npc.Center);
+        
+        var renderSettings = new PrimitiveSettings(
+            _ => connectionTex.Width / 2f,
+            p =>
+            {
+                var index = (int) (p * connectionSegments.Count);
+                if (index == connectionSegments.Count) index--;
+                var color = Lighting.GetColor(connectionSegments[index].Position.ToTileCoordinates());
+                color *= brain.Opacity;
+                return color;
+            },
+            Shader: ShaderManager.GetShader("AcidicBosses.Rope")
+        );
+        renderSettings.Shader.SetTexture(connectionTexAsset, 1, SamplerState.PointClamp);
+        renderSettings.Shader.TrySetParameter("segments", connectionSegments.Count);
+    
+        PrimitiveRenderer.RenderTrail(connectionSegments.Select(s => s.Position), renderSettings);
     }
 }

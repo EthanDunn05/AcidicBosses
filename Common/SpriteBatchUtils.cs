@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using System;
+using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 
 namespace AcidicBosses.Common;
@@ -12,7 +13,15 @@ public static class SpriteBatchUtils
     /// <seealso cref="ExitShader"/>
     public static void EnterShader(this SpriteBatch spriteBatch, BlendState blendState = null, Effect effect = null)
     {
-        spriteBatch.End();
+        try
+        {
+            spriteBatch.End();
+        }
+        catch (InvalidOperationException e)
+        {
+            // Don't end then
+        }
+        
         spriteBatch.Begin(SpriteSortMode.Immediate, blendState ?? BlendState.AlphaBlend, Main.DefaultSamplerState, DepthStencilState.None, Main.Rasterizer, effect, Main.GameViewMatrix.TransformationMatrix);
     }
 
@@ -23,7 +32,14 @@ public static class SpriteBatchUtils
     /// <seealso cref="EnterShader"/>
     public static void ExitShader(this SpriteBatch spriteBatch)
     {
-        spriteBatch.End();
+        try
+        {
+            spriteBatch.End();
+        }
+        catch (InvalidOperationException e)
+        {
+            // Don't end then
+        }
         spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, Main.DefaultSamplerState, DepthStencilState.None, Main.Rasterizer, null, Main.GameViewMatrix.TransformationMatrix);
     }
 }

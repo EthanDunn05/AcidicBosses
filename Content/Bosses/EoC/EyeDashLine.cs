@@ -12,11 +12,11 @@ namespace AcidicBosses.Content.Bosses.EoC;
 
 public class EyeDashLine : BaseLineProjectile
 {
-    protected override float Length { get; set; } = 12000f;
+    protected override float Length { get; set; } = 1000f;
     protected override float Width { get; set; } = 33f;
     protected override Color Color => GetColor();
     
-    protected override Asset<Texture2D> LineTexture { get; } = TextureRegistry.InvertedGlowLine;
+    protected override Asset<Texture2D> LineTexture { get; } = TextureRegistry.InvertedFadingGlowLine;
     
     private Color GetColor()
     {

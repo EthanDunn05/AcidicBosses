@@ -1,6 +1,5 @@
 ﻿using System;
 using AcidicBosses.Common.Configs;
-using AcidicBosses.Core.Systems.DifficultySystem;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
@@ -43,7 +42,7 @@ public class WoFSystem : ModSystem
     
     private void WoFTongue(On_Player.orig_WOFTongue orig, Player self)
     {
-	    if (!AcidicDifficultySystem.AcidicActive || !BossToggleConfig.Get().EnableWallOfFlesh)
+	    if (!BossToggleConfig.Get().EnableWallOfFlesh)
 	    {
 		    orig(self);
 		    return;
@@ -100,7 +99,7 @@ public class WoFSystem : ModSystem
 
     private void DrawWofBody(On_Main.orig_DrawWoF orig, Main self)
     {
-	    if (!AcidicDifficultySystem.AcidicActive || !BossToggleConfig.Get().EnableWallOfFlesh)
+	    if (!BossToggleConfig.Get().EnableWallOfFlesh)
 	    {
 		    orig(self);
 		    return;
@@ -140,7 +139,7 @@ public class WoFSystem : ModSystem
         var rightWallX = WoF.position.X + WallDistance;
 
         int frameY = Main.wofDrawFrameIndex / 6 * frameHeight;
-        if (!Main.gamePaused && ++Main.wofDrawFrameIndex >= 18)
+        if (!Main.gamePaused && Main.wofDrawFrameIndex >= 18)
         {
 	        Main.wofDrawFrameIndex = 0;
         }
@@ -198,7 +197,7 @@ public class WoFSystem : ModSystem
     
     private void DrawWOFTongueToPlayer(On_Main.orig_DrawWOFTongueToPlayer orig, int i)
     {
-	    if (!AcidicDifficultySystem.AcidicActive || !BossToggleConfig.Get().EnableWallOfFlesh)
+	    if (!BossToggleConfig.Get().EnableWallOfFlesh)
 	    {
 		    orig(i);
 		    return;

@@ -13,6 +13,7 @@ using ReLogic.Content;
 using ReLogic.Graphics;
 using Terraria;
 using Terraria.GameContent;
+using Terraria.GameContent.Bestiary;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Vector2 = Microsoft.Xna.Framework.Vector2;
@@ -50,6 +51,17 @@ public partial class TwinsController : AcidicNPC
     private Texture2D connectionTex = TextureAssets.Chain12.Value; // The sprite is oriented vertically
     private Asset<Texture2D> connectionTexAsset = TextureAssets.Chain12;
     private int connectionLength = 500;
+
+    public override void SetStaticDefaults()
+    {
+        // Yeet the bestiary entry
+        var bestiary = new NPCID.Sets.NPCBestiaryDrawModifiers()
+        {
+            Hide = true
+        };
+        
+        NPCID.Sets.NPCBestiaryDrawOffset.Add(NPC.type, bestiary);
+    }
 
     public override void SetDefaults()
     {
@@ -202,6 +214,9 @@ public partial class TwinsController : AcidicNPC
 
     public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
     {
+        // Don't draw on the first frame to fix null errors
+        if (IsFirstFrame) return false;
+        
         // Yes I'm running this every frame. If I don't the rope is jittery.
         // You can't stop me
         connectionSegments = VerletSimulations.RopeVerletSimulation(connectionSegments, Retinazer.Npc.Center,
@@ -224,7 +239,7 @@ public partial class TwinsController : AcidicNPC
     
         PrimitiveRenderer.RenderTrail(connectionSegments.Select(s => s.Position), renderSettings);
         
-        spriteBatch.DrawString(FontAssets.MouseText.Value, attackManager.AiTimer.ToString(), NPC.position - Main.screenPosition + new Vector2(50, 50), Color.White);
+        // spriteBatch.DrawString(FontAssets.MouseText.Value, attackManager.AiTimer.ToString(), NPC.position - Main.screenPosition + new Vector2(50, 50), Color.White);
 
         return false;
     }

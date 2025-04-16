@@ -1,6 +1,5 @@
 ﻿using System;
 using AcidicBosses.Common.Configs;
-using AcidicBosses.Core.Systems.DifficultySystem;
 using Mono.Cecil.Cil;
 using MonoMod.Cil;
 using Terraria;
@@ -69,6 +68,6 @@ public class RemoveConnectorSystem : ModSystem
 
     private static bool HideVanillaConnector()
     {
-        return AcidicDifficultySystem.AcidicActive && BossToggleConfig.Get().EnableTwins;
+        return BossToggleConfig.Get().EnableTwins;
     }
 }

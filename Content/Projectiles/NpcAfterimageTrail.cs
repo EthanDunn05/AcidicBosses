@@ -20,17 +20,17 @@ public class NpcAfterimageTrail : ModProjectile
 {
     public override string Texture => TextureRegistry.InvisPath;
 
-    private Vector2? startoffset;
+    protected Vector2? startoffset;
 
-    private bool doneFirstFrame = false;
+    protected bool doneFirstFrame = false;
 
     protected int maxTimeLeft = 0;
 
-    private Rectangle frame;
-    private Vector2 endPos;
-    private float rotation;
+    protected Rectangle frame;
+    protected Vector2 endPos;
+    protected float rotation;
     
-    private const int Images = 20;
+    protected const int Images = 20;
 
     public override void SetDefaults()
     {

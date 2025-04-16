@@ -85,6 +85,12 @@ public class PhaseTracker
         CurrentPhase = phase;
     }
 
+    public void ResumePhase()
+    {
+        CurrentPhase.ExitTransition?.Invoke();
+        CurrentPhase = phases[currentStateIndex];
+    }
+
     /// <summary>
     /// Saves phase data to the network
     /// </summary>

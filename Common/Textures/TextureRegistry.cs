@@ -15,6 +15,7 @@ public static class TextureRegistry
     // Lines
     public static Asset<Texture2D> GlowLine => Tex("Lines/GlowLine");
     public static Asset<Texture2D> InvertedGlowLine => Tex("Lines/InvertedGlowLine");
+    public static Asset<Texture2D> InvertedFadingGlowLine => Tex("Lines/InvertedFadingGlowLine");
     public static Asset<Texture2D> SideGlowLine => Tex("Lines/SideGlowLine");
     public static Asset<Texture2D> Line => Tex("Lines/Line");
     

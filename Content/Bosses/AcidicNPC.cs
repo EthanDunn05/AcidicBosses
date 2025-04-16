@@ -14,7 +14,7 @@ namespace AcidicBosses.Content.Bosses;
 /// </summary>
 public abstract class AcidicNPC : ModNPC
 {
-    private bool isFirstFrame = true;
+    protected bool IsFirstFrame = true;
 
     public virtual void OnFirstFrame()
     {
@@ -23,10 +23,10 @@ public abstract class AcidicNPC : ModNPC
 
     public sealed override void AI()
     {
-        if (isFirstFrame)
+        if (IsFirstFrame)
         {
             OnFirstFrame();
-            isFirstFrame = false;
+            IsFirstFrame = false;
         }
         AcidAI();
     }
