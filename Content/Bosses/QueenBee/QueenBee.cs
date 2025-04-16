@@ -25,7 +25,8 @@ public class QueenBee : AcidicNPCOverride
     private static readonly SoundStyle ScreechSound = SoundID.Zombie125;
     private static readonly SoundStyle FlapSound = SoundID.Item32;
     private static readonly SoundStyle SummonBeesSound = SoundID.DD2_WyvernScream with { Pitch = 0.5f };
-
+    private static readonly SoundStyle BeeEmergeSound = SoundID.DeerclopsRubbleAttack with { Pitch = 0.5f, MaxInstances = 10, Volume = 0.25f };
+    
     protected override int OverriddenNpc => NPCID.QueenBee;
     protected override bool BossEnabled => BossToggleConfig.Get().EnableQueenBee;
 
@@ -526,11 +527,11 @@ public class QueenBee : AcidicNPCOverride
         AttackManager.CountUp = true;
 
         Npc.velocity = Vector2.Zero;
-
+        
         if (AttackManager.AiTimer % 60 == 0 && AttackManager.AiTimer != 240)
         {
             new SmallPuffParticle(StingerPos, Vector2.Zero, 0f, Color.Yellow, 30).Spawn();
-            SoundEngine.PlaySound(SpitSound, StingerPos);
+            SoundEngine.PlaySound(SoundID.Item97, StingerPos);
             NewBeeWave(StingerPos, Npc.DirectionTo(TargetPlayer.Center).ToRotation(), 180);
         }
 
@@ -561,9 +562,9 @@ public class QueenBee : AcidicNPCOverride
             centerY = center.Y;
 
             var pos = center;
-            pos.Y = Utilities.FindGroundVertical(pos.ToTileCoordinates()).ToWorldCoordinates().Y;
+            pos.Y = Utilities.FindGroundVertical(pos.ToTileCoordinates()).ToWorldCoordinates().Y + 8;
 
-            NewDashLine(pos, new Vector2(0, -1).ToRotation(), 60, false);
+            NewPillarLine(pos, new Vector2(0, -1).ToRotation(), 60, false);
 
             for (var i = 1; i <= pillarsToEachSide; i++)
             {
@@ -573,12 +574,12 @@ public class QueenBee : AcidicNPCOverride
                 leftPos.X -= spacing * i;
                 rightPos.X += spacing * i;
 
-                leftPos.Y = Utilities.FindGroundVertical(leftPos.ToTileCoordinates()).ToWorldCoordinates().Y;
-                rightPos.Y = Utilities.FindGroundVertical(rightPos.ToTileCoordinates()).ToWorldCoordinates().Y;
+                leftPos.Y = Utilities.FindGroundVertical(leftPos.ToTileCoordinates()).ToWorldCoordinates().Y + 8;
+                rightPos.Y = Utilities.FindGroundVertical(rightPos.ToTileCoordinates()).ToWorldCoordinates().Y + 8;
 
 
-                NewDashLine(leftPos, new Vector2(0, -1).ToRotation(), 60, false);
-                NewDashLine(rightPos, new Vector2(0, -1).ToRotation(), 60, false);
+                NewPillarLine(leftPos, new Vector2(0, -1).ToRotation(), 60, false);
+                NewPillarLine(rightPos, new Vector2(0, -1).ToRotation(), 60, false);
             }
         }
 
@@ -592,7 +593,7 @@ public class QueenBee : AcidicNPCOverride
             {
                 Scale = Vector2.One * 2f
             }.Spawn();
-            SoundEngine.PlaySound(SpitSound, pos);
+            SoundEngine.PlaySound(BeeEmergeSound, pos);
             NewBeePillar(pos, new Vector2(0, -1).ToRotation(), 180);
 
             ScreenShakeSystem.StartShakeAtPoint(pos, 5f);
@@ -617,8 +618,8 @@ public class QueenBee : AcidicNPCOverride
                     Scale = Vector2.One * 2f
                 }.Spawn();
 
-                SoundEngine.PlaySound(SpitSound, leftPos);
-                SoundEngine.PlaySound(SpitSound, rightPos);
+                SoundEngine.PlaySound(BeeEmergeSound, leftPos);
+                SoundEngine.PlaySound(BeeEmergeSound, rightPos);
 
                 if (AcidUtils.IsServer())
                 {
@@ -682,7 +683,7 @@ public class QueenBee : AcidicNPCOverride
         return QueenBeeAfterimageTrail.Create(Npc.GetSource_FromAI(), startPos, endPos, Npc.whoAmI);
     }
 
-    private Projectile? NewDashLine(Vector2 position, float offset, int lifetime, bool anchorToBoss = true)
+    private Projectile? NewPillarLine(Vector2 position, float offset, int lifetime, bool anchorToBoss = true)
     {
         if (!AcidUtils.IsServer()) return null;
         var ai1 = anchorToBoss ? Npc.whoAmI : -1;

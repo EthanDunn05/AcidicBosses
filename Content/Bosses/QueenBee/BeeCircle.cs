@@ -1,5 +1,4 @@
 ﻿using System;
-using AcidicBosses.Content.Particles;
 using AcidicBosses.Content.Particles.Animated;
 using AcidicBosses.Content.ProjectileBases;
 using AcidicBosses.Helpers;

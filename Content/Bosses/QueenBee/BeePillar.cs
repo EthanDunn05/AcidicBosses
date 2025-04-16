@@ -3,7 +3,6 @@ using AcidicBosses.Content.Particles.Animated;
 using AcidicBosses.Content.ProjectileBases;
 using Microsoft.Xna.Framework;
 using Terraria;
-using Terraria.ID;
 
 namespace AcidicBosses.Content.Bosses.QueenBee;
 

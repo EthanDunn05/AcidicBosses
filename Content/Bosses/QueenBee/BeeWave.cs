@@ -25,4 +25,9 @@ public class BeeWave : BaseSwarmProjectile
         base.SetDefaults();
         Projectile.hostile = true;
     }
+
+    public override void AI()
+    {
+        base.AI();
+    }
 }
