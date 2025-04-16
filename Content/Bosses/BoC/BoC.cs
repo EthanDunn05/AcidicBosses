@@ -361,7 +361,7 @@ public class BoC : AcidicNPCOverride
         if (Main.netMode != NetmodeID.MultiplayerClient)
         {
             var pos = Npc.Center + Main.rand.NextVector2Circular(250, 250);
-            NPC.NewNPCDirect(Npc.GetSource_FromAI(), pos, NPCID.Creeper, ai1: (int) type);
+            NPC.NewNPCDirect(Npc.GetSource_FromAI(), pos, NPCID.Creeper, start:Npc.whoAmI, ai1: (int) type);
         }
 
         return true;

@@ -92,6 +92,14 @@ public class CreeperOverride : AcidicNPCOverride
         if (Main.netMode != NetmodeID.Server) FillTether();
     }
 
+    public override void DrawBehind(NPC npc, int index)
+    {
+        if (!ShouldOverride()) return;
+        
+        // Draw over the brain
+        Main.instance.DrawCacheNPCProjectiles.Add(index);
+    }
+
     public override bool AcidAI(NPC npc)
     {
         if (!Main.npc.IndexInRange(NPC.crimsonBoss) || !Main.npc[NPC.crimsonBoss].active)
