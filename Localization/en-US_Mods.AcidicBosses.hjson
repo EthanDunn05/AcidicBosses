@@ -41,6 +41,7 @@ Projectiles: {
 	BeePillar.DisplayName: Bee Pillar
 	QueenBeePillarLine.DisplayName: Queen Bee Pillar Line
 	EyePhantomDashLine.DisplayName: Eye Phantom Dash Line
+	BeeWaveIndicator.DisplayName: Bee Wave Indicator
 }
 
 Buffs: {
