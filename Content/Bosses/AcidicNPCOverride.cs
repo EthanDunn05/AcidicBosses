@@ -219,6 +219,6 @@ public abstract class AcidicNPCOverride : GlobalNPC
 
     public bool ShouldOverride()
     {
-        return BossEnabled;
+        return BossEnabled && !AcidicBosses.DisableReworks();
     }
 }

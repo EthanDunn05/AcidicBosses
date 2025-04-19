@@ -29,6 +29,7 @@ public class BeeModification : GlobalNPC
 
     public override bool PreDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color lightColor)
     {
+        if (AcidicBosses.DisableReworks()) return true;
         if (!BossToggleConfig.Get().EnableQueenBee) return true;
         if (!Main.npc.Any(n => n.type == NPCID.QueenBee && n.active)) return true;
         
