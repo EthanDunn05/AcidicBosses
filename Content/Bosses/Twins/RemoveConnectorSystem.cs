@@ -68,6 +68,6 @@ public class RemoveConnectorSystem : ModSystem
 
     private static bool HideVanillaConnector()
     {
-        return BossToggleConfig.Get().EnableTwins;
+        return BossToggleConfig.Get().EnableTwins && !AcidicBosses.DisableReworks();
     }
 }

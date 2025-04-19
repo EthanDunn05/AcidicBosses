@@ -42,7 +42,7 @@ public class WoFSystem : ModSystem
     
     private void WoFTongue(On_Player.orig_WOFTongue orig, Player self)
     {
-	    if (!BossToggleConfig.Get().EnableWallOfFlesh)
+	    if (!BossToggleConfig.Get().EnableWallOfFlesh || AcidicBosses.DisableReworks())
 	    {
 		    orig(self);
 		    return;
@@ -99,7 +99,7 @@ public class WoFSystem : ModSystem
 
     private void DrawWofBody(On_Main.orig_DrawWoF orig, Main self)
     {
-	    if (!BossToggleConfig.Get().EnableWallOfFlesh)
+	    if (!BossToggleConfig.Get().EnableWallOfFlesh || AcidicBosses.DisableReworks())
 	    {
 		    orig(self);
 		    return;
@@ -197,7 +197,7 @@ public class WoFSystem : ModSystem
     
     private void DrawWOFTongueToPlayer(On_Main.orig_DrawWOFTongueToPlayer orig, int i)
     {
-	    if (!BossToggleConfig.Get().EnableWallOfFlesh)
+	    if (!BossToggleConfig.Get().EnableWallOfFlesh || AcidicBosses.DisableReworks())
 	    {
 		    orig(i);
 		    return;
