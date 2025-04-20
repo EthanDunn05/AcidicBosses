@@ -2,8 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using AcidicBosses.Common.Configs;
+using AcidicBosses.Common.Textures;
 using AcidicBosses.Content.Particles.Animated;
 using AcidicBosses.Content.ProjectileBases;
+using AcidicBosses.Core.Graphics.Sprites;
+using AcidicBosses.Helpers;
 using Luminance.Common.VerletIntergration;
 using Luminance.Core.Graphics;
 using Microsoft.Xna.Framework;
@@ -250,9 +253,9 @@ public class CreeperOverride : AcidicNPCOverride
         countUpTimer = true;
         var target = Main.player[Npc.target].Center;
 
-        if (AiTimer == 0 && Main.netMode != NetmodeID.MultiplayerClient)
+        if (AiTimer == 0)
         {
-            var line = NewDashLine(Npc.Center, 0f, dashAtTime);
+            NewDashLine(dashAtTime);
         }
 
         if (AiTimer == 0)
@@ -283,10 +286,17 @@ public class CreeperOverride : AcidicNPCOverride
         isDone = false;
     }
     
-    private Projectile NewDashLine(Vector2 position, float offset, int lifetime, bool anchor = true)
+    private void NewDashLine(int lifetime)
     {
-        var ai1 = anchor ? Npc.whoAmI : -1;
-        return BaseLineProjectile.Create<CreeperDashLine>(Npc.GetSource_FromAI(), position, offset, lifetime, ai1);
+        new EffectLine(TextureRegistry.InvertedFadingGlowLine, Npc.Center, Npc.rotation, 1000f, 14f, Color.Crimson, lifetime)
+        {
+            OnUpdate = line =>
+            {
+                line.Position = Npc.Center;
+                line.Rotation = Npc.rotation;
+                line.DrawColor = Color.Crimson * EasingHelper.CubicOut(1f - line.LifetimeRatio);
+            }
+        }.Spawn();
     }
     
     #endregion

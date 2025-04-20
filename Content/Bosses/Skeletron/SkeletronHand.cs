@@ -213,13 +213,6 @@ public class SkeletronHand : AcidicNPCOverride
             AiTimer = offset;
         }
     }
-    
-    private Projectile NewDashLine(Vector2 position, float offset, bool anchorToBoss = true)
-    {
-        var ai1 = anchorToBoss ? Npc.whoAmI + 1 : 0;
-        return Projectile.NewProjectileDirect(Npc.GetSource_FromAI(), position, Vector2.Zero,
-            ModContent.ProjectileType<SkeletronHandDashLine>(), 0, 0, ai0: offset, ai1: ai1);
-    }
 
     #endregion
 

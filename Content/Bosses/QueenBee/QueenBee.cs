@@ -1,9 +1,11 @@
 using System.IO;
 using AcidicBosses.Common.Configs;
+using AcidicBosses.Common.Textures;
 using AcidicBosses.Content.Particles;
 using AcidicBosses.Content.Particles.Animated;
 using AcidicBosses.Content.ProjectileBases;
 using AcidicBosses.Core.Animation;
+using AcidicBosses.Core.Graphics.Sprites;
 using AcidicBosses.Core.StateManagement;
 using AcidicBosses.Helpers;
 using AcidicBosses.Helpers.NpcHelpers;
@@ -564,7 +566,7 @@ public class QueenBee : AcidicNPCOverride
             var pos = center;
             pos.Y = Utilities.FindGroundVertical(pos.ToTileCoordinates()).ToWorldCoordinates().Y + 8;
 
-            NewPillarLine(pos, new Vector2(0, -1).ToRotation(), 60, false);
+            NewPillarLine(pos, new Vector2(0, -1).ToRotation(), 60);
 
             for (var i = 1; i <= pillarsToEachSide; i++)
             {
@@ -578,8 +580,8 @@ public class QueenBee : AcidicNPCOverride
                 rightPos.Y = Utilities.FindGroundVertical(rightPos.ToTileCoordinates()).ToWorldCoordinates().Y + 8;
 
 
-                NewPillarLine(leftPos, new Vector2(0, -1).ToRotation(), 60, false);
-                NewPillarLine(rightPos, new Vector2(0, -1).ToRotation(), 60, false);
+                NewPillarLine(leftPos, new Vector2(0, -1).ToRotation(), 60);
+                NewPillarLine(rightPos, new Vector2(0, -1).ToRotation(), 60);
             }
         }
 
@@ -677,17 +679,36 @@ public class QueenBee : AcidicNPCOverride
 
     #region Projectiles
 
-    private Projectile? NewAfterimage(Vector2 startPos, Vector2 endPos)
+    private void NewAfterimage(Vector2 startPos, Vector2 endPos)
     {
-        if (!AcidUtils.IsServer()) return null;
-        return QueenBeeAfterimageTrail.Create(Npc.GetSource_FromAI(), startPos, endPos, Npc.whoAmI);
+        new FakeAfterimage(startPos, endPos, Npc)
+        {
+            CustomDrawCode = (sb, afterimage, pos, color) =>
+            {
+                var texture = TextureAssets.Npc[Npc.type].Value;
+                var origin = afterimage.StartFrame.Size() / 2f;
+                
+                var effects = SpriteEffects.FlipHorizontally;
+                if (afterimage.StartRotation.ToRotationVector2().X < 0) effects |= SpriteEffects.FlipVertically;
+                
+                sb.Draw(
+                    texture, pos - Main.screenPosition,
+                    afterimage.StartFrame, color,
+                    afterimage.StartRotation, origin, afterimage.StartScale,
+                    effects, 0f);
+            }
+        }.Spawn();
     }
 
-    private Projectile? NewPillarLine(Vector2 position, float offset, int lifetime, bool anchorToBoss = true)
+    private void NewPillarLine(Vector2 position, float rotation, int lifetime)
     {
-        if (!AcidUtils.IsServer()) return null;
-        var ai1 = anchorToBoss ? Npc.whoAmI : -1;
-        return BaseLineProjectile.Create<QueenBeePillarLine>(Npc.GetSource_FromAI(), position, offset, lifetime, ai1);
+        new EffectLine(TextureRegistry.InvertedFadingGlowLine, position, rotation, 1500f, 50f, Color.White, lifetime)
+        {
+            OnUpdate = line =>
+            {
+                line.DrawColor = Color.White * EasingHelper.CubicOut(1f - line.LifetimeRatio);
+            }
+        }.Spawn();
     }
 
     private Projectile? NewBeeWave(Vector2 position, float rotation, int lifetime)

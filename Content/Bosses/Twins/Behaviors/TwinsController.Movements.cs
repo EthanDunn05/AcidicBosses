@@ -73,10 +73,7 @@ public partial class TwinsController
         npc.rotation = awayDir.ToRotation() - MathHelper.PiOver2;
         DashFx(twin);
         
-        if (Main.netMode != NetmodeID.MultiplayerClient)
-        {
-            NewAfterimage(twin, startPos, position);
-        }
+        NewAfterimage(twin, startPos, position);
         
         npc.Center = position;
         npc.velocity = awayDir * recoil;
@@ -94,10 +91,7 @@ public partial class TwinsController
         
         if (am.AiTimer == 0)
         {
-            if (Main.netMode != NetmodeID.MultiplayerClient)
-            {
-                NewDashLine(twin, npc.Center, MathHelper.PiOver2, options.DashAtTime);
-            }
+            NewDashLine(twin, npc.Center, MathHelper.PiOver2, options.DashAtTime);
         }
         
         // Lots of FX

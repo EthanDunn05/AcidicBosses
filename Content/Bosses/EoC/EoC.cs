@@ -1,10 +1,12 @@
 ﻿using System.IO;
 using AcidicBosses.Common.Configs;
 using AcidicBosses.Common.Effects;
+using AcidicBosses.Common.Textures;
 using AcidicBosses.Content.Particles;
 using AcidicBosses.Content.Particles.Animated;
 using AcidicBosses.Content.ProjectileBases;
 using AcidicBosses.Content.Projectiles;
+using AcidicBosses.Core.Graphics.Sprites;
 using AcidicBosses.Core.StateManagement;
 using AcidicBosses.Helpers;
 using AcidicBosses.Helpers.NpcHelpers;
@@ -431,18 +433,18 @@ public class EoC : AcidicNPCOverride
 
         // Normal dash movement
         var dashState = Attack_DashAtPlayer(dashLength, speed, true, 300);
+        
+        // Create Telegraph
+        if (AttackManager.AiTimer == 0)
+        {
+            NewDashLine(MathHelper.PiOver2, dashAtTime);
+        }
 
         if (dashState == DashState.Repositioning) return false;
 
         if (dashState == DashState.Done) AttackManager.CountUp = false;
         if (Main.netMode == NetmodeID.MultiplayerClient) return dashState == DashState.Done;
-
-        // Create Telegraph
-        if (AttackManager.AiTimer == 0)
-        {
-            var line = NewDashLine(Npc.Center, MathHelper.PiOver2, dashAtTime);
-        }
-
+        
         return dashState == DashState.Done;
     }
 
@@ -467,10 +469,10 @@ public class EoC : AcidicNPCOverride
             var offsetCoef = i - 1;
 
             // Create Telegraph
-            if (AttackManager.AiTimer == 0 && Main.netMode != NetmodeID.MultiplayerClient)
+            if (AttackManager.AiTimer == 0)
             {
                 // Center
-                var line = NewDashLine(Npc.Center, dashOffset * offsetCoef + MathHelper.PiOver2, dashAtTime);
+                NewDashLine(dashOffset * offsetCoef + MathHelper.PiOver2, dashAtTime);
             }
         }
 
@@ -528,6 +530,9 @@ public class EoC : AcidicNPCOverride
                 TeleportationStyleID.RodOfDiscord);
             Main.TeleportEffect(new Rectangle((int) pos1.X, (int) pos1.Y, Npc.width, Npc.height),
                 TeleportationStyleID.RodOfDiscord);
+            
+            NewPhantomDashLine(pos0, vel0.ToRotation(), indicateTime);
+            NewPhantomDashLine(pos1, vel1.ToRotation(), indicateTime);
         }
 
         if (AttackManager.AiTimer == indicateTime)
@@ -543,14 +548,12 @@ public class EoC : AcidicNPCOverride
             // Spawn Right
             var rightEye = NewPhantomEoC(pos0, vel0, indicateTime);
             rightEye.timeLeft = indicateTime + dashLength;
-            var rightLine = NewPhantomDashLine(pos0, vel0.ToRotation(), indicateTime, false);
             var rightEye1 = NewPhantomEoC(pos2, vel2, indicateTime);
             rightEye1.timeLeft = indicateTime + dashLength;
 
             // Spawn Left
             var leftEye = NewPhantomEoC(pos1, vel1, indicateTime);
             leftEye.timeLeft = indicateTime + dashLength;
-            var leftLine = NewPhantomDashLine(pos1, vel1.ToRotation(), indicateTime, false);
             var leftEye1 = NewPhantomEoC(pos3, vel3, indicateTime);
             leftEye1.timeLeft = indicateTime + dashLength;
         }
@@ -590,6 +593,9 @@ public class EoC : AcidicNPCOverride
                 TeleportationStyleID.RodOfDiscord);
             Main.TeleportEffect(new Rectangle((int) pos1.X, (int) pos1.Y, Npc.width, Npc.height),
                 TeleportationStyleID.RodOfDiscord);
+            
+            NewPhantomDashLine(pos0, vel0.ToRotation(), indicateTime);
+            NewPhantomDashLine(pos1, vel1.ToRotation(), indicateTime);
         }
 
         if (AttackManager.AiTimer == indicateTime)
@@ -605,14 +611,12 @@ public class EoC : AcidicNPCOverride
             // Spawn Right
             var rightEye = NewPhantomEoC(pos0, vel0, indicateTime);
             rightEye.timeLeft = indicateTime + dashLength;
-            var rightLine = NewPhantomDashLine(pos0, vel0.ToRotation(), indicateTime, false);
             var rightEye1 = NewPhantomEoC(pos2, vel2, indicateTime);
             rightEye1.timeLeft = indicateTime + dashLength;
 
             // Spawn Left
             var leftEye = NewPhantomEoC(pos1, vel1, indicateTime);
             leftEye.timeLeft = indicateTime + dashLength;
-            var leftLine = NewPhantomDashLine(pos1, vel1.ToRotation(), indicateTime, false);
             var leftEye1 = NewPhantomEoC(pos3, vel3, indicateTime);
             leftEye1.timeLeft = indicateTime + dashLength;
         }
@@ -666,6 +670,7 @@ public class EoC : AcidicNPCOverride
                 SoundEngine.PlaySound(SoundID.ForceRoarPitched);
             }
 
+            NewPhantomDashLine(pos, vel.ToRotation(), (int) (dashAtTime + dashLength / 2f));
             dashes++;
         }
 
@@ -678,7 +683,6 @@ public class EoC : AcidicNPCOverride
             var eye = NewPhantomEoC(pos, vel, dashAtTime);
             var eye2 = NewPhantomEoC(pos2, -vel, dashAtTime);
             eye.timeLeft = dashAtTime + dashLength;
-            var line = NewPhantomDashLine(pos, vel.ToRotation(), (int) (dashAtTime + dashLength / 2f), false);
         }
 
         return isDone;
@@ -741,11 +745,8 @@ public class EoC : AcidicNPCOverride
         var startPos = Npc.Center;
 
         Npc.rotation = awayDir.ToRotation() - MathHelper.PiOver2;
-        
-        if (Main.netMode != NetmodeID.MultiplayerClient)
-        {
-            NpcAfterimageTrail.Create(Npc.GetSource_FromAI(), Npc.Center, destination, Npc.whoAmI);
-        }
+
+        new FakeAfterimage(startPos, destination, Npc).Spawn();
         
         Npc.Center = destination;
         Npc.velocity = awayDir * recoil;
@@ -763,16 +764,28 @@ public class EoC : AcidicNPCOverride
         Main.npc[summon].velocity = Main.rand.NextVector2Unit() * 10;
     }
 
-    private Projectile NewDashLine(Vector2 position, float offset, int lifetime, bool anchorToBoss = true)
+    private void NewDashLine(float offset, int lifetime)
     {
-        var ai1 = anchorToBoss ? Npc.whoAmI : -1;
-        return BaseLineProjectile.Create<EyeDashLine>(Npc.GetSource_FromAI(), position, offset, lifetime, ai1);
+        new EffectLine(TextureRegistry.InvertedFadingGlowLine, Npc.Center, Npc.rotation + offset, 1000f, 33f, Color.Crimson, lifetime)
+        {
+            OnUpdate = line =>
+            {
+                line.Position = Npc.Center;
+                line.Rotation = Npc.rotation + offset;
+                line.DrawColor = Color.Crimson * EasingHelper.CubicOut(1f - line.LifetimeRatio);
+            }
+        }.Spawn();
     }
     
-    private Projectile NewPhantomDashLine(Vector2 position, float offset, int lifetime, bool anchorToBoss = true)
+    private void NewPhantomDashLine(Vector2 position, float rotation, int lifetime)
     {
-        var ai1 = anchorToBoss ? Npc.whoAmI : -1;
-        return BaseLineProjectile.Create<EyePhantomDashLine>(Npc.GetSource_FromAI(), position, offset, lifetime, ai1);
+        new EffectLine(TextureRegistry.InvertedGlowLine, position, rotation, 1900f, 33f, Color.Crimson, lifetime)
+        {
+            OnUpdate = line =>
+            {
+                line.DrawColor = Color.Crimson * EasingHelper.CubicOut(1f - line.LifetimeRatio);
+            }
+        }.Spawn();
     }
 
     private Projectile NewPhantomEoC(Vector2 position, Vector2 dashVelocity, int dashDelay = 0)

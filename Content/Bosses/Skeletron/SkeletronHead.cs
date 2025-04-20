@@ -6,6 +6,7 @@ using AcidicBosses.Content.Particles;
 using AcidicBosses.Content.Particles.Animated;
 using AcidicBosses.Content.ProjectileBases;
 using AcidicBosses.Content.Projectiles;
+using AcidicBosses.Core.Graphics.Sprites;
 using AcidicBosses.Core.StateManagement;
 using AcidicBosses.Helpers;
 using Luminance.Common.Utilities;
@@ -406,10 +407,7 @@ public class SkeletronHead : AcidicNPCOverride
             var awayDir = Npc.DirectionTo(goal);
             var distanceToGoal = Npc.Distance(goal);
             
-            if (Main.netMode != NetmodeID.MultiplayerClient)
-            {
-                NewAfterimage(startPos, goal, 60);
-            }
+            NewAfterimage(startPos, goal, 60);
             
             Npc.Center = goal;
             Npc.velocity = awayDir * 20f;
@@ -656,9 +654,9 @@ public class SkeletronHead : AcidicNPCOverride
             ModContent.ProjectileType<EvilWaterbolt>(), Npc.damage, 3);
     }
     
-    private Projectile NewAfterimage(Vector2 startPos, Vector2 endPos, int lifetime)
+    private void NewAfterimage(Vector2 startPos, Vector2 endPos, int lifetime)
     {
-        return NpcAfterimageTrail.Create(Npc.GetSource_FromAI(), startPos, endPos, Npc.whoAmI);
+        new FakeAfterimage(startPos, endPos, Npc).Spawn();
     }
     
     private NPC NewHand(Vector2 position, int side)
