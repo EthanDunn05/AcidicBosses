@@ -32,6 +32,10 @@ public abstract class AcidicNPCOverride : GlobalNPC
     protected abstract int OverriddenNpc { get; }
     
     protected abstract bool BossEnabled { get; }
+
+    // FindFrame() doesn't override vanilla behavior, so use these instead of npc.frame
+    protected int FrameCounter = 0;
+    protected int Frame = 0;
     
     /// <summary>
     /// The npc... Not much to say about this.
