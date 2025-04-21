@@ -19,30 +19,47 @@ public partial class QueenSlime
     private AnimState currentAnimation = AnimState.Idle;
     
     private bool drawWings = true;
-    private bool drawAfterimages = true;
+    private bool drawExtraWings = false;
+    private bool drawAfterimages = false;
     private bool drawCrown = true;
+    private bool drawCore = true;
     
     private int wingFrameCounter = 0;
     private int wingFrame = 0;
     private const int wingFrameCount = 4;
+
+    private bool flapping = false;
+    private bool singleFlap = false;
+    private bool waitingToFlap = true;
+    
+    private float squash = 0f;
+    private Vector2 Scale => new Vector2(Npc.scale + squash, Npc.scale - squash);
     
     public override bool AcidicDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color lightColor)
     {
         var drawColor = Color.White;
+        if (Npc.damage == 0) drawColor *= 0.75f;
         
         // Lots of spritebatch shenanigans
-        spriteBatch.EnterShader();
-        if (drawAfterimages) DrawAfterimages(npc, spriteBatch, drawColor);
+        if (drawAfterimages)
+        {
+            spriteBatch.EnterShader();
+            DrawAfterimages(npc, spriteBatch, drawColor);
+        }
         
-        spriteBatch.ExitShader();
+        if (drawWings || drawExtraWings || drawCore) spriteBatch.ExitShader();
+        if (drawExtraWings) DrawExtraWings(npc, spriteBatch, drawColor);
         if (drawWings) DrawWings(npc, spriteBatch, drawColor);
-        DrawCore(npc, spriteBatch, drawColor);
+        if (drawCore) DrawCore(npc, spriteBatch, drawColor);
         
         spriteBatch.EnterShader();
         DrawBody(npc, spriteBatch, drawColor);
-        
-        spriteBatch.ExitShader();
-        if (drawCrown) DrawCrown(npc, spriteBatch, drawColor);
+
+        if (drawCrown)
+        {
+            spriteBatch.ExitShader();
+            DrawCrown(npc, spriteBatch, drawColor);
+        }
 
         return false;
     }
@@ -70,7 +87,7 @@ public partial class QueenSlime
             var fadedColor = drawColor * fadeProgress;
             
             spriteBatch.Draw(bodyTex, oldPos, frame, fadedColor, npc.rotation, origin,
-                npc.scale, SpriteEffects.FlipHorizontally, 0f);
+                Scale, SpriteEffects.FlipHorizontally, 0f);
         }
     }
 
@@ -87,7 +104,7 @@ public partial class QueenSlime
         var origin = frame.Size() * new Vector2(0.5f, 1f);
         
         var drawData = new DrawData(bodyTex, drawPos, frame, npc.GetAlpha(drawColor),
-            npc.rotation, origin, npc.scale, SpriteEffects.FlipHorizontally);
+            npc.rotation, origin, Scale, SpriteEffects.FlipHorizontally);
         GameShaders.Misc["QueenSlime"].Apply(drawData);
         drawData.Draw(spriteBatch);
         
@@ -125,12 +142,12 @@ public partial class QueenSlime
     {
         var wingTex = TextureAssets.Extra[ExtrasID.QueenSlimeWing].Value;
         var frame = wingTex.Frame(1, wingFrameCount, 0, wingFrame);
-        var scale = 0.8f;
+        var scale = 1f;
 
         for (var i = 0; i < 2; i++)
         {
             var originX = 1f;
-            var xOffset = 0f;
+            var xOffset = 0f + (Npc.width * (1f - Scale.X));
             var effects = SpriteEffects.None;
 
             if (i == 1)
@@ -142,14 +159,76 @@ public partial class QueenSlime
 
             var origin = frame.Size() * new Vector2(originX, 0.5f);
             var pos = new Vector2(npc.Center.X + xOffset, npc.Center.Y);
+            pos = CoreOffset(pos);
             if (npc.rotation != 0f)
                 pos = pos.RotatedBy(npc.rotation, npc.Bottom);
 
             pos -= Main.screenPosition;
-            var rotOffset = MathHelper.Clamp(npc.velocity.Y, -6f, 6f) * -0.1f;
+            var rotOffset = MathHelper.Clamp(npc.velocity.Y, -6f, 4f) * -0.1f;
             if (i == 0) rotOffset *= -1f;
 
             spriteBatch.Draw(wingTex, pos, frame, drawColor, npc.rotation + rotOffset, origin, scale, effects, 0f);
+        }
+    }
+    
+    private void DrawExtraWings(NPC npc, SpriteBatch spriteBatch, Color drawColor)
+    {
+        var wingTex = TextureAssets.Extra[ExtrasID.QueenSlimeWing].Value;
+        var frame = wingTex.Frame(1, wingFrameCount, 0, wingFrame);
+        var scale = 1f;
+
+        for (var i = 0; i < 2; i++)
+        {
+            var originX = 1f;
+            var xOffset = -25f + Npc.width * (1f - Scale.X);
+            var effects = SpriteEffects.None;
+
+            if (i == 1)
+            {
+                originX = 0f;
+                xOffset = 0f - xOffset + 2f;
+                effects = SpriteEffects.FlipHorizontally;
+            }
+
+            var origin = frame.Size() * new Vector2(originX, 0.5f);
+            var pos = new Vector2(npc.Center.X + xOffset, npc.Center.Y);
+            pos = CoreOffset(pos);
+            pos.Y += 40f;
+            if (npc.rotation != 0f)
+                pos = pos.RotatedBy(npc.rotation, npc.Bottom);
+
+            pos -= Main.screenPosition;
+            var rotOffset = MathHelper.Clamp(npc.velocity.Y - 2f, -6f, 2f) * -0.1f;
+            if (i == 0) rotOffset *= -1f;
+
+            spriteBatch.Draw(wingTex, pos, frame, drawColor.MultiplyRGB(Color.Gray), npc.rotation + rotOffset, origin, scale, effects, 0f);
+        }
+        
+        for (var i = 0; i < 2; i++)
+        {
+            var originX = 1f;
+            var xOffset = -12.5f + Npc.width * (1f - Scale.X);
+            var effects = SpriteEffects.None;
+
+            if (i == 1)
+            {
+                originX = 0f;
+                xOffset = 0f - xOffset + 2f;
+                effects = SpriteEffects.FlipHorizontally;
+            }
+
+            var origin = frame.Size() * new Vector2(originX, 0.5f);
+            var pos = new Vector2(npc.Center.X + xOffset, npc.Center.Y);
+            pos = CoreOffset(pos);
+            pos.Y += 20;
+            if (npc.rotation != 0f)
+                pos = pos.RotatedBy(npc.rotation, npc.Bottom);
+
+            pos -= Main.screenPosition;
+            var rotOffset = MathHelper.Clamp(npc.velocity.Y - 1f, -6f, 3f) * -0.1f;
+            if (i == 0) rotOffset *= -1f;
+
+            spriteBatch.Draw(wingTex, pos, frame, drawColor.MultiplyRGB(Color.DarkGray), npc.rotation + rotOffset, origin, scale, effects, 0f);
         }
     }
 
@@ -197,7 +276,8 @@ public partial class QueenSlime
                 centerYOff -= 22f;
                 break;
         }
-        
+
+        pos.Y += (Npc.height * (1f - Scale.Y)) / 2f;
         pos.Y += centerYOff;
         if (Npc.rotation != 0f)
             pos = pos.RotatedBy(Npc.rotation, Npc.Bottom);
@@ -249,7 +329,8 @@ public partial class QueenSlime
                 centerYOff -= 22f;
                 break;
         }
-        
+
+        pos.Y += Npc.height * (1f - Scale.Y);
         pos.Y += centerYOff;
         if (Npc.rotation != 0f)
             pos = pos.RotatedBy(Npc.rotation, Npc.Bottom);
@@ -260,16 +341,25 @@ public partial class QueenSlime
     public override void FindFrame(NPC npc, int frameHeight)
     {
         // Wing Flapping
-        wingFrameCounter++;
-        if (wingFrameCounter >= 6)
+        if (singleFlap || flapping)
         {
-            wingFrame++;
-            if (wingFrame >= wingFrameCount)
+            wingFrameCounter++;
+            if (wingFrameCounter >= 6)
             {
-                wingFrame = 0;
-            }
+                wingFrame++;
+                if (wingFrame >= wingFrameCount)
+                {
+                    wingFrame = 0;
+                    singleFlap = false;
+                }
 
-            wingFrameCounter = 0;
+                wingFrameCounter = 0;
+            }
+        }
+        else
+        {
+            wingFrame = 0;
+            wingFrameCounter = 4;
         }
         
         // Body Animation
@@ -278,8 +368,31 @@ public partial class QueenSlime
         {
             case AnimState.Idle:
             {
-                // Moving Up
-                if (npc.velocity.Y > 0f)
+                if (npc.velocity.Y < 0f || flapping)
+                {
+                    if (Frame < 20 || Frame > 23) {
+                        if (Frame < 4 || Frame > 7) {
+                            Frame = 4;
+                            FrameCounter = 0;
+                        }
+
+                        if (FrameCounter >= 4.0) {
+                            FrameCounter = 0;
+                            Frame++;
+                            if (Frame >= 7)
+                            {
+                                Frame = 7;
+                                if (flapping) Frame = 22;
+                            }
+                        }
+                    }
+                    else if (FrameCounter >= 5.0) {
+                        FrameCounter = 0;
+                        Frame++;
+                        if (Frame >= 24) Frame = 20;
+                    }
+                }
+                else if (npc.velocity.Y > 0f)
                 {
                     if (Frame < 8 || Frame > 10) {
                         Frame = 8;
@@ -292,28 +405,6 @@ public partial class QueenSlime
                         if (Frame >= 10) Frame = 10;
                     }
                 }
-                // Moving Down
-                else if (npc.velocity.Y < 0f)
-                {
-                    if (Frame < 20 || Frame > 23) {
-                        if (Frame < 4 || Frame > 7) {
-                            Frame = 4;
-                            FrameCounter = 0;
-                        }
-
-                        if (FrameCounter >= 4.0) {
-                            FrameCounter = 0;
-                            Frame++;
-                            if (Frame >= 7) Frame = 7;
-                        }
-                    }
-                    else if (FrameCounter >= 5.0) {
-                        FrameCounter = 0;
-                        Frame++;
-                        if (Frame >= 24) Frame = 20;
-                    }
-                }
-                // Stationary
                 else
                 {
                     if (FrameCounter >= 10)
