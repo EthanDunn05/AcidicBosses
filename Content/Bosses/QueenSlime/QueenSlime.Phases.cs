@@ -8,10 +8,16 @@ public partial class QueenSlime
 {
     private PhaseState PhaseIntro => new(Phase_Intro);
     private PhaseState PhaseOne => new(Phase_One, EnterPhase_One);
+    private PhaseState PhaseTwo => new(Phase_Two, EnterPhase_Two);
 
     private void Phase_Intro()
     {
-        if (Attack_Slam()) phaseTracker.NextPhase();
+        AttackManager.CountUp = true;
+        if (AttackManager.AiTimer == 0)
+        {
+            Teleport(TargetPlayer.Center + new Vector2(0f, -500f));
+        }
+        if (Attack_Slam(true)) phaseTracker.NextPhase();
     }
 
     private void EnterPhase_One()
@@ -19,19 +25,52 @@ public partial class QueenSlime
         AttackManager.Reset();
         
         AttackManager.SetAttackPattern([
-            new AttackState(() => Attack_JumpToPlayer(60), 0),
-            new AttackState(() => Attack_SummonSlimes(3), 30),
-            new AttackState(Attack_Slam, 30),
-            new AttackState(() => Attack_InstantJumpToPlayer(60), 30),
-            new AttackState(() => Attack_TripleShoot(MathHelper.Pi / 6f, true), 15),
+            new AttackState(Attack_WaitForLand, 30),
+            new AttackState(() => Attack_SummonSlimes(1), 15),
+            new AttackState(() => Attack_Slam(true), 30),
+            new AttackState(Attack_WaitForLand, 30),
+            new AttackState(() => Attack_JumpToPlayer(60), 30),
+            new AttackState(() => Attack_AirShotgun(3, MathHelper.Pi / 3f), 15),
         ]);
     }
 
     private void Phase_One()
     {
-        drawExtraWings = true;
         if (AttackManager.InWindDown)
         {
+            if (Npc.Distance(TargetPlayer.Center) > 2000f)
+            {
+                FlyTo(TargetPlayer.Center + new Vector2(0, -250f), 30f, 1f);
+                AttackManager.AiTimer++;
+                singleFlap = true;
+                grounded = false;
+            }
+            return;
+        }
+        
+        AttackManager.RunAttackPattern();
+    }
+    
+    private void EnterPhase_Two()
+    {
+        AttackManager.Reset();
+        
+        AttackManager.SetAttackPattern([
+            new AttackState(() => Attack_AirShotgun(4, MathHelper.Pi / 3f), 0),
+        ]);
+    }
+
+    private void Phase_Two()
+    {
+        if (AttackManager.InWindDown)
+        {
+            if (Npc.Distance(TargetPlayer.Center) > 2000f)
+            {
+                FlyTo(TargetPlayer.Center + new Vector2(0, -250f), 30f, 1f);
+                AttackManager.AiTimer++;
+                singleFlap = true;
+                grounded = false;
+            }
             return;
         }
         

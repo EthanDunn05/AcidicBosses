@@ -1,8 +1,14 @@
+using System;
 using AcidicBosses.Common.Textures;
 using AcidicBosses.Core.Animation;
 using AcidicBosses.Core.Graphics.Sprites;
+using AcidicBosses.Core.StateManagement;
+using AcidicBosses.Helpers;
 using Luminance.Common.Easings;
+using Luminance.Common.Utilities;
+using Luminance.Core.Graphics;
 using Microsoft.Xna.Framework;
+using Terraria;
 
 namespace AcidicBosses.Content.Bosses.QueenSlime;
 
@@ -16,16 +22,15 @@ public partial class QueenSlime
 
         anim.AddInstantEvent(0, () =>
         {
-            Npc.noGravity = true;
             drawAfterimages = true;
             Npc.damage = 0;
             
-            JumpTo(TargetPlayer.Center, 60);
+            JumpTo(TargetPlayer.Center + new Vector2(0f, -250f), 45);
             
             new FadingEffectLine(
                 TextureRegistry.InvertedFadingGlowLine,
                 Npc.Bottom + new Vector2(0, -50), MathHelper.PiOver2,
-                250f, 30f,
+                300f, 40f,
                 Color.White, 90
             )
             {
@@ -44,6 +49,7 @@ public partial class QueenSlime
         anim.AddSequencedEvent(30, (progress, frame) =>
         {
             flapping = true;
+            Npc.noGravity = true;
             FlyTo(TargetPlayer.Center + new Vector2(0f, -300f), 20f, 0.75f);
             anim.Data.Set("startPos", Npc.Bottom);
         });
@@ -60,23 +66,40 @@ public partial class QueenSlime
         anim.AddInstantEvent(91, () =>
         {
             Npc.damage = Npc.defDamage;
-            grounded = false;
+            grounded = true;
             flapping = false;
+            drawAfterimages = false;
             
             Npc.noGravity = false;
-            Npc.velocity = new Vector2(0f, 50f);
+
+            var searchPos = new Vector2(Npc.Bottom.X, TargetPlayer.Center.Y);
+            var ground = AcidUtils.FindGroundVertical(searchPos.ToTileCoordinates()).ToWorldCoordinates();
+            Teleport(ground);
+            OnLand(50f);
+        });
+
+        anim.AddSequencedEvent(12, (progress, frame) =>
+        {
+            var scale = MathHelper.Lerp(0.25f, 1.25f, EasingHelper.QuadOut(progress));
+            var angle = -MathHelper.PiOver2;
+            var rightPos = Npc.Center + new Vector2(32, 0) * frame;
+            rightPos = AcidUtils.FindGroundVertical(rightPos.ToTileCoordinates()).ToWorldCoordinates();
+            NewCrystalSpike(rightPos - new Vector2(0, 8 * scale), angle, scale);
+
+            var leftPos = Npc.Center - new Vector2(32, 0) * frame;
+            leftPos = AcidUtils.FindGroundVertical(leftPos.ToTileCoordinates()).ToWorldCoordinates();
+            NewCrystalSpike(leftPos - new Vector2(0, 8 * scale), angle, scale);
         });
         
         return anim;
     }
     
-    private bool Attack_Slam()
+    private bool Attack_Slam(bool useSpikes)
     {
         slamAnimation ??= PrepareSlamAnimation();
-        if (slamAnimation.RunAnimation() && grounded)
+        slamAnimation.Data.Set("useSpikes", useSpikes);
+        if (slamAnimation.RunAnimation())
         {
-            drawAfterimages = false;
-            NewSmash(Npc.Center);
             slamAnimation.Reset();
             return true;
         }

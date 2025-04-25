@@ -21,13 +21,15 @@ public partial class QueenSlime : AcidicNPCOverride
     {
         phaseTracker = new PhaseTracker([
             PhaseIntro,
-            PhaseOne
+            PhaseOne,
+            PhaseTwo,
         ]);
     }
 
     public override bool AcidAI(NPC npc)
     {
-        Npc.MaxFallSpeedMultiplier *= 5f;
+        Npc.MaxFallSpeedMultiplier *= 2f;
+        Npc.GravityMultiplier *= 2f;
         
         if (!Npc.HasValidTarget) Npc.TargetClosest();
         
@@ -44,13 +46,8 @@ public partial class QueenSlime : AcidicNPCOverride
         var lerp = Utils.GetLerpValue(-75, 75, Npc.velocity.X, true);
         var goal = MathHelper.Lerp(-MathHelper.PiOver4, MathHelper.PiOver4, lerp);
         Npc.rotation = MathHelper.Lerp(Npc.rotation, goal, 0.5f);
-
-        squash = MathHelper.Lerp(squash, 0f, 0.1f);
         
-        // if (upright)
-        // {
-        //     Npc.rotation = MathHelper.Lerp(Npc.rotation, 0f, 0.1f);
-        // }
+        squash = MathHelper.Lerp(squash, 0f, 0.1f);
 
         upright = true;
         oldOldVel = oldVel;
@@ -75,4 +72,6 @@ public partial class QueenSlime : AcidicNPCOverride
         }
         return solidGround;
     }
+    
+    
 }

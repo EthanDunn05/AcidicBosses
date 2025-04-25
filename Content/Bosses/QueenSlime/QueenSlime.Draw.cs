@@ -11,13 +11,6 @@ namespace AcidicBosses.Content.Bosses.QueenSlime;
 
 public partial class QueenSlime
 {
-    private enum AnimState
-    {
-        Idle,
-    }
-
-    private AnimState currentAnimation = AnimState.Idle;
-    
     private bool drawWings = true;
     private bool drawExtraWings = false;
     private bool drawAfterimages = false;
@@ -48,18 +41,19 @@ public partial class QueenSlime
         }
         
         if (drawWings || drawExtraWings || drawCore) spriteBatch.ExitShader();
-        if (drawExtraWings) DrawExtraWings(npc, spriteBatch, drawColor);
-        if (drawWings) DrawWings(npc, spriteBatch, drawColor);
+        if (drawExtraWings)
+        {
+            DrawWings(npc, spriteBatch, drawColor, new Vector2(25f, 40f));
+            DrawWings(npc, spriteBatch, drawColor, new Vector2(12.5f, 20f));
+        }
+        if (drawWings) DrawWings(npc, spriteBatch, drawColor, Vector2.Zero);
         if (drawCore) DrawCore(npc, spriteBatch, drawColor);
         
         spriteBatch.EnterShader();
         DrawBody(npc, spriteBatch, drawColor);
 
-        if (drawCrown)
-        {
-            spriteBatch.ExitShader();
-            DrawCrown(npc, spriteBatch, drawColor);
-        }
+        spriteBatch.ExitShader();
+        if (drawCrown) DrawCrown(npc, spriteBatch, drawColor);
 
         return false;
     }
@@ -138,7 +132,7 @@ public partial class QueenSlime
         spriteBatch.Draw(crownTex, pos, frame, drawColor, npc.rotation, origin, 1f, SpriteEffects.FlipHorizontally, 0f);
     }
 
-    private void DrawWings(NPC npc, SpriteBatch spriteBatch, Color drawColor)
+    private void DrawWings(NPC npc, SpriteBatch spriteBatch, Color drawColor, Vector2 offset)
     {
         var wingTex = TextureAssets.Extra[ExtrasID.QueenSlimeWing].Value;
         var frame = wingTex.Frame(1, wingFrameCount, 0, wingFrame);
@@ -147,7 +141,7 @@ public partial class QueenSlime
         for (var i = 0; i < 2; i++)
         {
             var originX = 1f;
-            var xOffset = 0f + (Npc.width * (1f - Scale.X));
+            var xOffset = -offset.X + (Npc.width * (1f - Scale.X));
             var effects = SpriteEffects.None;
 
             if (i == 1)
@@ -160,6 +154,7 @@ public partial class QueenSlime
             var origin = frame.Size() * new Vector2(originX, 0.5f);
             var pos = new Vector2(npc.Center.X + xOffset, npc.Center.Y);
             pos = CoreOffset(pos);
+            pos.Y += offset.Y;
             if (npc.rotation != 0f)
                 pos = pos.RotatedBy(npc.rotation, npc.Bottom);
 
@@ -168,67 +163,6 @@ public partial class QueenSlime
             if (i == 0) rotOffset *= -1f;
 
             spriteBatch.Draw(wingTex, pos, frame, drawColor, npc.rotation + rotOffset, origin, scale, effects, 0f);
-        }
-    }
-    
-    private void DrawExtraWings(NPC npc, SpriteBatch spriteBatch, Color drawColor)
-    {
-        var wingTex = TextureAssets.Extra[ExtrasID.QueenSlimeWing].Value;
-        var frame = wingTex.Frame(1, wingFrameCount, 0, wingFrame);
-        var scale = 1f;
-
-        for (var i = 0; i < 2; i++)
-        {
-            var originX = 1f;
-            var xOffset = -25f + Npc.width * (1f - Scale.X);
-            var effects = SpriteEffects.None;
-
-            if (i == 1)
-            {
-                originX = 0f;
-                xOffset = 0f - xOffset + 2f;
-                effects = SpriteEffects.FlipHorizontally;
-            }
-
-            var origin = frame.Size() * new Vector2(originX, 0.5f);
-            var pos = new Vector2(npc.Center.X + xOffset, npc.Center.Y);
-            pos = CoreOffset(pos);
-            pos.Y += 40f;
-            if (npc.rotation != 0f)
-                pos = pos.RotatedBy(npc.rotation, npc.Bottom);
-
-            pos -= Main.screenPosition;
-            var rotOffset = MathHelper.Clamp(npc.velocity.Y - 2f, -6f, 2f) * -0.1f;
-            if (i == 0) rotOffset *= -1f;
-
-            spriteBatch.Draw(wingTex, pos, frame, drawColor.MultiplyRGB(Color.Gray), npc.rotation + rotOffset, origin, scale, effects, 0f);
-        }
-        
-        for (var i = 0; i < 2; i++)
-        {
-            var originX = 1f;
-            var xOffset = -12.5f + Npc.width * (1f - Scale.X);
-            var effects = SpriteEffects.None;
-
-            if (i == 1)
-            {
-                originX = 0f;
-                xOffset = 0f - xOffset + 2f;
-                effects = SpriteEffects.FlipHorizontally;
-            }
-
-            var origin = frame.Size() * new Vector2(originX, 0.5f);
-            var pos = new Vector2(npc.Center.X + xOffset, npc.Center.Y);
-            pos = CoreOffset(pos);
-            pos.Y += 20;
-            if (npc.rotation != 0f)
-                pos = pos.RotatedBy(npc.rotation, npc.Bottom);
-
-            pos -= Main.screenPosition;
-            var rotOffset = MathHelper.Clamp(npc.velocity.Y - 1f, -6f, 3f) * -0.1f;
-            if (i == 0) rotOffset *= -1f;
-
-            spriteBatch.Draw(wingTex, pos, frame, drawColor.MultiplyRGB(Color.DarkGray), npc.rotation + rotOffset, origin, scale, effects, 0f);
         }
     }
 
@@ -364,174 +298,55 @@ public partial class QueenSlime
         
         // Body Animation
         FrameCounter++;
-        switch (currentAnimation)
+        if (npc.velocity.Y < 0f || flapping)
         {
-            case AnimState.Idle:
+            if (Frame < 20 || Frame > 23) {
+                if (Frame < 4 || Frame > 7) {
+                    Frame = 4;
+                    FrameCounter = 0;
+                }
+
+                if (FrameCounter >= 4.0) {
+                    FrameCounter = 0;
+                    Frame++;
+                    if (Frame >= 7)
+                    {
+                        Frame = 7;
+                        if (flapping) Frame = 22;
+                    }
+                }
+            }
+            else if (FrameCounter >= 5.0) {
+                FrameCounter = 0;
+                Frame++;
+                if (Frame >= 24) Frame = 20;
+            }
+        }
+        else if (npc.velocity.Y > 0f)
+        {
+            if (Frame < 8 || Frame > 10) {
+                Frame = 8;
+                FrameCounter = 0;
+            }
+
+            if (FrameCounter >= 8) {
+                FrameCounter = 0;
+                Frame++;
+                if (Frame >= 10) Frame = 10;
+            }
+        }
+        else
+        {
+            if (FrameCounter >= 10)
             {
-                if (npc.velocity.Y < 0f || flapping)
-                {
-                    if (Frame < 20 || Frame > 23) {
-                        if (Frame < 4 || Frame > 7) {
-                            Frame = 4;
-                            FrameCounter = 0;
-                        }
-
-                        if (FrameCounter >= 4.0) {
-                            FrameCounter = 0;
-                            Frame++;
-                            if (Frame >= 7)
-                            {
-                                Frame = 7;
-                                if (flapping) Frame = 22;
-                            }
-                        }
-                    }
-                    else if (FrameCounter >= 5.0) {
-                        FrameCounter = 0;
-                        Frame++;
-                        if (Frame >= 24) Frame = 20;
-                    }
-                }
-                else if (npc.velocity.Y > 0f)
-                {
-                    if (Frame < 8 || Frame > 10) {
-                        Frame = 8;
-                        FrameCounter = 0;
-                    }
-
-                    if (FrameCounter >= 8) {
-                        FrameCounter = 0;
-                        Frame++;
-                        if (Frame >= 10) Frame = 10;
-                    }
-                }
-                else
-                {
-                    if (FrameCounter >= 10)
-                    {
-                        Frame++;
-                        FrameCounter = 0;
-                    }
-
-                    if (Frame >= 4)
-                    {
-                        Frame = 0;
-                    }
-                }
-
-                break;
-            }
-        }
-    }
-
-    // Just here for animation refrence
-    private void VanillaFindFrame(NPC npc)
-    {
-        double frameCounter = 0d;
-        Rectangle frame = Rectangle.Empty;
-        float life = 0f;
-        float lifeMax = 0f;
-        int frameHeight = 0;
-        bool noGravity = false;
-        Vector2 velocity = Vector2.Zero;
-        
-        ref float attackType = ref npc.ai[0];
-        ref float attackTimer = ref npc.ai[1];
-        
-        bool phase2 = life <= lifeMax / 2;
-        frame.Width = 180;
-        int frameIndex = frame.Y / frameHeight;
-        if ((phase2 && noGravity) || velocity.Y < 0f) {
-            if (frameIndex < 20 || frameIndex > 23) {
-                if (frameIndex < 4 || frameIndex > 7) {
-                    frameIndex = 4;
-                    frameCounter = -1.0;
-                }
-
-                if ((frameCounter += 1.0) >= 4.0) {
-                    frameCounter = 0.0;
-                    frameIndex++;
-                    if (frameIndex >= 7)
-                        frameIndex = ((!phase2) ? 7 : 22);
-                }
-            }
-            else if ((frameCounter += 1.0) >= 5.0) {
-                frameCounter = 0.0;
-                frameIndex++;
-                if (frameIndex >= 24)
-                    frameIndex = 20;
+                Frame++;
+                FrameCounter = 0;
             }
 
-            frame.Y = frameIndex * frameHeight;
-        }
-        else if (velocity.Y > 0f) {
-            if (frameIndex < 8 || frameIndex > 10) {
-                frameIndex = 8;
-                frameCounter = -1.0;
+            if (Frame >= 4)
+            {
+                Frame = 0;
             }
-
-            if ((frameCounter += 1.0) >= 8.0) {
-                frameCounter = 0.0;
-                frameIndex++;
-                if (frameIndex >= 10)
-                    frameIndex = 10;
-            }
-
-            frame.Y = frameIndex * frameHeight;
-        }
-        else {
-            if (velocity.Y != 0f)
-                return;
-
-            if (attackType == 5f) {
-                frameCounter = 0.0;
-                switch ((int)attackTimer / 3 % 3) {
-                    default:
-                        frameIndex = 13;
-                        break;
-                    case 1:
-                        frameIndex = 14;
-                        break;
-                    case 2:
-                        frameIndex = 15;
-                        break;
-                }
-            }
-            else if (attackType == 4f) {
-                frameCounter = 0.0;
-                switch ((int)attackTimer / 15) {
-                    default:
-                        frameIndex = 12;
-                        break;
-                    case 1:
-                        frameIndex = 11;
-                        break;
-                    case 2:
-                    case 3:
-                        frameIndex = 10;
-                        break;
-                }
-            }
-            else {
-                bool flag2 = frameIndex >= 10 && frameIndex <= 12;
-                int num10 = 10;
-                if (flag2)
-                    num10 = 6;
-
-                if (!flag2 && frameIndex >= 4) {
-                    frameIndex = 0;
-                    frameCounter = -1.0;
-                }
-
-                if ((frameCounter += 1.0) >= (double)num10) {
-                    frameCounter = 0.0;
-                    frameIndex++;
-                    if ((!flag2 || frameIndex == 13) && frameIndex >= 4)
-                        frameIndex = 0;
-                }
-            }
-
-            frame.Y = frameIndex * frameHeight;
         }
     }
 }

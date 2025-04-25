@@ -2,6 +2,7 @@ using System;
 using AcidicBosses.Content.Particles.Animated;
 using AcidicBosses.Core.Graphics.Sprites;
 using Luminance.Common.Utilities;
+using Luminance.Core.Graphics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
 using Terraria;
@@ -68,13 +69,29 @@ public partial class QueenSlime
         return true;
     }
 
+    private bool Attack_InstantJumpOverPlayer(float landTime)
+    {
+        var diff = TargetPlayer.Bottom - Npc.Bottom;
+        var goal = TargetPlayer.Center + diff;
+        JumpTo(goal, landTime);
+        return true;
+    }
+
+    private bool Attack_WaitForLand()
+    {
+        return grounded;
+    }
+
     private void OnLand(float force)
     {
         var trueForce = force;
         force = MathHelper.Clamp(force, 0f, 25f);
         var forceLerp = force / 25f;
         
+        squash = forceLerp * 0.5f;
+        
         SoundEngine.PlaySound(SlamSound with {Volume = forceLerp}, Npc.Bottom);
+        ScreenShakeSystem.StartShakeAtPoint(Npc.Bottom, trueForce / 10f);
         
         // Smoke puffs
         var puff = new WideGroundPuffParticle(Npc.Bottom, Vector2.Zero, 0f, Color.White, 30);
@@ -98,7 +115,6 @@ public partial class QueenSlime
         if (forceLerp > 0.25f)
         {
             bouncing = true;
-            squash = forceLerp * 0.25f;
             Npc.velocity.Y = -trueForce * 0.25f;
             Npc.velocity.X = oldVel.X * 0.25f;
         }
