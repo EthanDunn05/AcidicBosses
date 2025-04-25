@@ -23,8 +23,8 @@ Projectiles: {
 	SpazFlamethrower.DisplayName: Spaz Flamethrower
 	NpcAfterimageProjectile.DisplayName: Npc Afterimage Projectile
 	NpcAfterimageTrail.DisplayName: Npc Afterimage Trail
-	RetDeathray.DisplayName: Ret Deathray
-	RetDeathrayIndicator.DisplayName: Ret Deathray Indicator
+	RetDeathray.DisplayName: Laser
+	RetDeathrayIndicator.DisplayName: Laser
 	TestProj.DisplayName: Test Proj
 	RetLaserIndicator.DisplayName: Ret Laser Indicator
 	RetSweepIndicator.DisplayName: Ret Sweep Indicator
@@ -42,12 +42,20 @@ Projectiles: {
 	QueenBeePillarLine.DisplayName: Queen Bee Pillar Line
 	EyePhantomDashLine.DisplayName: Eye Phantom Dash Line
 	BeeWaveIndicator.DisplayName: Bee Wave Indicator
+	QueenSlimeDeathray.DisplayName: Queenly Laser
+	CrystalShard.DisplayName: Crystal Shard
+	CrystalSpike.DisplayName: Crystal Spike
 }
 
 Buffs: {
 	NewTonguedBuff: {
 		DisplayName: The Tongue
 		Description: You are being sucked into the mouth
+	}
+
+	InsanityBuff: {
+		DisplayName: Insanity
+		Description: Deerclops is straining you mental well being
 	}
 }
 

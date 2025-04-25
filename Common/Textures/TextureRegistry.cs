@@ -21,6 +21,9 @@ public static class TextureRegistry
     
     // Noise
     public static Asset<Texture2D> RgbPerlin => Tex("Noise/rgbPerlin");
+    
+    // Misc
+    public static Asset<Texture2D> InsanityOverlay => Tex("InsanityOverlay");
 
     // A simple function that loads a texture
     private static Asset<Texture2D> Tex(string name) => ModContent.Request<Texture2D>($"AcidicBosses/Assets/Textures/{name}", AssetRequestMode.ImmediateLoad);

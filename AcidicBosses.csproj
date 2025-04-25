@@ -11,6 +11,5 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Assets\Atlases\" />
-    <Folder Include="Core\Graphics\" />
   </ItemGroup>
 </Project>
