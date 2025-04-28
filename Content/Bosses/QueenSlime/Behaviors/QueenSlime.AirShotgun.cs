@@ -84,12 +84,12 @@ public partial class QueenSlime
         return anim;
     }
     
-    private bool Attack_AirShotgun(int projectiles, float spread)
+    private bool Attack_AirShotgun(int projectiles, float spread, bool waitForLand)
     {
         airShotgunAnimation ??= PrepareAirShotgunAnimation();
         airShotgunAnimation.Data.Set("projectiles", projectiles);
         airShotgunAnimation.Data.Set("spread", spread);
-        if (airShotgunAnimation.RunAnimation() && grounded)
+        if (airShotgunAnimation.RunAnimation() && (grounded || !waitForLand))
         {
             airShotgunAnimation.Reset();
             return true;

@@ -1,4 +1,5 @@
 using System;
+using AcidicBosses.Common.Configs;
 using AcidicBosses.Core.StateManagement;
 using Microsoft.Xna.Framework;
 using Terraria;
@@ -10,7 +11,7 @@ namespace AcidicBosses.Content.Bosses.QueenSlime;
 public partial class QueenSlime : AcidicNPCOverride
 {
     protected override int OverriddenNpc => NPCID.QueenSlimeBoss;
-    protected override bool BossEnabled => true;
+    protected override bool BossEnabled => BossToggleConfig.Get().EnableQueenSlime;
 
     private Vector2 oldVel = Vector2.UnitY;
     private Vector2 oldOldVel = Vector2.UnitY;
@@ -22,6 +23,7 @@ public partial class QueenSlime : AcidicNPCOverride
         phaseTracker = new PhaseTracker([
             PhaseIntro,
             PhaseOne,
+            PhaseTransform,
             PhaseTwo,
         ]);
     }
@@ -30,6 +32,7 @@ public partial class QueenSlime : AcidicNPCOverride
     {
         Npc.MaxFallSpeedMultiplier *= 2f;
         Npc.GravityMultiplier *= 2f;
+        Npc.GravityMultiplier *= Npc.scale;
         
         if (!Npc.HasValidTarget) Npc.TargetClosest();
         

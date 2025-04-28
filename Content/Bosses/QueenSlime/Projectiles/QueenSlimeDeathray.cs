@@ -6,6 +6,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
 using Terraria;
+using Terraria.Audio;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -23,6 +24,13 @@ public class QueenSlimeDeathray : DeathrayBase
     {
         base.SetStaticDefaults();
         ProjectileID.Sets.TrailingMode[Projectile.type] = 2;
+    }
+    
+    public override void FirstFrame()
+    {
+        SoundEngine.PlaySound(SoundID.Zombie104 with { Volume = 0.25f, SoundLimitBehavior = SoundLimitBehavior.ReplaceOldest}, Projectile.Center);
+        Projectile.timeLeft = (int) Projectile.ai[2];
+        maxTimeLeft = (int) Projectile.ai[2];
     }
 
     public override void AI()

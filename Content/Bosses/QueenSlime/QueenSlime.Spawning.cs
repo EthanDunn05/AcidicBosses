@@ -31,7 +31,7 @@ public partial class QueenSlime
     private Projectile NewDeathray(Vector2 position, float rotation, int lifetime)
     {
         return DeathrayBase.Create<QueenSlimeDeathray>(Npc.GetSource_FromAI(), position, Npc.damage * 2, 3, rotation,
-            lifetime, Npc.whoAmI);
+            lifetime, -1);
     }
 
     private Projectile? NewCrystalVile(Vector2 position, float angle)

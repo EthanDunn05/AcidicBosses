@@ -5,6 +5,7 @@ using Terraria;
 using Terraria.Graphics.Effects;
 using Terraria.Graphics.Shaders;
 using Terraria.ModLoader;
+
 // ReSharper disable MemberHidesStaticFromOuterClass
 
 namespace AcidicBosses.Common.Effects;

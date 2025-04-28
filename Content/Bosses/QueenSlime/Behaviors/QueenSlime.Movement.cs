@@ -84,7 +84,7 @@ public partial class QueenSlime
 
     private void OnLand(float force)
     {
-        var trueForce = force;
+        var trueForce = force * Npc.scale;
         force = MathHelper.Clamp(force, 0f, 25f);
         var forceLerp = force / 25f;
         

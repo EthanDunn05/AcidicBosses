@@ -55,7 +55,7 @@ Buffs: {
 
 	InsanityBuff: {
 		DisplayName: Insanity
-		Description: Deerclops is straining you mental well being
+		Description: Deerclops is straining your mind
 	}
 }
 
@@ -148,6 +148,11 @@ Configs: {
 
 		EnableQueenBee: {
 			Label: Enable Queen Bee
+			Tooltip: ""
+		}
+
+		EnableQueenSlime: {
+			Label: Enable Queen Slime
 			Tooltip: ""
 		}
 	}

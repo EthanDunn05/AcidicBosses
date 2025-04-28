@@ -1,7 +1,10 @@
 using AcidicBosses.Common;
+using AcidicBosses.Common.Effects;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
+using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent;
 using Terraria.Graphics.Shaders;
@@ -26,12 +29,11 @@ public partial class QueenSlime
     private bool waitingToFlap = true;
     
     private float squash = 0f;
-    private Vector2 Scale => new Vector2(Npc.scale + squash, Npc.scale - squash);
+    private Vector2 Scale => new Vector2(Npc.scale + squash * Npc.scale, Npc.scale - squash * Npc.scale);
     
     public override bool AcidicDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color lightColor)
     {
-        var drawColor = Color.White;
-        if (Npc.damage == 0) drawColor *= 0.75f;
+        var drawColor = lightColor;
         
         // Lots of spritebatch shenanigans
         if (drawAfterimages)
@@ -43,10 +45,13 @@ public partial class QueenSlime
         if (drawWings || drawExtraWings || drawCore) spriteBatch.ExitShader();
         if (drawExtraWings)
         {
-            DrawWings(npc, spriteBatch, drawColor, new Vector2(25f, 40f));
-            DrawWings(npc, spriteBatch, drawColor, new Vector2(12.5f, 20f));
+            // Gray is darker than dark gray because reasons
+            // Gray is (128, 128, 128)
+            // Dark Gray is (169, 169, 169)
+            DrawWings(npc, spriteBatch, drawColor.MultiplyRGBA(Color.Gray), new Vector2(25f, 40f), 2);
+            DrawWings(npc, spriteBatch, drawColor.MultiplyRGBA(Color.DarkGray), new Vector2(12.5f, 20f), 1);
         }
-        if (drawWings) DrawWings(npc, spriteBatch, drawColor, Vector2.Zero);
+        if (drawWings) DrawWings(npc, spriteBatch, drawColor, Vector2.Zero, 0);
         if (drawCore) DrawCore(npc, spriteBatch, drawColor);
         
         spriteBatch.EnterShader();
@@ -113,6 +118,7 @@ public partial class QueenSlime
 
         var center = npc.Center;
         center = CoreOffset(center);
+        if (drawExtraWings) center += Main.rand.NextVector2Unit() * 2f;
         center -= Main.screenPosition;
         
         Main.pixelShader.CurrentTechnique.Passes[0].Apply();
@@ -125,14 +131,13 @@ public partial class QueenSlime
         var crownTex = TextureAssets.Extra[ExtrasID.QueenSlimeCrown].Value;
         var frame = crownTex.Frame();
         var origin = frame.Size() * new Vector2(0.5f, 0.5f);
-        var pos = new Vector2(npc.Center.X, npc.Top.Y - (float)frame.Bottom + 44f);
-        pos = CrownOffset(pos);
+        var pos = GetCrownPos();
         pos -= Main.screenPosition;
         
         spriteBatch.Draw(crownTex, pos, frame, drawColor, npc.rotation, origin, 1f, SpriteEffects.FlipHorizontally, 0f);
     }
 
-    private void DrawWings(NPC npc, SpriteBatch spriteBatch, Color drawColor, Vector2 offset)
+    private void DrawWings(NPC npc, SpriteBatch spriteBatch, Color drawColor, Vector2 offset, int wingIndex)
     {
         var wingTex = TextureAssets.Extra[ExtrasID.QueenSlimeWing].Value;
         var frame = wingTex.Frame(1, wingFrameCount, 0, wingFrame);
@@ -154,12 +159,13 @@ public partial class QueenSlime
             var origin = frame.Size() * new Vector2(originX, 0.5f);
             var pos = new Vector2(npc.Center.X + xOffset, npc.Center.Y);
             pos = CoreOffset(pos);
-            pos.Y += offset.Y;
+            pos.Y += offset.Y * Scale.Y;
             if (npc.rotation != 0f)
                 pos = pos.RotatedBy(npc.rotation, npc.Bottom);
 
             pos -= Main.screenPosition;
-            var rotOffset = MathHelper.Clamp(npc.velocity.Y, -6f, 4f) * -0.1f;
+            var rotOff = MathHelper.Pi / 16f * wingIndex;
+            var rotOffset = MathHelper.Clamp(npc.velocity.Y - wingIndex / 12f, -6f, 4f) * -0.1f + rotOff;
             if (i == 0) rotOffset *= -1f;
 
             spriteBatch.Draw(wingTex, pos, frame, drawColor, npc.rotation + rotOffset, origin, scale, effects, 0f);
@@ -216,6 +222,15 @@ public partial class QueenSlime
         if (Npc.rotation != 0f)
             pos = pos.RotatedBy(Npc.rotation, Npc.Bottom);
 
+        return pos;
+    }
+
+    private Vector2 GetCrownPos()
+    {
+        var crownTex = TextureAssets.Extra[ExtrasID.QueenSlimeCrown].Value;
+        var frame = crownTex.Frame();
+        var pos = new Vector2(Npc.Center.X, Npc.Top.Y - (float)frame.Bottom + 44f);
+        pos = CrownOffset(pos);
         return pos;
     }
     
@@ -277,6 +292,11 @@ public partial class QueenSlime
         // Wing Flapping
         if (singleFlap || flapping)
         {
+            if (wingFrame == 1 && wingFrameCounter == 3)
+            {
+                SoundEngine.PlaySound(SoundID.Item1 with { Pitch = -1f}, Npc.Center);
+            }
+            
             wingFrameCounter++;
             if (wingFrameCounter >= 6)
             {
