@@ -27,18 +27,18 @@ public partial class QueenSlime
             
             JumpTo(TargetPlayer.Center + new Vector2(0f, -250f), 45);
             
-            new FadingEffectLine(
-                TextureRegistry.InvertedFadingGlowLine,
-                Npc.Bottom + new Vector2(0, -50), MathHelper.PiOver2,
-                300f, 40f,
-                Color.White, 90
-            )
-            {
-                OnUpdate = line =>
-                {
-                    line.Position = Npc.Bottom;
-                }
-            }.Spawn();
+            // new FadingEffectLine(
+            //     TextureRegistry.InvertedFadingGlowLine,
+            //     Npc.Bottom + new Vector2(0, -50), MathHelper.PiOver2,
+            //     300f, 40f,
+            //     Color.White, 90
+            // )
+            // {
+            //     OnUpdate = line =>
+            //     {
+            //         line.Position = Npc.Bottom;
+            //     }
+            // }.Spawn();
         });
 
         anim.AddSequencedEvent(30, (progress, frame) =>
@@ -72,9 +72,13 @@ public partial class QueenSlime
             
             Npc.noGravity = false;
 
+            var startY = Npc.Bottom.Y;
+
             var searchPos = new Vector2(Npc.Bottom.X, TargetPlayer.Center.Y);
             var ground = AcidUtils.FindGroundVertical(searchPos.ToTileCoordinates()).ToWorldCoordinates();
             Teleport(ground);
+            
+            NewSlamTrail(Npc.Bottom, Npc.Bottom.Y - startY);
             OnLand(50f);
         });
 

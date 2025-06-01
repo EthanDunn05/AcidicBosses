@@ -33,6 +33,11 @@ public partial class QueenSlime
         return DeathrayBase.Create<QueenSlimeDeathray>(Npc.GetSource_FromAI(), position, Npc.damage * 2, 3, rotation,
             lifetime, -1);
     }
+    
+    private Projectile NewSlamTrail(Vector2 position, float height)
+    {
+        return QueenSlimeSlamTrail.Create(Npc.GetSource_FromAI(), position, height, Npc.damage, 4);
+    }
 
     private Projectile? NewCrystalVile(Vector2 position, float angle)
     {

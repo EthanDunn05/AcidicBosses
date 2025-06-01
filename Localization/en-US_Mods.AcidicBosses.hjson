@@ -45,6 +45,7 @@ Projectiles: {
 	QueenSlimeDeathray.DisplayName: Queenly Laser
 	CrystalShard.DisplayName: Crystal Shard
 	CrystalSpike.DisplayName: Crystal Spike
+	QueenSlimeSlamTrail.DisplayName: Queen Slime
 }
 
 Buffs: {
@@ -153,6 +154,11 @@ Configs: {
 
 		EnableQueenSlime: {
 			Label: Enable Queen Slime
+			Tooltip: ""
+		}
+
+		EnableDeerclops: {
+			Label: Enable Deerclops
 			Tooltip: ""
 		}
 	}

@@ -33,10 +33,12 @@ public class EoC : AcidicNPCOverride
     protected override bool BossEnabled => BossToggleConfig.Get().EnableEyeOfCthulhu;
 
     #region AI
-    
+
     private PhaseTracker phaseTracker;
 
     private bool useAfterimages = false;
+
+    private float afterimageOpacity = 0f;
 
     private bool isFleeing = false;
 
@@ -102,11 +104,11 @@ public class EoC : AcidicNPCOverride
             Npc.active = false;
         }
     }
-    
+
     #endregion
 
     #region Phase AIs
-    
+
     private PhaseState PhaseOne => new(Phase_One, EnterPhaseOne);
 
     private void EnterPhaseOne()
@@ -136,29 +138,29 @@ public class EoC : AcidicNPCOverride
 
         if (AttackManager.AiTimer > 0 && !AttackManager.CountUp)
         {
-            Npc.SimpleFlyMovement(Vector2.Zero, 0.25f);
+            // Npc.SimpleFlyMovement(Vector2.Zero, 0.15f);
+            Attack_Hover(7.5f, 0.05f, 250f);
             LookTowards(Main.player[Npc.target].Center, 0.05f);
             return;
         }
 
         AttackManager.RunAttackPattern();
     }
-    
+
     private PhaseState PhaseTwo => new(Phase_Two, EnterPhaseTwo);
-    
+
     private void EnterPhaseTwo()
     {
         var hover = new AttackState(() => Attack_Hover(120, 10f, 0.15f, 250f), 0);
-        var telegraphedDash = new AttackState(() => Attack_TelegraphedDash(45, 15f), 15);
         var dash = new AttackState(() => Attack_DashAtPlayer(45, 15f, true, 250) == DashState.Done, 15);
         var teleport = new AttackState(Attack_TeleportBehind, 15);
-        
+
         AttackManager.SetAttackPattern([
             hover,
-            telegraphedDash,
+            dash,
             dash,
             hover,
-            telegraphedDash,
+            dash,
             teleport
         ]);
     }
@@ -181,31 +183,31 @@ public class EoC : AcidicNPCOverride
 
         AttackManager.RunAttackPattern();
     }
-    
+
     private PhaseState PhaseThree => new(Phase_Three, EnterPhaseThree);
-    
+
     private void EnterPhaseThree()
     {
         var hover = new AttackState(() => Attack_Hover(90, 10f, 0.15f, 350f), 0);
-        var telegraphedDash = new AttackState(() => Attack_TelegraphedDash(45, 15f), 15);
+        var dash = new AttackState(() => Attack_DashAtPlayer(45, 15f, true, 250f) == DashState.Done, 15);
         var tripleDash = new AttackState(() => Attack_TripleDash(45, 15f), 15);
         var phantomCrossDash = new AttackState(Attack_PhantomCrossDash, 15);
         var phantomPlusDash = new AttackState(Attack_PhantomCrossDash, 15);
         var teleport = new AttackState(Attack_TeleportBehind, 5);
         var summon = new AttackState(() => Attack_SummonMinions(3), 15);
-        
+
         AttackManager.SetAttackPattern([
             hover,
-            telegraphedDash,
+            dash,
             tripleDash,
             phantomCrossDash,
             hover,
-            telegraphedDash,
+            dash,
             teleport,
             tripleDash,
             phantomPlusDash,
             hover,
-            telegraphedDash,
+            dash,
             tripleDash,
             tripleDash,
             tripleDash,
@@ -231,13 +233,13 @@ public class EoC : AcidicNPCOverride
 
         AttackManager.RunAttackPattern();
     }
-    
+
     private PhaseState PhaseFour => new(Phase_Four, EnterPhaseFour);
 
     private void EnterPhaseFour()
     {
         var hover = new AttackState(() => Attack_Hover(30, 20f, 0.15f, 250f), 0);
-        var telegraphedDash = new AttackState(() => Attack_TelegraphedDash(45, 20f), 0);
+        var dash = new AttackState(() => Attack_DashAtPlayer(45, 20f, true, 250) == DashState.Done, 0);
         var tripleDash = new AttackState(() => Attack_TripleDash(45, 20f), 0)
         {
             OnDone = () => Npc.velocity = Vector2.Zero
@@ -247,16 +249,16 @@ public class EoC : AcidicNPCOverride
         var gasterSpin = new AttackState(() => Attack_GasterSpinDash(8, 1), 30);
         var summon = new AttackState(() => Attack_SummonMinions(5), 0);
         var teleport = new AttackState(Attack_TeleportBehind, 5);
-        
+
         AttackManager.SetAttackPattern([
             hover,
-            telegraphedDash,
+            dash,
             teleport,
             phantomPlusDash,
             phantomCrossDash,
             phantomPlusDash,
             hover,
-            telegraphedDash,
+            dash,
             tripleDash,
             tripleDash,
             teleport,
@@ -279,7 +281,7 @@ public class EoC : AcidicNPCOverride
     }
 
     private PhaseState PhaseTransitionOne => new(Phase_TransitionOne);
-    
+
     private void Phase_TransitionOne()
     {
         AttackManager.CountUp = true;
@@ -304,9 +306,8 @@ public class EoC : AcidicNPCOverride
             var spinCurve = new PiecewiseCurve()
                 .Add(EasingCurves.Quadratic, EasingType.In, MathHelper.PiOver2, 0.25f)
                 .Add(MoreEasingCurves.Back, EasingType.Out, MathHelper.TwoPi, 1f);
-            
-            Npc.rotation = MathHelper.WrapAngle(Npc.localAI[0] + spinCurve.Evaluate(spinT) * 2f);
 
+            Npc.rotation = MathHelper.WrapAngle(Npc.localAI[0] + spinCurve.Evaluate(spinT) * 2f);
         }
         // Transform to mouth and start shockwave
         else if (AttackManager.AiTimer == 90)
@@ -331,7 +332,6 @@ public class EoC : AcidicNPCOverride
 
             mouthMode = true;
             Npc.damage = 80; // Way more damage now that the mouth is out
-            
         }
         // Shockwave Update
         else if (AttackManager.AiTimer is >= 90 and < 180)
@@ -350,14 +350,14 @@ public class EoC : AcidicNPCOverride
     }
 
     private PhaseState PhaseTransitionTwo => new(Phase_TransitionTwo);
-    
+
     private void Phase_TransitionTwo()
     {
         phaseTracker.NextPhase();
         AttackManager.Reset();
 
         // Faster Dashes
-        dashAtTime = 25;
+        dashAtTime = 45;
         dashTrackTime = 10;
     }
 
@@ -390,7 +390,7 @@ public class EoC : AcidicNPCOverride
     // Dash Stuff
 
     private static int dashTrackTime = 15;
-    private static int dashAtTime = 30;
+    private static int dashAtTime = 60;
 
     private DashState Attack_DashAtPlayer(int dashLength, float speed, bool enraged, float distance)
     {
@@ -401,23 +401,32 @@ public class EoC : AcidicNPCOverride
             DashLength = dashLength,
             TrackTime = dashTrackTime,
             DashAtTime = dashAtTime,
-            LookOffset = MathHelper.PiOver2
+            LookOffset = MathHelper.PiOver2,
+            DontReposition = true
         };
-        
+
         var target = Main.player[Npc.target];
         var dashState = DashHelper.Dash(Npc, AttackManager, target.Center, options);
 
         if (enraged)
         {
+            if (dashState == DashState.Tracking || dashState == DashState.Waiting)
+            {
+                var t = (float)AttackManager.AiTimer / dashAtTime;
+                var ease = 1f - EasingHelper.ExpOut(t);
+                Npc.SimpleFlyMovement(-(Npc.rotation + MathHelper.PiOver2).ToRotationVector2() * dashAtTime * ease, 0.75f);
+            }
+            
             if (dashState == DashState.StartingDash)
             {
                 var ring = new SmokeRingParticle(Npc.Center, Vector2.Zero, Npc.rotation, Color.Gray, 30);
                 ring.Scale *= 2f;
                 ring.Spawn();
-                
+
                 SoundEngine.PlaySound(SoundID.ForceRoarPitched, Npc.Center);
                 useAfterimages = true;
             }
+
             if (dashState == DashState.Done)
             {
                 useAfterimages = false;
@@ -433,7 +442,7 @@ public class EoC : AcidicNPCOverride
 
         // Normal dash movement
         var dashState = Attack_DashAtPlayer(dashLength, speed, true, 300);
-        
+
         // Create Telegraph
         if (AttackManager.AiTimer == 0)
         {
@@ -444,7 +453,7 @@ public class EoC : AcidicNPCOverride
 
         if (dashState == DashState.Done) AttackManager.CountUp = false;
         if (Main.netMode == NetmodeID.MultiplayerClient) return dashState == DashState.Done;
-        
+
         return dashState == DashState.Done;
     }
 
@@ -504,7 +513,7 @@ public class EoC : AcidicNPCOverride
 
         const int dashLength = 45;
         const float dashSpeed = 40f;
-        var indicateTime = (int) (dashAtTime);
+        var indicateTime = (int)(dashAtTime);
 
         var isDone = AttackManager.AiTimer >= dashLength + indicateTime;
 
@@ -526,11 +535,11 @@ public class EoC : AcidicNPCOverride
 
         if (AttackManager.AiTimer == 0)
         {
-            Main.TeleportEffect(new Rectangle((int) pos0.X, (int) pos0.Y, Npc.width, Npc.height),
+            Main.TeleportEffect(new Rectangle((int)pos0.X, (int)pos0.Y, Npc.width, Npc.height),
                 TeleportationStyleID.RodOfDiscord);
-            Main.TeleportEffect(new Rectangle((int) pos1.X, (int) pos1.Y, Npc.width, Npc.height),
+            Main.TeleportEffect(new Rectangle((int)pos1.X, (int)pos1.Y, Npc.width, Npc.height),
                 TeleportationStyleID.RodOfDiscord);
-            
+
             NewPhantomDashLine(pos0, vel0.ToRotation(), indicateTime);
             NewPhantomDashLine(pos1, vel1.ToRotation(), indicateTime);
         }
@@ -567,7 +576,7 @@ public class EoC : AcidicNPCOverride
 
         const int dashLength = 45;
         const float dashSpeed = 40f;
-        var indicateTime = (int) (dashAtTime);
+        var indicateTime = (int)(dashAtTime);
 
         Attack_Hover(10f, 0.05f, 400f);
         var isDone = AttackManager.AiTimer >= dashLength + indicateTime;
@@ -589,11 +598,11 @@ public class EoC : AcidicNPCOverride
 
         if (AttackManager.AiTimer == 0)
         {
-            Main.TeleportEffect(new Rectangle((int) pos0.X, (int) pos0.Y, Npc.width, Npc.height),
+            Main.TeleportEffect(new Rectangle((int)pos0.X, (int)pos0.Y, Npc.width, Npc.height),
                 TeleportationStyleID.RodOfDiscord);
-            Main.TeleportEffect(new Rectangle((int) pos1.X, (int) pos1.Y, Npc.width, Npc.height),
+            Main.TeleportEffect(new Rectangle((int)pos1.X, (int)pos1.Y, Npc.width, Npc.height),
                 TeleportationStyleID.RodOfDiscord);
-            
+
             NewPhantomDashLine(pos0, vel0.ToRotation(), indicateTime);
             NewPhantomDashLine(pos1, vel1.ToRotation(), indicateTime);
         }
@@ -653,7 +662,8 @@ public class EoC : AcidicNPCOverride
             originY = origin.Y;
 
             startAngle = Main.player[Npc.target].velocity.ToRotation() + MathHelper.PiOver2;
-            spinDirection = -1 * Main.player[Npc.target].velocity.X.NonZeroSign() * Main.player[Npc.target].velocity.Y.NonZeroSign();
+            spinDirection = -1 * Main.player[Npc.target].velocity.X.NonZeroSign() *
+                            Main.player[Npc.target].velocity.Y.NonZeroSign();
         }
 
         var targetPos = new Vector2(originX, originY);
@@ -670,7 +680,16 @@ public class EoC : AcidicNPCOverride
                 SoundEngine.PlaySound(SoundID.ForceRoarPitched);
             }
 
-            NewPhantomDashLine(pos, vel.ToRotation(), (int) (dashAtTime + dashLength / 2f));
+            new EffectLine(TextureRegistry.InvertedGlowLine, pos, vel.ToRotation(), 1900f, 33f, Color.Crimson,
+                dashAtTime + dashLength)
+            {
+                OnUpdate = line =>
+                {
+                    line.DrawColor =
+                        Color.Crimson
+                        * EasingHelper.CubicOut(1f - line.LifetimeRatio);
+                }
+            }.Spawn();
             dashes++;
         }
 
@@ -709,7 +728,7 @@ public class EoC : AcidicNPCOverride
         var spinCurve = new PiecewiseCurve()
             .Add(EasingCurves.Quadratic, EasingType.In, MathHelper.PiOver2, 0.25f)
             .Add(EasingCurves.Quadratic, EasingType.Out, MathHelper.TwoPi, 1f);
-        
+
         Npc.rotation = MathHelper.WrapAngle(startAngle + spinCurve.Evaluate(spinT));
 
         if (AttackManager.AiTimer >= spinTime)
@@ -734,6 +753,14 @@ public class EoC : AcidicNPCOverride
             destination = -target.DirectionTo(Npc.Center) * 250;
             destination += target;
         }
+
+        // Set a limit to how far the eye can be after teleporting
+        if (destination.Distance(target + targetVel * 15) >= 750)
+        {
+            destination = -target.DirectionTo(Npc.Center) * 750;
+            destination += target;
+        }
+
         Teleport(destination, 20f);
 
         return true;
@@ -747,10 +774,10 @@ public class EoC : AcidicNPCOverride
         Npc.rotation = awayDir.ToRotation() - MathHelper.PiOver2;
 
         new FakeAfterimage(startPos, destination, Npc).Spawn();
-        
+
         Npc.Center = destination;
         Npc.velocity = awayDir * recoil;
-        
+
         SoundEngine.PlaySound(SoundID.DD2_JavelinThrowersAttack, Npc.Center);
     }
 
@@ -759,32 +786,30 @@ public class EoC : AcidicNPCOverride
         SoundEngine.PlaySound(SoundID.Item95, Npc.Center);
 
         if (Main.netMode == NetmodeID.MultiplayerClient) return;
-        var summon = NPC.NewNPC(Npc.GetSource_FromAI(), (int) Npc.Center.X, (int) Npc.Center.Y,
+        var summon = NPC.NewNPC(Npc.GetSource_FromAI(), (int)Npc.Center.X, (int)Npc.Center.Y,
             NPCID.ServantofCthulhu);
         Main.npc[summon].velocity = Main.rand.NextVector2Unit() * 10;
     }
 
     private void NewDashLine(float offset, int lifetime)
     {
-        new EffectLine(TextureRegistry.InvertedFadingGlowLine, Npc.Center, Npc.rotation + offset, 1000f, 33f, Color.Crimson, lifetime)
+        new EffectLine(TextureRegistry.InvertedFadingGlowLine, Npc.Center, Npc.rotation + offset, 1000f, 33f,
+            Color.Crimson, lifetime)
         {
             OnUpdate = line =>
             {
-                line.Position = Npc.Center;
+                line.Position = Npc.Center + (Npc.rotation + MathHelper.PiOver2).ToRotationVector2() * 50f;
                 line.Rotation = Npc.rotation + offset;
                 line.DrawColor = Color.Crimson * EasingHelper.CubicOut(1f - line.LifetimeRatio);
             }
         }.Spawn();
     }
-    
+
     private void NewPhantomDashLine(Vector2 position, float rotation, int lifetime)
     {
         new EffectLine(TextureRegistry.InvertedGlowLine, position, rotation, 1900f, 33f, Color.Crimson, lifetime)
         {
-            OnUpdate = line =>
-            {
-                line.DrawColor = Color.Crimson * EasingHelper.CubicOut(1f - line.LifetimeRatio);
-            }
+            OnUpdate = line => { line.DrawColor = Color.Crimson * EasingHelper.CubicOut(1f - line.LifetimeRatio); }
         }.Spawn();
     }
 
@@ -809,12 +834,16 @@ public class EoC : AcidicNPCOverride
         var eyeTexture = TextureAssets.Npc[npc.type].Value;
         var eyeOrigin = eyeTexture.Size() / new Vector2(1f, Main.npcFrameCount[npc.type]) * 0.5f;
 
+        if (useAfterimages) afterimageOpacity = 1f;
+        else if (afterimageOpacity > 0) afterimageOpacity -= 0.05f;
+
         // Afterimages
-        if (useAfterimages)
+        if (afterimageOpacity > 0)
+        {
             for (var i = 1; i < npc.oldPos.Length; i++)
             {
                 // All of this is heavily simplified from decompiled vanilla
-                var fade = 0.5f * (10 - i) / 20f;
+                var fade = 0.5f * (10 - i) / 20f * afterimageOpacity;
                 var afterImageColor = Color.Multiply(drawColor, fade);
 
                 var pos = npc.oldPos[i] + new Vector2(npc.width, npc.height) / 2f - Main.screenPosition;
@@ -822,6 +851,7 @@ public class EoC : AcidicNPCOverride
                     effects,
                     0f);
             }
+        }
 
         spriteBatch.Draw(
             eyeTexture, drawPos,
@@ -836,7 +866,7 @@ public class EoC : AcidicNPCOverride
     public override void FindFrame(NPC npc, int frameHeight)
     {
         if (!ShouldOverride()) base.FindFrame(npc, frameHeight);
-        
+
         if (npc.frameCounter < 7.0)
         {
             npc.frame.Y = 0;
